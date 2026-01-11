@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Turbo
+.turbo/
+
+# Coverage
+coverage/
+
+# Generated files
+*.generated.ts
+*.generated.tsx
+
+# Mobile specific
+apps/mobile/ios/
+apps/mobile/android/
+
+# Desktop specific
+apps/desktop/out/
+apps/desktop/release/
+
+# Assets
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+

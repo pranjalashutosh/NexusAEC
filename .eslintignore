@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Turbo
+.turbo/
+
+# Coverage
+coverage/
+
+# Generated files
+*.generated.ts
+*.generated.tsx
+
+# Config files (handled separately)
+*.config.js
+*.config.ts
+*.config.mjs
+*.config.cjs
+
+# Mobile specific
+apps/mobile/ios/
+apps/mobile/android/
+
+# Desktop specific
+apps/desktop/out/
+apps/desktop/release/
+

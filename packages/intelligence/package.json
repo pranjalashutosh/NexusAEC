@@ -1,0 +1,56 @@
+{
+  "name": "@nexus-aec/intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Intelligence layer for red flag detection, clustering, and email analysis",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "clean": "rm -rf dist",
+    "ingest:assets": "tsx cli/ingest-assets.ts",
+    "ingest:manuals": "tsx cli/ingest-manuals.ts",
+    "list:assets": "tsx cli/list-assets.ts",
+    "validate:assets": "tsx scripts/validate-seed-data.ts",
+    "validate:manuals": "tsx scripts/validate-safety-manuals.ts"
+  },
+  "dependencies": {
+    "@nexus-aec/logger": "workspace:*",
+    "@nexus-aec/shared-types": "workspace:*",
+    "@supabase/supabase-js": "^2.90.1",
+    "commander": "^14.0.2",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.3",
+    "ioredis": "^5.9.1",
+    "openai": "^6.16.0",
+    "pdf-parse": "^2.4.5"
+  },
+  "devDependencies": {
+    "@types/ioredis": "^5.0.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "ioredis-mock": "^8.13.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

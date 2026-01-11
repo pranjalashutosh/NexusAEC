@@ -1,0 +1,111 @@
+[
+  {
+    "id": "SM-001",
+    "title": "Pump Station Safety Manual - Chapter 3: Emergency Shutdown Procedures",
+    "content": "EMERGENCY SHUTDOWN PROCEDURES FOR PUMP STATIONS\n\nPurpose: This procedure establishes the steps required to safely shut down pump stations during emergency situations including equipment failure, flooding, fire, or power loss.\n\nScope: Applies to all pump stations including P-104, P-105, P-201, and P-301.\n\nIMEDIATE ACTIONS:\n\n1. ALARM ACKNOWLEDGMENT\n- Acknowledge all SCADA alarms immediately\n- Notify Central Control Room of emergency condition\n- Activate emergency lighting if required\n\n2. ASSESS THE SITUATION\n- Identify the nature of emergency (mechanical failure, electrical fault, flooding, fire)\n- Determine if immediate evacuation is required\n- Check for personnel injuries or hazards\n\n3. EMERGENCY STOP PROCEDURE\n- Press red EMERGENCY STOP button on control panel\n- Pumps will stop immediately (no controlled ramp-down)\n- All motor starters will open\n- Generator auto-start will activate if configured\n\n4. ELECTRICAL ISOLATION\n- Open main disconnect switch at panel C-701\n- Verify all motors have stopped rotation\n- Check motor temperatures - allow 30 minutes cooling before restart\n- Post \"DO NOT OPERATE\" tags on all disconnects\n\n5. MECHANICAL ISOLATION\n- Close suction valve V-401 if pump failure occurred\n- Open bypass valves if available to maintain service\n- Check for vibration, unusual noise, or leaks\n- Document pump hour meter readings\n\nWARNING: Never attempt to restart pumps until root cause is identified and corrected. Pumps running dry or with mechanical failure can cause catastrophic damage within seconds.\n\n6. NOTIFICATION REQUIREMENTS\n- Notify Water Operations Supervisor: John Martinez (555-0104)\n- For after-hours: Call emergency on-call rotation\n- Notify Maintenance if mechanical failure suspected\n- Document all actions in shift log\n\n7. SYSTEM MONITORING\n- Monitor system pressure via SCADA\n- Check storage tank levels (T-401, T-402)\n- Activate backup pump P-105 if P-104 failed\n- Ensure distribution system maintains minimum 35 PSI\n\nDO NOT RESTART until authorized by Operations Supervisor and root cause is resolved.\n\nRelated Documents: SOP-PUMP-001, LOTO-PUMP-003\nRevision: 3.2\nEffective Date: 2024-01-15",
+    "type": "SAFETY_MANUAL",
+    "relatedAssets": ["P-104", "P-105", "P-201", "P-301", "V-401", "C-701", "T-401", "T-402"],
+    "metadata": {
+      "version": "3.2",
+      "effectiveDate": "2024-01-15",
+      "author": "Safety Committee",
+      "department": "Water Operations",
+      "reviewDate": "2025-01-15",
+      "category": "Emergency Response"
+    }
+  },
+  {
+    "id": "SM-002",
+    "title": "Chlorine Safety Manual - Sodium Hypochlorite Handling and Spill Response",
+    "content": "SODIUM HYPOCHLORITE HANDLING AND SPILL RESPONSE\n\nChemical Properties:\n- Chemical Name: Sodium Hypochlorite Solution (12.5% concentration)\n- Storage Location: Chemical Tank T-501 at North Plant\n- Hazard Class: Corrosive, Oxidizer\n- pH: 12-13 (highly alkaline)\n\nPERSONAL PROTECTIVE EQUIPMENT (PPE) - REQUIRED:\n\n1. MINIMUM PPE for routine operations:\n- Chemical resistant gloves (nitrile or neoprene)\n- Safety glasses with side shields\n- Face shield when making/breaking connections\n- Chemical resistant apron\n\n2. ENHANCED PPE for spill response:\n- Full face respirator with acid gas cartridge\n- Tyvek coveralls\n- Double gloves (nitrile inner, heavy rubber outer)\n- Rubber boots with steel toe\n\nDANGERS AND WARNINGS:\n\nWARNING: Sodium hypochlorite releases toxic chlorine gas when mixed with acids. NEVER mix with muriatic acid, sulfuric acid, or ammonia-based cleaners. Mixing these chemicals will produce deadly chlorine gas - a LIFE THREATENING situation requiring immediate evacuation.\n\nSYMPTOMS OF CHLORINE GAS EXPOSURE:\n- Burning eyes, nose, throat\n- Difficulty breathing, coughing, choking\n- Nausea, vomiting\n- Chemical pneumonia (delayed symptom)\n\nIf chlorine gas detected: EVACUATE IMMEDIATELY upwind, activate ventilation, call 911.\n\nSPILL RESPONSE PROCEDURES:\n\nSMALL SPILL (< 1 gallon):\n1. Evacuate non-essential personnel\n2. Don appropriate PPE\n3. Ventilate area\n4. Contain with absorbent pads\n5. Neutralize with sodium bisulfite if available\n6. Flush area with water\n7. Report to supervisor\n\nLARGE SPILL (> 1 gallon):\n1. EVACUATE building immediately\n2. Call 911 and notify HAZMAT team\n3. Notify Operations Supervisor: Sarah Chen (555-0201)\n4. Shut off dosing pump B-201 from SCADA\n5. Establish 100-foot perimeter\n6. Do not attempt cleanup without HAZMAT team\n\nFIRST AID:\n\nSKIN CONTACT: Flush with water for 15 minutes, seek medical attention\nEYE CONTACT: Flush for 15 minutes, seek immediate medical attention (EMERGENCY)\nINHALATION: Move to fresh air, administer oxygen if needed, seek medical attention\nINGESTION: Do NOT induce vomiting, rinse mouth, drink water, seek immediate medical attention\n\nEMERGENCY CONTACTS:\n- Emergency: 911\n- Poison Control: 1-800-222-1222\n- Operations Supervisor: Sarah Chen (555-0201)\n\nRevision: 4.1\nLast Review: 2024-11-01",
+    "type": "SAFETY_MANUAL",
+    "relatedAssets": ["T-501", "B-201"],
+    "metadata": {
+      "version": "4.1",
+      "effectiveDate": "2024-06-01",
+      "author": "Safety Officer",
+      "department": "Water Quality",
+      "reviewDate": "2025-06-01",
+      "category": "Chemical Safety"
+    }
+  },
+  {
+    "id": "PROC-001",
+    "title": "Lockout/Tagout Procedure - Electrical Equipment",
+    "content": "LOCKOUT/TAGOUT (LOTO) PROCEDURE FOR ELECTRICAL EQUIPMENT\n\nPurpose: Prevent unexpected startup of equipment during maintenance that could result in employee injury or death.\n\nScope: All electrical equipment including pumps, motors, control panels. Assets: P-104, P-105, P-201, P-301, M-501, M-502, E-301, E-401, E-501, C-701.\n\nREGULATORY REQUIREMENT: OSHA 29 CFR 1910.147 - MANDATORY safety procedure.\n\nGENERAL RULES:\n1. Only AUTHORIZED employees may perform lockout/tagout\n2. Each employee applies their OWN lock - never share\n3. Locks only removed by employee who applied them\n4. Test equipment for zero energy before work\n\nLOCKOUT/TAGOUT PROCEDURE (8 STEPS):\n\nSTEP 1: PREPARE FOR SHUTDOWN\n- Identify all energy sources\n- Notify affected employees and control room\n- Gather locks, tags, voltage tester\n\nSTEP 2: EQUIPMENT SHUTDOWN\n- Shut down using normal stop procedures\n- Allow complete stop\n\nSTEP 3: ISOLATE ENERGY SOURCES\n- Open main disconnect switch\n- Rack out motor starters\n- Open control power circuits\n\nSTEP 4: APPLY LOCKOUT DEVICES\n- Place lockout hasp on disconnect\n- Each worker applies personal lock\n- Attach \"DANGER - DO NOT OPERATE\" tag\n- Tags alone NOT sufficient - locks required\n\nSTEP 5: CONTROL STORED ENERGY\n- Wait 5 minutes for capacitor discharge\n- Drain pressure from systems\n- Block rotating parts\n\nSTEP 6: VERIFY ZERO ENERGY (CRITICAL)\n- Use calibrated voltage tester\n- Test all phases to ground and phase-to-phase\n- Test control circuits\n- Attempt to start equipment (must NOT respond)\n- If ANY voltage detected, DO NOT PROCEED\n\nSTEP 7: PERFORM WORK\n- Work may proceed safely\n- Keep locks in place entire duration\n\nSTEP 8: REMOVE LOCKOUT\n- Verify work complete, tools removed\n- Notify control room\n- Each employee removes ONLY their own lock\n- Restore disconnects, test operation\n\nPENALTIES FOR VIOLATIONS:\n- First offense: Written warning\n- Second offense: 3-day suspension\n- Third offense: Termination\n- Removing another's lock: Immediate termination\n\nRevision: 5.0\nEffective: 2024-03-01",
+    "type": "PROCEDURE",
+    "relatedAssets": ["P-104", "P-105", "P-201", "P-301", "M-501", "M-502", "E-301", "E-401", "E-501", "C-701"],
+    "metadata": {
+      "version": "5.0",
+      "effectiveDate": "2024-03-01",
+      "author": "Safety Manager",
+      "department": "Safety",
+      "reviewDate": "2025-03-01",
+      "category": "Lockout/Tagout",
+      "oshaReference": "29 CFR 1910.147"
+    }
+  },
+  {
+    "id": "PROC-002",
+    "title": "Confined Space Entry Procedure - Storage Tanks",
+    "content": "CONFINED SPACE ENTRY PROCEDURE\n\nPurpose: Establish safe procedures for entry into confined spaces including storage tanks T-401, T-402, T-501, wet wells, and vaults.\n\nDefinition: Confined space has limited entry/exit, not designed for continuous occupancy.\n\nPermit-Required Confined Space has:\n- Hazardous atmosphere potential\n- Engulfment hazard\n- Internal configuration creating entrapment\n\nAll tanks classified as Permit-Required Confined Spaces.\n\nENTRY PROHIBITION:\n- NO ENTRY without valid permit\n- NO ENTRY without atmospheric testing\n- NO ENTRY without trained attendant\n\nATMOSPHERIC HAZARDS:\n\nOxygen: Acceptable 19.5% - 23.5%\n- Below 19.5%: Risk of unconsciousness/death\n\nHydrogen Sulfide (H2S):\n- Acceptable: 0 PPM (zero tolerance)\n- 100 PPM: Immediately dangerous to life\n- WARNING: Paralyzes sense of smell at high concentrations\n\nCarbon Monoxide (CO):\n- Acceptable: 0-35 PPM\n- 1600 PPM: Death in 1 hour\n\nCombustible Gases (Methane):\n- Acceptable: 0-10% LEL\n- Above 10% LEL: EVACUATE - explosion risk\n\nPERMIT SYSTEM:\nRequired info: Space ID, purpose, date, authorized entrants, attendant, supervisor, test results, rescue availability.\nValid for single shift only (max 8 hours).\n\nENTRY PROCEDURE:\n\n1. ATMOSPHERIC TESTING (Before Entry):\n- Test order: Oxygen, Combustibles, Toxics\n- Test from outside using sample probe\n- Test multiple levels (top, middle, bottom)\n- Continuous monitoring during entry\n\n2. VENTILATION:\n- Mechanical ventilation required\n- Minimum 10 air changes before entry\n- Continue during entire entry\n\n3. ISOLATE HAZARDS:\n- Lockout/tagout all equipment\n- Close and lock valves\n- Blank/blind pipe flanges\n- Post warning signs\n\n4. PPE:\n- Full body harness with retrieval line\n- Hard hat, safety glasses, boots\n- Respirator if required by testing\n\n5. COMMUNICATION:\n- Two-way radio or intercom\n- Backup whistle\n\nENTRY TEAM ROLES:\n\nSupervisor: Issues permit, verifies precautions, terminates if unsafe\nEntrant: Trained, aware of hazards, maintains communication\nAttendant: Remains outside, monitors entrants, summons rescue, NEVER leaves post\n\nRESCUE:\n\nNON-ENTRY RESCUE (Preferred):\n- Harness connected to retrieval line\n- Mechanical winch outside\n- Attendant retrieves without entering\n\nWARNING: More deaths from untrained rescuers than initial victims. NEVER enter to rescue without training and SCBA.\n\nEmergency: 911\nRescue Team: County HAZMAT (555-9111)\n\nTRAINING:\n- Entrants/Attendants: 8-hour course + annual refresher\n- Supervisors: 16-hour advanced course\n- Annual rescue drill required\n\nRevision: 3.8\nEffective: 2024-08-01",
+    "type": "PROCEDURE",
+    "relatedAssets": ["T-401", "T-402", "T-501"],
+    "metadata": {
+      "version": "3.8",
+      "effectiveDate": "2024-08-01",
+      "author": "Safety Manager",
+      "department": "Safety",
+      "reviewDate": "2025-08-01",
+      "category": "Confined Space",
+      "oshaReference": "29 CFR 1910.146"
+    }
+  },
+  {
+    "id": "GUIDE-001",
+    "title": "Electrical Safety Guidelines - Arc Flash Hazards",
+    "content": "ELECTRICAL SAFETY GUIDELINES - ARC FLASH AND SHOCK HAZARD PROTECTION\n\nPurpose: Provide guidance on electrical safety when working on energized equipment.\n\nScope: Transformers (E-301), UPS (E-401), motor control centers (E-501), control panels (C-701).\n\nELECTRICAL HAZARDS:\n\n1. SHOCK HAZARD: Contact with energized conductors can cause cardiac arrest, burns, falls. Voltage as low as 50V can be fatal.\n\n2. ARC FLASH HAZARD: Explosive energy release during fault. Temperatures exceed 35,000°F. Causes severe burns, blindness, hearing loss.\n\n3. ARC BLAST HAZARD: Pressure wave can rupture eardrums, collapse lungs, throw workers.\n\nHIERARCHY OF CONTROLS:\n1. ELIMINATION: De-energize completely, lockout/tagout\n2. SUBSTITUTION: Use insulated tools, remote operation\n3. ENGINEERING: Arc-rated switchgear, current-limiting fuses\n4. ADMINISTRATIVE: Work permits, training\n5. PPE: Arc-rated clothing, face shields (last resort)\n\nARC FLASH BOUNDARIES (Equipment Specific):\n\nTransformer E-301 (1500kVA, 13.2kV):\n- Arc Flash Boundary: 8 ft 10 in\n- Incident Energy: 12.4 cal/cm²\n- PPE Category: 3\n\nMotor Control Center E-501 (480V, 600A):\n- Arc Flash Boundary: 4 ft 6 in\n- Incident Energy: 6.8 cal/cm²\n- PPE Category: 2\n\nControl Panel C-701 (480V, 200A):\n- Arc Flash Boundary: 20 in\n- Incident Energy: 1.2 cal/cm²\n- PPE Category: 1\n\nPPE CATEGORIES:\n\nCategory 0: Non-melting clothing, safety glasses\nCategory 1: Arc-rated shirt/pants (4 cal), face shield\nCategory 2: Arc-rated suit (8 cal), face shield, balaclava\nCategory 3: Arc-rated flash suit (25 cal), hood, multi-layer\nCategory 4: Arc-rated flash suit (40 cal), multi-layer system\n\nINSULATED GLOVES:\n- Class 0: Up to 1000V\n- Class 1: Up to 7,500V\n- Class 2: Up to 17,000V\n- Must be tested every 6 months\n- Inspect before each use\n\nSAFE WORK PRACTICES:\n1. Qualified person requirements\n2. Energized electrical work permit required\n3. Test voltage detection device first\n4. Test all phases and to ground\n5. Never work alone on >50V\n6. Use insulated tools\n7. Remove jewelry\n\nINCIDENT RESPONSE:\n\nShock Victim:\n- DO NOT TOUCH if still in contact\n- De-energize if safe\n- Call 911\n- Begin CPR if trained\n- All shock victims need medical evaluation\n\nArc Flash:\n- Call 911 immediately\n- Cool burns with room-temperature water\n- Do not remove adhered clothing\n- Treat for shock\n\nRegulatory: OSHA 1910.333, NFPA 70E\n\nRevision: 2.9\nEffective: 2024-09-15",
+    "type": "GUIDELINE",
+    "relatedAssets": ["E-301", "E-401", "E-501", "C-701"],
+    "metadata": {
+      "version": "2.9",
+      "effectiveDate": "2024-09-15",
+      "author": "Chief Electrician",
+      "department": "Electrical",
+      "reviewDate": "2025-09-15",
+      "category": "Electrical Safety",
+      "nfpaReference": "NFPA 70E"
+    }
+  },
+  {
+    "id": "SM-003",
+    "title": "Water Quality Monitoring - Safety and Sample Collection",
+    "content": "WATER QUALITY MONITORING - OPERATOR SAFETY AND SAMPLE COLLECTION\n\nPurpose: Safe procedures for water quality sampling and online analyzer operation.\n\nScope: Analyzers S-601, S-602, S-701, S-801 and lab equipment W-101.\n\nSAFETY HAZARDS:\n1. Biological: Waterborne pathogens\n2. Chemical: Chlorine gas, lab reagents\n3. Physical: Slips, confined spaces, electrical\n\nPPE:\nMinimum: Safety glasses, nitrile gloves, closed-toe shoes\nEnhanced (wastewater): Face shield, apron, rubber boots\n\nSAMPLE COLLECTION:\n\n1. Distribution Samples:\n- Remove aerator, clean tap\n- Run water 3-5 minutes\n- Use sterile 100mL bottles (bacteriological)\n- Do NOT rinse bottle (contains preservative)\n- Fill to shoulder, cap immediately\n- Store on ice, deliver within 6 hours\n\n2. Field Testing:\n- Calibrate meters before use\n- Test: chlorine residual, pH, temperature, turbidity\n- Acceptable chlorine: 0.5-2.0 mg/L\n- Acceptable turbidity: <0.3 NTU\n- Acceptable pH: 6.5-8.5\n\nONLINE ANALYZER OPERATION:\n\nTurbidity Analyzer S-801:\nDaily: Verify reading, check flow, inspect for bubbles\nWeekly: Clean sample cell\nMonthly: Calibrate with standards (0.02, 0.10, 1.0 NTU)\n\nChlorine Analyzer S-701:\nDaily: Verify readings, check reagent flow\nWeekly: Check reagent color and expiration\nMonthly: 3-point calibration (0.5, 1.0, 2.0 mg/L)\nQuarterly: Replace tubing, clean pump heads\n\nFlow Sensor S-601:\nDaily: Verify reasonable reading\nMonthly: Verify zero flow test\nAnnual: Certified calibration (±2% accuracy)\n\nPressure Sensor S-602:\nDaily: Check for normal pressure\nMonthly: Zero and span check\nAnnual: 5-point calibration (±0.5% accuracy)\n\nLAB SAFETY:\n- No food/drink in lab\n- No mouth pipetting\n- Wash hands before leaving\n- Label all containers\n- Proper waste disposal\n\nREGULATORY COMPLIANCE:\n- Monthly bacteriological monitoring\n- Daily turbidity monitoring\n- Continuous chlorine monitoring\n- Report results within 10 days\n\nMaximum Contaminant Levels:\n- Total Coliform: <5% positive/month\n- E. coli: 0 (any positive = notification)\n- Turbidity: <0.3 NTU (95% of time)\n- Chlorine residual: 0.2 mg/L minimum\n\nQUALITY CONTROL:\n- Calibrate field meters daily\n- 10% duplicate samples weekly\n- Proficiency testing monthly\n- Acceptable precision: ±10%\n- Acceptable recovery: 90-110%\n\nRevision: 4.5\nEffective: 2024-10-01",
+    "type": "SAFETY_MANUAL",
+    "relatedAssets": ["S-601", "S-602", "S-701", "S-801", "W-101"],
+    "metadata": {
+      "version": "4.5",
+      "effectiveDate": "2024-10-01",
+      "author": "Water Quality Supervisor",
+      "department": "Water Quality",
+      "reviewDate": "2025-10-01",
+      "category": "Water Quality"
+    }
+  },
+  {
+    "id": "PROC-003",
+    "title": "Generator Testing and Maintenance Procedure",
+    "content": "GENERATOR TESTING AND MAINTENANCE PROCEDURE\n\nPurpose: Safe operation, testing, and maintenance of emergency generators G-301 (500kW diesel) and G-102 (300kW natural gas).\n\nScope: Emergency generators at South Treatment Plant and Riverside Bridge Station.\n\nSAFETY HAZARDS:\n1. Electrical: 480V output - lethal\n2. Mechanical: Rotating parts, hot surfaces (>600°F)\n3. Fuel: Diesel/natural gas - flammable\n4. Exhaust: Carbon monoxide, temperatures >1000°F\n5. Noise: 85-95 dBA - hearing protection required\n\nPPE: Safety glasses, hearing protection (when running), work gloves\n\nLOTO: Required for maintenance - lock control switch, transfer switch, fuel supply\n\nWEEKLY TESTING:\nFrequency: Every Monday 10:00 AM\nDuration: 30 minutes minimum under load\n\nPRE-START INSPECTION:\n1. Check for leaks (fuel, oil, coolant)\n2. Inspect belts and guards\n3. Check battery terminals\n\nFluid Levels:\n- Engine oil: Between ADD and FULL\n- Coolant: At FULL COLD mark\n- Fuel: G-301 minimum 50% (250 gal), G-102 verify gas valve open\n- Battery: Check electrolyte level\n\nControl Panel:\n- Switch in AUTO position\n- Battery voltage 24-28VDC\n- No active alarms\n- Record hour meter\n\nSTART PROCEDURE:\n1. Notify Control Room\n2. Switch to TEST mode\n3. Press START button\n4. Engine should start within 30 seconds\n5. Warm-up 5 minutes\n6. Apply load (30-40% of rating)\n7. Monitor gauges every 5 minutes for 30 minutes\n\nACCEPTABLE PARAMETERS:\nG-301 (500kW Diesel):\n- Oil Pressure: 45-60 PSI\n- Coolant Temp: 180-200°F\n- Voltage: 470-480V\n- Frequency: 59.8-60.2 Hz\n\nG-102 (300kW Natural Gas):\n- Oil Pressure: 40-55 PSI\n- Coolant Temp: 170-190°F\n- Voltage: 470-480V\n- Frequency: 59.8-60.2 Hz\n\nSHUTDOWN:\n1. Remove load, return to utility\n2. Run 5 minutes at no-load (cool-down)\n3. Press STOP button\n4. Return switch to AUTO\n5. Record run hours and observations\n\nMONTHLY MAINTENANCE:\n- Battery load test and cleaning\n- Inspect belts (1/2\" deflection)\n- Check hoses and connections\n- Air filter service\n- Drain water separator (diesel)\n- Exercise automatic transfer switch\n\nQUARTERLY:\n- Oil and filter change\n- Coolant system check\n- Fuel filter replacement\n- Exhaust system inspection\n\nANNUAL:\n- Load bank test (100% load, 2 hours)\n- Compression test\n- Valve adjustment\n- Full inspection by certified technician\n\nTROUBLESHOOTING:\nFails to start: Check battery, fuel, alarms\nStarts but shuts down: Check oil pressure, temperature\nLow power: Check fuel supply, air filter\n\nEmergency Operation:\n- Auto-start within 10 seconds of outage\n- Monitor remotely via SCADA\n- Check fuel level hourly for extended outages\n\nRevision: 3.5\nEffective: 2024-07-01",
+    "type": "PROCEDURE",
+    "relatedAssets": ["G-301", "G-102", "X-501"],
+    "metadata": {
+      "version": "3.5",
+      "effectiveDate": "2024-07-01",
+      "author": "Facilities Supervisor",
+      "department": "Facilities",
+      "reviewDate": "2025-07-01",
+      "category": "Generator Maintenance",
+      "nfpaReference": "NFPA 110"
+    }
+  }
+]
