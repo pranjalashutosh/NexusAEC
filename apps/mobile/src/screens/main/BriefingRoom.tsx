@@ -6,21 +6,22 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { RootStackScreenProps } from '../../types/navigation';
-import { useTheme } from '../../hooks/useTheme';
-import { useLiveKit } from '../../hooks/useLiveKit';
-import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { ConnectionQualityIndicator } from '../../components/ConnectionQualityIndicator';
 import { PTTButton } from '../../components/PTTButton';
+import { useLiveKit } from '../../hooks/useLiveKit';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { useTheme } from '../../hooks/useTheme';
 import { generateRoomName } from '../../services/livekit-token';
+
+import type { RootStackScreenProps } from '../../types/navigation';
 
 type Props = RootStackScreenProps<'BriefingRoom'>;
 
@@ -41,25 +42,25 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
   useEffect(() => {
     const roomName = route.params?.roomName ?? generateRoomName();
     
-    connect(roomName).catch((err) => {
+    void connect(roomName).catch((err) => {
       setError(err instanceof Error ? err.message : 'Failed to connect');
     });
 
     // Disconnect on unmount
     return () => {
-      disconnect();
+      void disconnect();
     };
   }, []);
 
   const handleClose = () => {
-    disconnect();
+    void disconnect();
     navigation.goBack();
   };
 
   const handleRetry = () => {
     setError(null);
     const roomName = route.params?.roomName ?? generateRoomName();
-    connect(roomName).catch((err) => {
+    void connect(roomName).catch((err) => {
       setError(err instanceof Error ? err.message : 'Failed to connect');
     });
   };

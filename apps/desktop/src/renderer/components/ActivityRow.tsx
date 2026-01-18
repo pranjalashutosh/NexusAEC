@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+
 import { UndoButton } from './UndoButton';
 
 interface AuditEntry {
@@ -60,8 +61,12 @@ function formatTimestamp(dateString: string): string {
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMs / 3600000);
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffMins < 1) {
+    return 'Just now';
+  }
+  if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  }
   if (diffHours < 24) {
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',

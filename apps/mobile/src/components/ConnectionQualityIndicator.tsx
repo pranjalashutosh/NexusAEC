@@ -3,10 +3,11 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+
+import { useTheme } from '../hooks/useTheme';
 
 import type { ConnectionQuality } from '../hooks/useNetworkStatus';
-import { useTheme } from '../hooks/useTheme';
 
 interface ConnectionQualityIndicatorProps {
   quality: ConnectionQuality;

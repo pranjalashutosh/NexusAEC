@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 
 interface UndoButtonProps {
-  onUndo: () => void;
+  onUndo: () => void | Promise<void>;
   entryId: string;
   confirmRequired?: boolean;
   label?: string;
@@ -31,7 +31,7 @@ export function UndoButton({
 
     setIsProcessing(true);
     try {
-      await onUndo();
+      await Promise.resolve(onUndo());
     } finally {
       setIsProcessing(false);
       setIsConfirming(false);

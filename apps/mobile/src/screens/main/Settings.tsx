@@ -3,12 +3,12 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+
+import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 
 import type { RootStackScreenProps } from '../../types/navigation';
-import { useTheme } from '../../hooks/useTheme';
-import { useAuth } from '../../hooks/useAuth';
 
 type Props = RootStackScreenProps<'Settings'>;
 
@@ -17,7 +17,7 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
   const { preferences, updatePreferences, logout } = useAuth();
 
   const handleVerbosityChange = (level: 'concise' | 'standard' | 'detailed') => {
-    updatePreferences({ verbosity: level });
+    void updatePreferences({ verbosity: level });
   };
 
   return (

@@ -3,15 +3,13 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import type { RootStackScreenProps } from '../../types/navigation';
-import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 
-type Props = RootStackScreenProps<'SyncStatus'>;
 
-export function SyncStatusScreen({ navigation }: Props): React.JSX.Element {
+export function SyncStatusScreen(): React.JSX.Element {
   const { colors } = useTheme();
   const { accounts } = useAuth();
 

@@ -2,7 +2,8 @@
  * Drafts Screen
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+
 import { DraftCard } from '../components/DraftCard';
 import { DraftDetailModal } from '../components/DraftDetailModal';
 
@@ -69,10 +70,18 @@ export function DraftsScreen(): React.ReactElement {
   const [search, setSearch] = useState<string>('');
 
   const filteredDrafts = drafts.filter((draft) => {
-    if (draft.status !== 'pending') return false;
-    if (filter === 'google' && draft.source !== 'google') return false;
-    if (filter === 'microsoft' && draft.source !== 'microsoft') return false;
-    if (filter === 'urgent' && (draft.redFlagScore ?? 0) < 0.7) return false;
+    if (draft.status !== 'pending') {
+      return false;
+    }
+    if (filter === 'google' && draft.source !== 'google') {
+      return false;
+    }
+    if (filter === 'microsoft' && draft.source !== 'microsoft') {
+      return false;
+    }
+    if (filter === 'urgent' && (draft.redFlagScore ?? 0) < 0.7) {
+      return false;
+    }
     if (search) {
       const searchLower = search.toLowerCase();
       return (

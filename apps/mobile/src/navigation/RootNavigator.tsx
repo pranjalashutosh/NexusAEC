@@ -4,29 +4,26 @@
  * Main navigation structure for the app
  */
 
-import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from 'react';
 
-import type { RootStackParamList } from '../types/navigation';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
-
-// Onboarding Screens
-import { WelcomeScreen } from '../screens/onboarding/Welcome';
-import { ConnectAccountScreen } from '../screens/onboarding/ConnectAccount';
-import { VIPSelectionScreen } from '../screens/onboarding/VIPSelection';
-import { TopicSelectionScreen } from '../screens/onboarding/TopicSelection';
-import { KeywordSelectionScreen } from '../screens/onboarding/KeywordSelection';
-import { ConfirmationScreen } from '../screens/onboarding/Confirmation';
-
-// Main Screens
-import { HomeScreen } from '../screens/main/Home';
-import { BriefingRoomScreen } from '../screens/main/BriefingRoom';
-import { SettingsScreen } from '../screens/main/Settings';
-import { PrivacyDashboardScreen } from '../screens/main/PrivacyDashboard';
-import { PendingActionsScreen } from '../screens/main/PendingActions';
-import { SyncStatusScreen } from '../screens/main/SyncStatus';
 import { AddAccountScreen } from '../screens/main/AddAccount';
+import { BriefingRoomScreen } from '../screens/main/BriefingRoom';
+import { HomeScreen } from '../screens/main/Home';
+import { PendingActionsScreen } from '../screens/main/PendingActions';
+import { PrivacyDashboardScreen } from '../screens/main/PrivacyDashboard';
+import { SettingsScreen } from '../screens/main/Settings';
+import { SyncStatusScreen } from '../screens/main/SyncStatus';
+import { ConfirmationScreen } from '../screens/onboarding/Confirmation';
+import { ConnectAccountScreen } from '../screens/onboarding/ConnectAccount';
+import { KeywordSelectionScreen } from '../screens/onboarding/KeywordSelection';
+import { TopicSelectionScreen } from '../screens/onboarding/TopicSelection';
+import { VIPSelectionScreen } from '../screens/onboarding/VIPSelection';
+import { WelcomeScreen } from '../screens/onboarding/Welcome';
+
+import type { RootStackParamList } from '../types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

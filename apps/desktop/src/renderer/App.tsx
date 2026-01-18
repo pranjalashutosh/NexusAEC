@@ -3,11 +3,12 @@
  */
 
 import React from 'react';
-import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { DraftsScreen } from './screens/Drafts';
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
+
 import { ActivityScreen } from './screens/Activity';
-import { SettingsScreen } from './screens/Settings';
+import { DraftsScreen } from './screens/Drafts';
 import { PrivacyScreen } from './screens/Privacy';
+import { SettingsScreen } from './screens/Settings';
 
 export function App(): React.ReactElement {
   return (

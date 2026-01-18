@@ -2,16 +2,16 @@
  * Authentication hook and provider
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {
   createContext,
-  useContext,
-  useState,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
+  useState,
   type ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Connected account information
@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
       }
     };
 
-    loadState();
+    void loadState();
   }, []);
 
   const connectAccount = useCallback(async (provider: 'google' | 'microsoft') => {

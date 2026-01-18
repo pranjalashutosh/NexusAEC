@@ -32,16 +32,28 @@ function formatTimeAgo(dateString: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return 'Yesterday';
+  if (diffMins < 1) {
+    return 'Just now';
+  }
+  if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+  if (diffDays === 1) {
+    return 'Yesterday';
+  }
   return `${diffDays}d ago`;
 }
 
 function getRedFlagLabel(score: number): { label: string; className: string } {
-  if (score >= 0.8) return { label: 'High Priority', className: 'priority-high' };
-  if (score >= 0.5) return { label: 'Medium', className: 'priority-medium' };
+  if (score >= 0.8) {
+    return { label: 'High Priority', className: 'priority-high' };
+  }
+  if (score >= 0.5) {
+    return { label: 'Medium', className: 'priority-medium' };
+  }
   return { label: 'Low', className: 'priority-low' };
 }
 

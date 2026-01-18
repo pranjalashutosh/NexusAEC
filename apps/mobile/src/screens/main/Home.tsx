@@ -6,19 +6,20 @@
 
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+  StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { RootStackScreenProps } from '../../types/navigation';
-import { useTheme } from '../../hooks/useTheme';
+import { ConnectionQualityIndicator } from '../../components/ConnectionQualityIndicator';
 import { useAuth } from '../../hooks/useAuth';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-import { ConnectionQualityIndicator } from '../../components/ConnectionQualityIndicator';
+import { useTheme } from '../../hooks/useTheme';
+
+import type { RootStackScreenProps } from '../../types/navigation';
 
 type Props = RootStackScreenProps<'Home'>;
 
@@ -33,8 +34,12 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
+    if (hour < 12) {
+      return 'Good morning';
+    }
+    if (hour < 17) {
+      return 'Good afternoon';
+    }
     return 'Good evening';
   };
 

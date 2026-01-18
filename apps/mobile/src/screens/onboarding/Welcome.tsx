@@ -6,21 +6,18 @@
 
 import React from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
+  Text,
   TouchableOpacity,
-  Image,
-  Dimensions,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import type { RootStackScreenProps } from '../../types/navigation';
 import { useTheme } from '../../hooks/useTheme';
 
-type Props = RootStackScreenProps<'Welcome'>;
+import type { RootStackScreenProps } from '../../types/navigation';
 
-const { width } = Dimensions.get('window');
+type Props = RootStackScreenProps<'Welcome'>;
 
 export function WelcomeScreen({ navigation }: Props): React.JSX.Element {
   const { colors } = useTheme();

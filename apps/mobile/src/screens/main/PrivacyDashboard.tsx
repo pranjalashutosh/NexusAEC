@@ -3,15 +3,13 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import type { RootStackScreenProps } from '../../types/navigation';
-import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 
-type Props = RootStackScreenProps<'PrivacyDashboard'>;
 
-export function PrivacyDashboardScreen({ navigation }: Props): React.JSX.Element {
+export function PrivacyDashboardScreen(): React.JSX.Element {
   const { colors } = useTheme();
   const { logout } = useAuth();
 

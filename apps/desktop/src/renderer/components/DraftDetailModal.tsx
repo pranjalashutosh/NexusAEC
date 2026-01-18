@@ -24,7 +24,7 @@ interface Draft {
 interface DraftDetailModalProps {
   draft: Draft;
   onClose: () => void;
-  onApprove: () => void;
+  onApprove: () => void | Promise<void>;
   onDelete: () => void;
   onEdit?: (updatedBody: string) => void;
 }
@@ -55,7 +55,7 @@ export function DraftDetailModal({
   const handleApprove = async () => {
     setIsApproving(true);
     try {
-      await onApprove();
+      await Promise.resolve(onApprove());
     } finally {
       setIsApproving(false);
     }
@@ -73,7 +73,7 @@ export function DraftDetailModal({
     setShowDeleteConfirm(false);
   };
 
-  const displayName = draft.recipientName || draft.recipientEmail;
+  const displayName = draft.recipientName ?? draft.recipientEmail;
 
   return (
     <div className="modal-overlay" onClick={onClose}>

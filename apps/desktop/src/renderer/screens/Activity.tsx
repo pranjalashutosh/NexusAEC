@@ -3,6 +3,7 @@
  */
 
 import React, { useState } from 'react';
+
 import { ActivityRow } from '../components/ActivityRow';
 
 interface AuditEntry {
@@ -85,8 +86,12 @@ export function ActivityScreen(): React.ReactElement {
   };
 
   const filteredEntries = entries.filter((entry) => {
-    if (entry.undoneAt) return false;
-    if (actionFilter !== 'all' && entry.action !== actionFilter) return false;
+    if (entry.undoneAt) {
+      return false;
+    }
+    if (actionFilter !== 'all' && entry.action !== actionFilter) {
+      return false;
+    }
     return true;
   });
 

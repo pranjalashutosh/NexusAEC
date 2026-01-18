@@ -3,12 +3,10 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import type { RootStackScreenProps } from '../../types/navigation';
 import { useTheme } from '../../hooks/useTheme';
 
-type Props = RootStackScreenProps<'PendingActions'>;
 
 interface PendingAction {
   id: string;
@@ -21,7 +19,7 @@ interface PendingAction {
 // Mock data
 const PENDING_ACTIONS: PendingAction[] = [];
 
-export function PendingActionsScreen({ navigation }: Props): React.JSX.Element {
+export function PendingActionsScreen(): React.JSX.Element {
   const { colors } = useTheme();
 
   if (PENDING_ACTIONS.length === 0) {

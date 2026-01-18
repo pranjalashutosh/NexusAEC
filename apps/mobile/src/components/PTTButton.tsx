@@ -5,8 +5,8 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, Animated } from 'react-native';
 
-import { useTheme } from '../hooks/useTheme';
 import { useLiveKit } from '../hooks/useLiveKit';
+import { useTheme } from '../hooks/useTheme';
 
 interface PTTButtonProps {
   size?: number;

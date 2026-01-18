@@ -4,17 +4,17 @@
  * Voice-driven AI executive assistant for email management
  */
 
+import { NavigationContainer } from '@react-navigation/native';
 import React from 'react';
 import { StatusBar, StyleSheet, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { RootNavigator } from './navigation/RootNavigator';
 import { AuthProvider } from './hooks/useAuth';
 import { LiveKitProvider } from './hooks/useLiveKit';
 import { NetworkProvider } from './hooks/useNetworkStatus';
 import { ThemeProvider, useTheme } from './hooks/useTheme';
+import { RootNavigator } from './navigation/RootNavigator';
 
 /**
  * App content with theme-aware status bar

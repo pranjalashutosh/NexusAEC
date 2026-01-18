@@ -19,8 +19,8 @@ import { loadAgentConfig, validateEnvironment, type AgentConfig } from './config
 import { startHealthServer } from './health.js';
 import { removeSession, setSession } from './session-store.js';
 
-import type { JobProcess } from '@livekit/agents';
 import type { AgentSession } from './session-store.js';
+import type { JobProcess } from '@livekit/agents';
 
 const logger = createLogger({ baseContext: { component: 'voice-agent' } });
 
