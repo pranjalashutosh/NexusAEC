@@ -4,8 +4,9 @@
  * Provides JWT-based authentication for protected API routes.
  */
 
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createLogger } from '@nexus-aec/logger';
+
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 const logger = createLogger({ baseContext: { component: 'auth-middleware' } });
 

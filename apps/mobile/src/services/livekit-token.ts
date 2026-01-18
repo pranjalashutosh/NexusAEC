@@ -43,7 +43,10 @@ const TOKEN_EXPIRY_BUFFER_MS = 60 * 1000; // 1 minute buffer before expiry
 function getApiBaseUrl(): string {
   // In production, this would come from environment config
   // For development, use local API or staging
-  return process.env.API_BASE_URL ?? 'http://localhost:3000';
+  const envApiUrl =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+      ?.env?.API_BASE_URL;
+  return envApiUrl ?? 'http://localhost:3000';
 }
 
 /**
@@ -82,12 +85,16 @@ async function fetchToken(request: TokenRequest): Promise<TokenResponse> {
 async function getCachedToken(roomName: string): Promise<CachedToken | null> {
   try {
     const cacheStr = await AsyncStorage.getItem(TOKEN_CACHE_KEY);
-    if (!cacheStr) return null;
+    if (!cacheStr) {
+      return null;
+    }
 
     const cache = JSON.parse(cacheStr) as Record<string, CachedToken>;
     const cached = cache[roomName];
 
-    if (!cached) return null;
+    if (!cached) {
+      return null;
+    }
 
     // Check if token is still valid (with buffer)
     const now = Date.now();

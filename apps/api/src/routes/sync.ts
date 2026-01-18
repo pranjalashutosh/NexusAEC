@@ -4,8 +4,9 @@
  * Handles synchronization of drafts and preferences between mobile and desktop clients.
  */
 
-import type { FastifyInstance } from 'fastify';
 import { createLogger } from '@nexus-aec/logger';
+
+import type { FastifyInstance } from 'fastify';
 
 const logger = createLogger({ baseContext: { component: 'sync-routes' } });
 

@@ -4,8 +4,9 @@
  */
 
 import Store from 'electron-store';
+
 import { addAuditEntry } from './audit-trail';
-import { Draft, getDrafts, saveDraft, updateDraft, getDraftById } from './drafts';
+import { Draft, getDraftById, getDrafts, saveDraft, updateDraft } from './drafts';
 
 const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3000';
 
@@ -52,7 +53,9 @@ export function onSyncStateChange(listener: SyncListener): () => void {
   listeners.push(listener);
   return () => {
     const index = listeners.indexOf(listener);
-    if (index >= 0) listeners.splice(index, 1);
+    if (index >= 0) {
+      listeners.splice(index, 1);
+    }
   };
 }
 
@@ -224,12 +227,12 @@ export function startPeriodicSync(intervalMs = 30000): void {
     const state = getSyncState();
     // Only sync if there are pending changes or if we haven't synced recently
     if (state.pendingChanges > 0 || state.status === 'error') {
-      syncDrafts();
+      void syncDrafts();
     }
   }, intervalMs);
 
   // Initial sync
-  syncDrafts();
+  void syncDrafts();
 }
 
 /**

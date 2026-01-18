@@ -11,7 +11,10 @@
  */
 
 import { createLogger } from '@nexus-aec/logger';
-import { loadDeepgramConfig, type DeepgramConfig } from '../config.js';
+
+import { loadDeepgramConfig } from '../config.js';
+
+import type { DeepgramConfig } from '../config.js';
 
 const logger = createLogger({ baseContext: { component: 'deepgram-stt' } });
 
@@ -252,7 +255,9 @@ export class InterimResultsBuffer {
    * Check if the buffer has stale interim results
    */
   isStale(): boolean {
-    if (this.buffer === '') return false;
+    if (this.buffer === '') {
+      return false;
+    }
     return Date.now() - this.lastInterimTimestamp > this.staleThresholdMs;
   }
 

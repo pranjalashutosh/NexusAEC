@@ -11,7 +11,10 @@
  */
 
 import { createLogger } from '@nexus-aec/logger';
-import { loadElevenLabsConfig, type ElevenLabsConfig } from '../config.js';
+
+import { loadElevenLabsConfig } from '../config.js';
+
+import type { ElevenLabsConfig } from '../config.js';
 
 const logger = createLogger({ baseContext: { component: 'elevenlabs-tts' } });
 

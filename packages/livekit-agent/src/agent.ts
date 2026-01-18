@@ -12,39 +12,21 @@
  */
 
 import { defineAgent, JobContext, WorkerOptions, cli } from '@livekit/agents';
-import type { JobProcess } from '@livekit/agents';
 import { TrackKind } from '@livekit/rtc-node';
 import { createLogger } from '@nexus-aec/logger';
-import {
-  loadAgentConfig,
-  validateEnvironment,
-  type AgentConfig,
-} from './config.js';
+
+import { loadAgentConfig, validateEnvironment, type AgentConfig } from './config.js';
 import { startHealthServer } from './health.js';
+import { removeSession, setSession } from './session-store.js';
+
+import type { JobProcess } from '@livekit/agents';
+import type { AgentSession } from './session-store.js';
 
 const logger = createLogger({ baseContext: { component: 'voice-agent' } });
 
 // =============================================================================
 // Types
 // =============================================================================
-
-/**
- * Agent session state
- */
-export interface AgentSession {
-  /** Unique session ID */
-  sessionId: string;
-  /** Room name */
-  roomName: string;
-  /** User participant identity */
-  userIdentity: string;
-  /** Session start time */
-  startedAt: Date;
-  /** Whether the agent is currently speaking */
-  isSpeaking: boolean;
-  /** Whether the session is active */
-  isActive: boolean;
-}
 
 /**
  * Participant info for logging
@@ -58,32 +40,6 @@ interface ParticipantInfo {
 // =============================================================================
 // Agent State
 // =============================================================================
-
-/**
- * Active sessions tracked by room name
- */
-const activeSessions = new Map<string, AgentSession>();
-
-/**
- * Get active session by room name
- */
-export function getSession(roomName: string): AgentSession | undefined {
-  return activeSessions.get(roomName);
-}
-
-/**
- * Get all active sessions
- */
-export function getAllSessions(): AgentSession[] {
-  return Array.from(activeSessions.values());
-}
-
-/**
- * Get active session count
- */
-export function getActiveSessionCount(): number {
-  return activeSessions.size;
-}
 
 // =============================================================================
 // Agent Implementation
@@ -112,7 +68,7 @@ export function createVoiceAgent(config: AgentConfig) {
         isSpeaking: false,
         isActive: true,
       };
-      activeSessions.set(roomName, session);
+      setSession(session);
 
       // Connect to the room
       await ctx.connect();
@@ -188,7 +144,8 @@ function setupParticipantHandlers(ctx: JobContext, session: AgentSession): void 
 
   // Handle track subscribed (audio from user)
   room.on('trackSubscribed', (track, publication, participant) => {
-    if (track.kind === TrackKind.KIND_AUDIO) {
+    const trackKind = track.kind as TrackKind;
+    if (trackKind === TrackKind.KIND_AUDIO) {
       logger.info('Subscribed to audio track', {
         roomName: session.roomName,
         sessionId: session.sessionId,
@@ -200,7 +157,8 @@ function setupParticipantHandlers(ctx: JobContext, session: AgentSession): void 
 
   // Handle track unsubscribed
   room.on('trackUnsubscribed', (track, publication, participant) => {
-    if (track.kind === TrackKind.KIND_AUDIO) {
+    const trackKind = track.kind as TrackKind;
+    if (trackKind === TrackKind.KIND_AUDIO) {
       logger.info('Unsubscribed from audio track', {
         roomName: session.roomName,
         sessionId: session.sessionId,
@@ -325,7 +283,7 @@ function handleDisconnect(session: AgentSession): void {
   });
 
   session.isActive = false;
-  activeSessions.delete(session.roomName);
+  removeSession(session.roomName);
 }
 
 /**

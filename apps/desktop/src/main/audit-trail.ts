@@ -2,10 +2,11 @@
  * Audit Trail Management
  */
 
-import Store from 'electron-store';
-import { dialog, app } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
+
+import { app, dialog } from 'electron';
+import Store from 'electron-store';
 
 /**
  * Audit entry
@@ -124,7 +125,7 @@ export function undoAuditEntry(entryId: string): boolean {
   const entries = store.get('entries');
   const entry = entries.find((e) => e.id === entryId);
 
-  if (!entry || !entry.undoable) {
+  if (!entry?.undoable) {
     return false;
   }
 

@@ -6,9 +6,11 @@
  */
 
 import { createServer, IncomingMessage, ServerResponse } from 'http';
+
 import { createLogger } from '@nexus-aec/logger';
-import { getActiveSessionCount, getAllSessions } from './agent.js';
+
 import { isEnvironmentConfigured, validateEnvironment } from './config.js';
+import { getActiveSessionCount, getAllSessions } from './session-store.js';
 
 const logger = createLogger({ baseContext: { component: 'health-server' } });
 

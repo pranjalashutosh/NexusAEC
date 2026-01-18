@@ -3,6 +3,7 @@
  */
 
 import Store from 'electron-store';
+
 import { addAuditEntry } from './audit-trail';
 
 /**
@@ -63,7 +64,8 @@ export function getDrafts(filters?: DraftFilters): {
   }
 
   if (filters?.minRedFlagScore !== undefined) {
-    drafts = drafts.filter((d) => (d.redFlagScore ?? 0) >= filters.minRedFlagScore!);
+    const minScore = filters.minRedFlagScore;
+    drafts = drafts.filter((d) => (d.redFlagScore ?? 0) >= minScore);
   }
 
   if (filters?.search) {

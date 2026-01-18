@@ -4,8 +4,9 @@
  * Handles incoming webhooks from external services like LiveKit.
  */
 
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { createLogger } from '@nexus-aec/logger';
+
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 const logger = createLogger({ baseContext: { component: 'webhook-routes' } });
 

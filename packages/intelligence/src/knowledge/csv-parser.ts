@@ -103,6 +103,27 @@ export interface CSVParseOptions {
  */
 const REQUIRED_COLUMNS = ['assetId', 'name', 'description', 'category', 'location'];
 
+function coerceCSVRecords(parsed: unknown): Record<string, string>[] {
+  if (!Array.isArray(parsed)) {
+    throw new Error('CSV parser returned an unexpected result.');
+  }
+
+  for (const entry of parsed) {
+    if (!isStringRecord(entry)) {
+      throw new Error('CSV contains invalid rows. Expected string values.');
+    }
+  }
+
+  return parsed as Record<string, string>[];
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  return Object.values(value).every((entry) => typeof entry === 'string');
+}
+
 /**
  * Standard column names (case-insensitive alternatives)
  */
@@ -197,12 +218,14 @@ export function parseAssetCSV(filePath: string, options: CSVParseOptions = {}): 
     const fileContent = fs.readFileSync(filePath, 'utf-8');
 
     // Parse CSV
-    const records = parse(fileContent, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      bom: true, // Handle UTF-8 BOM
-    }) as Record<string, string>[];
+    const records = coerceCSVRecords(
+      parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        bom: true, // Handle UTF-8 BOM
+      })
+    );
 
     result.stats.totalRows = records.length;
 
@@ -318,12 +341,14 @@ export function parseAssetCSVString(
 
   try {
     // Parse CSV
-    const records = parse(csvContent, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      bom: true,
-    }) as Record<string, string>[];
+    const records = coerceCSVRecords(
+      parse(csvContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        bom: true,
+      })
+    );
 
     result.stats.totalRows = records.length;
 

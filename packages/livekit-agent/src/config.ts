@@ -5,8 +5,9 @@
  * All credentials are loaded from environment variables.
  */
 
-import { config as dotenvConfig } from 'dotenv';
 import { resolve } from 'path';
+
+import { config as dotenvConfig } from 'dotenv';
 
 // Load environment variables from root .env
 dotenvConfig({ path: resolve(__dirname, '../../../.env') });

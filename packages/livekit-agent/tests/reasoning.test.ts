@@ -124,7 +124,9 @@ describe('livekit-agent/reasoning', () => {
       const chunks: string[] = [];
 
       loop.setTTSCallback((text, isFinal) => {
-        if (text) chunks.push(text);
+        if (text) {
+          chunks.push(text);
+        }
       });
 
       await loop.processUserInput('yes confirm');

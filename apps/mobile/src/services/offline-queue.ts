@@ -94,7 +94,9 @@ export async function incrementRetry(id: string): Promise<QueuedAction | null> {
   const queue = await loadQueue();
   const action = queue.find((a) => a.id === id);
 
-  if (!action) return null;
+  if (!action) {
+    return null;
+  }
 
   action.retries += 1;
 

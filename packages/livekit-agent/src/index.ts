@@ -36,12 +36,15 @@ export {
   startAgent,
   prewarm,
   getAgent,
+} from './agent.js';
+
+export {
   getSession,
   getAllSessions,
   getActiveSessionCount,
-} from './agent.js';
+} from './session-store.js';
 
-export type { AgentSession } from './agent.js';
+export type { AgentSession } from './session-store.js';
 
 // Default agent export for CLI
 export { default as defaultAgent } from './agent.js';

@@ -5,16 +5,16 @@
  * These routes receive the authorization code after user consent and exchange it for tokens.
  */
 
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-
 import {
   GoogleOAuthProvider,
   MicrosoftOAuthProvider,
   TokenManager,
   InMemoryTokenStorage,
 } from '@nexus-aec/email-providers';
-import type { OAuthState, EmailSource } from '@nexus-aec/email-providers';
 import { createLogger } from '@nexus-aec/logger';
+
+import type { EmailSource, OAuthState } from '@nexus-aec/email-providers';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 const logger = createLogger({ baseContext: { component: 'auth-routes' } });
 

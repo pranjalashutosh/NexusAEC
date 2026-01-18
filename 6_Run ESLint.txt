@@ -1,0 +1,1000 @@
+﻿2026-01-18T04:50:39.0779910Z ##[group]Run pnpm lint
+2026-01-18T04:50:39.0780225Z [36;1mpnpm lint[0m
+2026-01-18T04:50:39.0811705Z shell: /usr/bin/bash -e {0}
+2026-01-18T04:50:39.0811938Z env:
+2026-01-18T04:50:39.0812099Z   TURBO_TOKEN: 
+2026-01-18T04:50:39.0812278Z   TURBO_TEAM: 
+2026-01-18T04:50:39.0812508Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-01-18T04:50:39.0812800Z ##[endgroup]
+2026-01-18T04:50:39.4853057Z 
+2026-01-18T04:50:39.4853944Z > nexus-aec@0.1.0 lint /home/runner/work/NexusAEC/NexusAEC
+2026-01-18T04:50:39.4854431Z > eslint . --ext .ts,.tsx,.js,.jsx
+2026-01-18T04:50:39.4854657Z 
+2026-01-18T04:51:13.9481925Z 
+2026-01-18T04:51:13.9483314Z /home/runner/work/NexusAEC/NexusAEC/apps/api/src/app.ts
+2026-01-18T04:51:13.9510819Z ##[warning]  1:8  warning  Using exported name 'fastify' as identifier for default import  import/no-named-as-default
+2026-01-18T04:51:13.9518594Z 
+2026-01-18T04:51:13.9518960Z /home/runner/work/NexusAEC/NexusAEC/apps/api/src/middleware/auth.ts
+2026-01-18T04:51:13.9520818Z ##[error]  7:1  error  There should be at least one empty line between import groups            import/order
+2026-01-18T04:51:13.9522488Z ##[error]  8:1  error  `@nexus-aec/logger` import should occur before type import of `fastify`  import/order
+2026-01-18T04:51:13.9523282Z 
+2026-01-18T04:51:13.9523565Z /home/runner/work/NexusAEC/NexusAEC/apps/api/src/routes/auth.test.ts
+2026-01-18T04:51:13.9524582Z ##[warning]  5:8  warning  Using exported name 'fastify' as identifier for default import  import/no-named-as-default
+2026-01-18T04:51:13.9525425Z 
+2026-01-18T04:51:13.9525674Z /home/runner/work/NexusAEC/NexusAEC/apps/api/src/routes/auth.ts
+2026-01-18T04:51:13.9526958Z ##[error]    8:1   error    `fastify` type import should occur after import of `@nexus-aec/logger`                     import/order
+2026-01-18T04:51:13.9528532Z ##[error]   10:1   error    There should be at least one empty line between import groups                              import/order
+2026-01-18T04:51:13.9530121Z ##[error]   15:8   error    Unable to resolve path to module '@nexus-aec/email-providers'                              import/no-unresolved
+2026-01-18T04:51:13.9531652Z ##[error]   16:1   error    There should be at least one empty line between import groups                              import/order
+2026-01-18T04:51:13.9533178Z ##[error]   16:1   error    `@nexus-aec/email-providers` type import should occur after import of `@nexus-aec/logger`  import/order
+2026-01-18T04:51:13.9534821Z ##[warning]  126:26  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                     @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:13.9537187Z ##[warning]  126:37  warning  Unsafe member access .state on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9538967Z ##[warning]  130:31  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                     @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:13.9540619Z ##[warning]  130:42  warning  Unsafe member access .state on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9542242Z ##[warning]  138:9   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9543827Z ##[warning]  159:5   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9545383Z ##[warning]  159:20  warning  Unsafe construction of an any type value                                                   @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9547231Z ##[warning]  160:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9548822Z ##[warning]  160:16  warning  Unsafe construction of an any type value                                                   @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9550722Z ##[warning]  163:43  warning  Unsafe assignment of an `any` value                                                        @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9552276Z ##[warning]  167:11  warning  Unsafe assignment of an `any` value                                                        @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9553859Z ##[warning]  169:31  warning  Unsafe member access .message on an `any` value                                            @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9555473Z ##[warning]  176:11  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9557381Z ##[warning]  177:11  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9558972Z ##[warning]  180:7   warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9560644Z ##[warning]  180:20  warning  Unsafe member access .registerProvider on an `error` typed value                           @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9562273Z ##[warning]  183:7   warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9563942Z ##[warning]  183:20  warning  Unsafe member access .registerProvider on an `error` typed value                           @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9565650Z ##[warning]  195:5   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9567522Z ##[warning]  195:25  warning  Unsafe construction of an any type value                                                   @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9569181Z ##[warning]  206:5   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9570925Z ##[warning]  206:22  warning  Unsafe construction of an any type value                                                   @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9572659Z ##[warning]  238:11  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9574510Z ##[warning]  239:11  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9576296Z ##[warning]  239:34  warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9578080Z ##[warning]  239:43  warning  Unsafe member access .getAuthorizationUrl on an `error` typed value                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9580103Z ##[warning]  245:68  warning  Unsafe member access .state on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9582000Z ##[warning]  248:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9583735Z ##[warning]  249:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9585385Z ##[warning]  249:20  warning  Unsafe member access .state on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9587321Z ##[warning]  283:11  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9589171Z ##[warning]  284:11  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9590750Z ##[warning]  284:34  warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9592442Z ##[warning]  284:43  warning  Unsafe member access .getAuthorizationUrl on an `error` typed value                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9594149Z ##[warning]  291:65  warning  Unsafe member access .state on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9595803Z ##[warning]  294:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9597641Z ##[warning]  295:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9599271Z ##[warning]  295:20  warning  Unsafe member access .state on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9600911Z ##[warning]  355:9   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9602566Z ##[warning]  366:18  warning  Unsafe member access .provider on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9604243Z ##[warning]  367:61  warning  Unsafe member access .provider on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9605873Z ##[warning]  383:13  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9607760Z ##[warning]  384:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9609324Z ##[warning]  384:22  warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9611209Z ##[warning]  384:31  warning  Unsafe member access .exchangeCodeForTokens on an `error` typed value                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9612885Z ##[warning]  387:13  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9614447Z ##[warning]  387:32  warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9616298Z ##[warning]  387:41  warning  Unsafe member access .validateToken on an `error` typed value                              @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9618079Z ##[warning]  387:62  warning  Unsafe member access .accessToken on an `error` typed value                                @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9619755Z ##[warning]  388:23  warning  Unsafe member access .valid on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9621426Z ##[warning]  388:44  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9623054Z ##[warning]  397:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9624895Z ##[warning]  397:27  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9626735Z ##[warning]  398:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9628429Z ##[warning]  398:26  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9630124Z ##[warning]  398:54  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9631753Z ##[warning]  399:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9633394Z ##[warning]  399:32  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9635015Z ##[warning]  401:13  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9636818Z ##[warning]  402:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9638462Z ##[warning]  402:22  warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9640163Z ##[warning]  402:31  warning  Unsafe member access .exchangeCodeForTokens on an `error` typed value                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9641833Z ##[warning]  405:13  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9643397Z ##[warning]  405:32  warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9645036Z ##[warning]  405:41  warning  Unsafe member access .validateToken on an `error` typed value                              @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9647024Z ##[warning]  405:62  warning  Unsafe member access .accessToken on an `error` typed value                                @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9648965Z ##[warning]  406:23  warning  Unsafe member access .valid on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9650756Z ##[warning]  406:44  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9652409Z ##[warning]  415:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9654049Z ##[warning]  415:27  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9655681Z ##[warning]  416:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9657612Z ##[warning]  416:26  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9659279Z ##[warning]  417:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9660932Z ##[warning]  417:32  warning  Unsafe member access .userInfo on an `error` typed value                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9662744Z ##[warning]  421:11  warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9664317Z ##[warning]  430:11  warning  Unsafe call of an `error` type typed value                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:13.9665974Z ##[warning]  430:19  warning  Unsafe member access .storeTokens on an `error` typed value                                @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9667843Z ##[warning]  441:7   warning  Unsafe assignment of an error typed value                                                  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9669509Z ##[warning]  482:26  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                     @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:13.9671207Z ##[warning]  482:37  warning  Unsafe member access .state on an `error` typed value                                      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:13.9672145Z 
+2026-01-18T04:51:13.9672405Z /home/runner/work/NexusAEC/NexusAEC/apps/api/src/routes/index.ts
+2026-01-18T04:51:13.9673190Z ##[error]  1:1  error  `fastify` type import should occur after import of `./webhooks`  import/order
+2026-01-18T04:51:13.9674001Z 
+2026-01-18T04:51:13.9674292Z /home/runner/work/NexusAEC/NexusAEC/apps/api/src/routes/livekit-token.ts
+2026-01-18T04:51:13.9675133Z ##[error]  7:1  error  There should be at least one empty line between import groups            import/order
+2026-01-18T04:51:13.9676760Z ##[error]  8:1  error  `@nexus-aec/logger` import should occur before type import of `fastify`  import/order
+2026-01-18T04:51:13.9677645Z 
+2026-01-18T04:51:13.9677907Z /home/runner/work/NexusAEC/NexusAEC/apps/api/src/routes/sync.ts
+2026-01-18T04:51:13.9678726Z ##[error]  7:1  error  There should be at least one empty line between import groups            import/order
+2026-01-18T04:51:13.9680309Z ##[error]  8:1  error  `@nexus-aec/logger` import should occur before type import of `fastify`  import/order
+2026-01-18T04:51:13.9681193Z 
+2026-01-18T04:51:13.9681460Z /home/runner/work/NexusAEC/NexusAEC/apps/api/src/routes/webhooks.ts
+2026-01-18T04:51:13.9682306Z ##[error]  7:1  error  There should be at least one empty line between import groups            import/order
+2026-01-18T04:51:13.9683905Z ##[error]  8:1  error  `@nexus-aec/logger` import should occur before type import of `fastify`  import/order
+2026-01-18T04:51:13.9684758Z 
+2026-01-18T04:51:13.9685042Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/main/audit-trail.ts
+2026-01-18T04:51:13.9686516Z ##[error]    5:1  error    `electron-store` import should occur after import of `path`                                 import/order
+2026-01-18T04:51:13.9688237Z ##[error]    6:1  error    There should be at least one empty line between import groups                               import/order
+2026-01-18T04:51:13.9689787Z ##[error]    6:1  error    `electron` import should occur after import of `path`                                       import/order
+2026-01-18T04:51:13.9691525Z ##[warning]  127:7  warning  Prefer using an optional chain expression instead, as it's more concise and easier to read  @typescript-eslint/prefer-optional-chain
+2026-01-18T04:51:13.9692556Z 
+2026-01-18T04:51:13.9692844Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/main/draft-sync.ts
+2026-01-18T04:51:13.9694042Z ##[error]    6:1   error  There should be at least one empty line between import groups                                                                                                       import/order
+2026-01-18T04:51:13.9695786Z ##[error]   55:21  error  Expected { after 'if' condition                                                                                                                                     curly
+2026-01-18T04:51:13.9698422Z ##[error]  227:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+2026-01-18T04:51:13.9700952Z ##[error]  232:3   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+2026-01-18T04:51:13.9702183Z 
+2026-01-18T04:51:13.9702446Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/main/drafts.ts
+2026-01-18T04:51:13.9703230Z ##[error]   5:1   error    There should be at least one empty line between import groups  import/order
+2026-01-18T04:51:13.9704627Z ##[warning]  66:60  warning  Forbidden non-null assertion                                   @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9705511Z 
+2026-01-18T04:51:13.9705767Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/main/index.ts
+2026-01-18T04:51:13.9707147Z ##[error]    5:1  error  There should be at least one empty line between import groups                                                                                                       import/order
+2026-01-18T04:51:13.9709012Z ##[error]    5:1  error  `electron` import should occur after import of `path`                                                                                                               import/order
+2026-01-18T04:51:13.9710895Z ##[error]    6:1  error  There should be at least one empty line between import groups                                                                                                       import/order
+2026-01-18T04:51:13.9712706Z ##[error]    7:1  error  `./oauth` import should occur after import of `./drafts`                                                                                                            import/order
+2026-01-18T04:51:13.9714932Z ##[error]   36:5  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+2026-01-18T04:51:13.9717609Z ##[error]   39:5  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+2026-01-18T04:51:13.9720309Z ##[error]   49:5  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+2026-01-18T04:51:13.9722780Z ##[error]  108:1  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+2026-01-18T04:51:13.9723992Z 
+2026-01-18T04:51:13.9724264Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/main/preload.ts
+2026-01-18T04:51:13.9725419Z ##[warning]  16:62  warning  Unsafe argument of type `any` assigned to a parameter of type `{ provider: string; code: string; }`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:13.9726695Z 
+2026-01-18T04:51:13.9726972Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/App.tsx
+2026-01-18T04:51:13.9728122Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/App.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9728998Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9729456Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9729900Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9730437Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9732083Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9733086Z 
+2026-01-18T04:51:13.9733432Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/components/ActivityRow.tsx
+2026-01-18T04:51:13.9734738Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/components/ActivityRow.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9735681Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9736336Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9736752Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9737280Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9738782Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9739769Z 
+2026-01-18T04:51:13.9740108Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/components/DraftCard.tsx
+2026-01-18T04:51:13.9741374Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/components/DraftCard.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9742306Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9742769Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9743170Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9743683Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9745146Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9746308Z 
+2026-01-18T04:51:13.9746693Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/components/DraftDetailModal.tsx
+2026-01-18T04:51:13.9748026Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/components/DraftDetailModal.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9749120Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9749580Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9749969Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9750487Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9751953Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9752941Z 
+2026-01-18T04:51:13.9753277Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/components/UndoButton.tsx
+2026-01-18T04:51:13.9754557Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/components/UndoButton.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9755488Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9755933Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9756508Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9757030Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9758631Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9759628Z 
+2026-01-18T04:51:13.9759889Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/main.tsx
+2026-01-18T04:51:13.9761001Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/main.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9761866Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9762309Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9762705Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9763220Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9764680Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9765670Z 
+2026-01-18T04:51:13.9765982Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/screens/Activity.tsx
+2026-01-18T04:51:13.9767433Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/screens/Activity.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9768338Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9768789Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9769184Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9769692Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9771149Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9772138Z 
+2026-01-18T04:51:13.9772448Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/screens/Drafts.tsx
+2026-01-18T04:51:13.9773645Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/screens/Drafts.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9774714Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9775182Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9775578Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9776299Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9777779Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9778783Z 
+2026-01-18T04:51:13.9779106Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/screens/Privacy.tsx
+2026-01-18T04:51:13.9780322Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/screens/Privacy.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9781240Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9781700Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9782094Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9782616Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9784075Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9785237Z 
+2026-01-18T04:51:13.9785553Z /home/runner/work/NexusAEC/NexusAEC/apps/desktop/src/renderer/screens/Settings.tsx
+2026-01-18T04:51:13.9786999Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/desktop/src/renderer/screens/Settings.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9787924Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9788370Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9788762Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9789275Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9790730Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9791727Z 
+2026-01-18T04:51:13.9791941Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/App.tsx
+2026-01-18T04:51:13.9792952Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/App.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9793769Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9794212Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9794607Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9795114Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9796721Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9797728Z 
+2026-01-18T04:51:13.9798104Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/components/ConnectionQualityIndicator.tsx
+2026-01-18T04:51:13.9799443Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/components/ConnectionQualityIndicator.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9800519Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9800962Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9801353Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9801869Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9803331Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9804326Z 
+2026-01-18T04:51:13.9804620Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/components/PTTButton.tsx
+2026-01-18T04:51:13.9805791Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/components/PTTButton.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9806891Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9807348Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9807738Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9808250Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9809701Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9810811Z 
+2026-01-18T04:51:13.9811071Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/hooks/useAuth.tsx
+2026-01-18T04:51:13.9812165Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/hooks/useAuth.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9813015Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9813464Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9813849Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9814372Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9815834Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9817016Z 
+2026-01-18T04:51:13.9817295Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/hooks/useLiveKit.tsx
+2026-01-18T04:51:13.9818436Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/hooks/useLiveKit.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9819297Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9819743Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9820140Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9820647Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9822104Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9823101Z 
+2026-01-18T04:51:13.9823399Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/hooks/useNetworkStatus.tsx
+2026-01-18T04:51:13.9824579Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/hooks/useNetworkStatus.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9825471Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9825923Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9826632Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9827157Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9828617Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9829608Z 
+2026-01-18T04:51:13.9829869Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/hooks/useTheme.tsx
+2026-01-18T04:51:13.9830979Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/hooks/useTheme.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9831832Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9832275Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9832671Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9833181Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9834627Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9835620Z 
+2026-01-18T04:51:13.9836187Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/navigation/RootNavigator.tsx
+2026-01-18T04:51:13.9837426Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/navigation/RootNavigator.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9838329Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9838778Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9839176Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9839688Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9841132Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9842119Z 
+2026-01-18T04:51:13.9842413Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/main/AddAccount.tsx
+2026-01-18T04:51:13.9843604Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/main/AddAccount.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9844485Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9844934Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9845323Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9845837Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9847494Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9848484Z 
+2026-01-18T04:51:13.9848798Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/main/BriefingRoom.tsx
+2026-01-18T04:51:13.9850011Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/main/BriefingRoom.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9850906Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9851350Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9851731Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9852379Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9853831Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9854820Z 
+2026-01-18T04:51:13.9855097Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/main/Home.tsx
+2026-01-18T04:51:13.9856413Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/main/Home.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9857296Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9857743Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9858127Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9858645Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9860100Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9861088Z 
+2026-01-18T04:51:13.9861402Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/main/PendingActions.tsx
+2026-01-18T04:51:13.9862763Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/main/PendingActions.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9863677Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9864121Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9864517Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9865031Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9866658Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9867656Z 
+2026-01-18T04:51:13.9867980Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/main/PrivacyDashboard.tsx
+2026-01-18T04:51:13.9869239Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/main/PrivacyDashboard.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9870154Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9870597Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9870987Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9871490Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9872940Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9873933Z 
+2026-01-18T04:51:13.9874217Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/main/Settings.tsx
+2026-01-18T04:51:13.9875394Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/main/Settings.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9876429Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9876877Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9877266Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9877768Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9879350Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9880337Z 
+2026-01-18T04:51:13.9880636Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/main/SyncStatus.tsx
+2026-01-18T04:51:13.9881819Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/main/SyncStatus.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9882711Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9883159Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9883546Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9884059Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9885515Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9886739Z 
+2026-01-18T04:51:13.9887085Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/onboarding/Confirmation.tsx
+2026-01-18T04:51:13.9888352Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/onboarding/Confirmation.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9889407Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9889852Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9890239Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9890751Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9892217Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9893201Z 
+2026-01-18T04:51:13.9893545Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/onboarding/ConnectAccount.tsx
+2026-01-18T04:51:13.9894835Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/onboarding/ConnectAccount.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9895771Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9896399Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9896798Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9897314Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9898765Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9899753Z 
+2026-01-18T04:51:13.9900107Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/onboarding/KeywordSelection.tsx
+2026-01-18T04:51:13.9901413Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/onboarding/KeywordSelection.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9902360Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9902803Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9903208Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9935070Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9937104Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9938131Z 
+2026-01-18T04:51:13.9938502Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/onboarding/TopicSelection.tsx
+2026-01-18T04:51:13.9939862Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/onboarding/TopicSelection.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9940815Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9941287Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9941699Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9942220Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9943700Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9944708Z 
+2026-01-18T04:51:13.9945061Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/onboarding/VIPSelection.tsx
+2026-01-18T04:51:13.9946528Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/onboarding/VIPSelection.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9947606Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9948072Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9948469Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9948992Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9950468Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9951458Z 
+2026-01-18T04:51:13.9951771Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/screens/onboarding/Welcome.tsx
+2026-01-18T04:51:13.9952997Z   0:0  error  Parsing error: ESLint was configured to run on `<tsconfigRootDir>/apps/mobile/src/screens/onboarding/Welcome.tsx` using `parserOptions.project`: <tsconfigRootDir>/tsconfig.eslint.json
+2026-01-18T04:51:13.9953906Z However, that TSConfig does not include this file. Either:
+2026-01-18T04:51:13.9954360Z - Change ESLint's list of included files to not include this file
+2026-01-18T04:51:13.9954750Z - Change that TSConfig to include this file
+2026-01-18T04:51:13.9955270Z - Create a new TSConfig that includes this file and include it in your parserOptions.project
+2026-01-18T04:51:13.9956910Z See the typescript-eslint docs for more info: https://typescript-eslint.io/troubleshooting/typed-linting#i-get-errors-telling-me-eslint-was-configured-to-run--however-that-tsconfig-does-not--none-of-those-tsconfigs-include-this-file
+2026-01-18T04:51:13.9957908Z 
+2026-01-18T04:51:13.9958198Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/services/livekit-token.ts
+2026-01-18T04:51:13.9959439Z ##[error]   85:20  error    Expected { after 'if' condition      curly
+2026-01-18T04:51:13.9960888Z ##[error]   90:18  error    Expected { after 'if' condition      curly
+2026-01-18T04:51:13.9962154Z ##[warning]  111:11  warning  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:13.9963023Z 
+2026-01-18T04:51:13.9963336Z /home/runner/work/NexusAEC/NexusAEC/apps/mobile/src/services/offline-queue.ts
+2026-01-18T04:51:13.9964138Z ##[warning]  30:5   warning  Unsafe return of an `any` typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:13.9965512Z ##[error]  97:16  error    Expected { after 'if' condition        curly
+2026-01-18T04:51:13.9966479Z 
+2026-01-18T04:51:13.9966885Z /home/runner/work/NexusAEC/NexusAEC/packages/email-providers/src/adapters/gmail-adapter.ts
+2026-01-18T04:51:13.9968055Z ##[warning]   296:29  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9969437Z ##[warning]  1043:16  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9970311Z 
+2026-01-18T04:51:13.9970692Z /home/runner/work/NexusAEC/NexusAEC/packages/email-providers/src/adapters/outlook-adapter.ts
+2026-01-18T04:51:13.9971552Z ##[warning]  308:29  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9972390Z 
+2026-01-18T04:51:13.9972729Z /home/runner/work/NexusAEC/NexusAEC/packages/email-providers/src/oauth/microsoft.ts
+2026-01-18T04:51:13.9974012Z ##[warning]   74:7   warning  Prefer using an optional chain expression instead, as it's more concise and easier to read  @typescript-eslint/prefer-optional-chain
+2026-01-18T04:51:13.9975753Z ##[warning]   86:23  warning  Forbidden non-null assertion                                                                @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9977806Z ##[warning]  104:7   warning  Prefer using an optional chain expression instead, as it's more concise and easier to read  @typescript-eslint/prefer-optional-chain
+2026-01-18T04:51:13.9979714Z ##[warning]  124:35  warning  Forbidden non-null assertion                                                                @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9980638Z 
+2026-01-18T04:51:13.9980987Z /home/runner/work/NexusAEC/NexusAEC/packages/email-providers/src/oauth/token-manager.ts
+2026-01-18T04:51:13.9982078Z ##[warning]  377:30  warning  Promise returned in function argument where a void return was expected  @typescript-eslint/no-misused-promises
+2026-01-18T04:51:13.9983043Z 
+2026-01-18T04:51:13.9983407Z /home/runner/work/NexusAEC/NexusAEC/packages/email-providers/src/services/calendar-sync.ts
+2026-01-18T04:51:13.9984607Z ##[warning]  320:13  warning  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9986491Z ##[warning]  341:20  warning  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9988271Z ##[warning]  345:7   warning  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9989918Z ##[warning]  353:23  warning  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9991775Z ##[warning]  411:61  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:13.9993558Z ##[warning]  509:19  warning  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9995212Z ##[warning]  510:19  warning  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:13.9996317Z 
+2026-01-18T04:51:13.9996700Z /home/runner/work/NexusAEC/NexusAEC/packages/email-providers/src/services/contacts-sync.ts
+2026-01-18T04:51:13.9998036Z ##[warning]  239:56  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:13.9999827Z ##[warning]  311:25  warning  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0001671Z ##[warning]  434:7   warning  Forbidden non-null assertion                                                                               @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0002595Z 
+2026-01-18T04:51:14.0002961Z /home/runner/work/NexusAEC/NexusAEC/packages/email-providers/src/services/smart-draft.ts
+2026-01-18T04:51:14.0003797Z ##[warning]  436:24  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0004636Z 
+2026-01-18T04:51:14.0004994Z /home/runner/work/NexusAEC/NexusAEC/packages/email-providers/src/services/unified-inbox.ts
+2026-01-18T04:51:14.0005829Z ##[warning]  728:7  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0006933Z 
+2026-01-18T04:51:14.0007209Z /home/runner/work/NexusAEC/NexusAEC/packages/encryption/src/index.ts
+2026-01-18T04:51:14.0008321Z ##[warning]  212:45  warning  Invalid type "never" of template literal expression  @typescript-eslint/restrict-template-expressions
+2026-01-18T04:51:14.0009856Z ##[warning]  333:15  warning  Forbidden non-null assertion                         @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0011265Z ##[warning]  333:23  warning  Forbidden non-null assertion                         @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0012119Z 
+2026-01-18T04:51:14.0012426Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/cli/ingest-assets.ts
+2026-01-18T04:51:14.0014068Z ##[warning]  44:45  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0015160Z 
+2026-01-18T04:51:14.0015477Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/cli/ingest-manuals.ts
+2026-01-18T04:51:14.0016988Z ##[warning]   46:45  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0018876Z ##[warning]  140:40  warning  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0020559Z ##[warning]  223:39  warning  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0021495Z 
+2026-01-18T04:51:14.0021795Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/cli/list-assets.ts
+2026-01-18T04:51:14.0023029Z ##[warning]  46:56  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0024078Z 
+2026-01-18T04:51:14.0024451Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/scripts/validate-safety-manuals.ts
+2026-01-18T04:51:14.0025675Z ##[warning]   54:26  warning  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0027798Z ##[warning]  100:46  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0029789Z ##[warning]  121:43  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0030847Z 
+2026-01-18T04:51:14.0031197Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/scripts/validate-seed-data.ts
+2026-01-18T04:51:14.0032316Z ##[warning]   56:28  warning  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0034174Z ##[warning]  102:62  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0036641Z ##[warning]  114:32  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0038688Z ##[warning]  115:56  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0040698Z ##[warning]  127:62  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0041754Z 
+2026-01-18T04:51:14.0042199Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/__tests__/asset-ingestion.test.ts
+2026-01-18T04:51:14.0043935Z ##[warning]   56:36  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0046380Z ##[warning]   56:53  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0048637Z ##[warning]   65:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0051072Z ##[warning]   65:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0053264Z ##[warning]   78:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0055438Z ##[warning]   78:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0057891Z ##[warning]  128:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0060092Z ##[warning]  128:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0062272Z ##[warning]  152:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0064440Z ##[warning]  152:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0066846Z ##[warning]  179:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0069069Z ##[warning]  179:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0071250Z ##[warning]  227:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0073438Z ##[warning]  227:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0075315Z ##[warning]  246:11  warning  Unsafe return of an `any[]` typed value                                                                                 @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0077814Z ##[warning]  264:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0080031Z ##[warning]  264:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0082236Z ##[warning]  383:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0084445Z ##[warning]  383:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0086858Z ##[warning]  488:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0089105Z ##[warning]  488:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0091008Z ##[warning]  512:9   warning  Unsafe return of an `any[]` typed value                                                                                 @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0093187Z ##[warning]  518:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0095373Z ##[warning]  518:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0098404Z ##[warning]  569:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0102730Z ##[warning]  569:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0106601Z ##[warning]  575:58  warning  Unsafe return of an `any` typed value                                                                                   @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0110428Z ##[warning]  588:50  warning  Unsafe argument of type `jest.Mocked<SupabaseVectorStore>` assigned to a parameter of type `SupabaseVectorStore`        @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0113464Z ##[warning]  588:67  warning  Unsafe argument of type `jest.MockedFunction<EmbeddingGenerator>` assigned to a parameter of type `EmbeddingGenerator`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0115411Z ##[warning]  594:63  warning  Unsafe return of an `any` typed value                                                                                   @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0116607Z 
+2026-01-18T04:51:14.0117070Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/__tests__/feedback-learner.test.ts
+2026-01-18T04:51:14.0118036Z ##[warning]  554:49  warning  Unsafe return of an `any` typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0119388Z ##[warning]  555:46  warning  Unsafe return of an `any` typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0120224Z 
+2026-01-18T04:51:14.0120646Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/__tests__/llm-client.test.ts
+2026-01-18T04:51:14.0121528Z ##[warning]  10:3  warning  Unsafe return of an error typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0122366Z 
+2026-01-18T04:51:14.0122963Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/__tests__/pdf-extractor.test.ts
+2026-01-18T04:51:14.0123872Z ##[warning]  20:3  warning  Unsafe return of an error typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0124714Z 
+2026-01-18T04:51:14.0125179Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/__tests__/supabase-vector-store.test.ts
+2026-01-18T04:51:14.0126469Z ##[warning]   34:3   warning  Unsafe return of an `any` typed value                                       @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0128134Z ##[warning]  253:42  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0129808Z ##[warning]  282:26  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0131461Z ##[warning]  322:42  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0133666Z ##[warning]  338:42  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0135342Z ##[warning]  351:33  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0137293Z ##[warning]  748:42  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0139153Z ##[warning]  785:42  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0140787Z ##[warning]  812:42  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0141714Z 
+2026-01-18T04:51:14.0142089Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/asset-ingestion.ts
+2026-01-18T04:51:14.0143080Z ##[warning]  637:20  warning  Forbidden non-null assertion                                   @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0144550Z ##[warning]  639:9   warning  Unsafe assignment of an `any` value                            @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0146237Z ##[warning]  641:23  warning  Unexpected any. Specify a different type                       @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0147867Z ##[warning]  703:11  warning  Unsafe assignment of type `any[]` to a variable of type `T[]`  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0148800Z 
+2026-01-18T04:51:14.0149153Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/csv-parser.ts
+2026-01-18T04:51:14.0150431Z ##[error]  200:21  error    This assertion is unnecessary since it does not change the type of the expression                          @typescript-eslint/no-unnecessary-type-assertion
+2026-01-18T04:51:14.0152392Z ##[error]  321:21  error    This assertion is unnecessary since it does not change the type of the expression                          @typescript-eslint/no-unnecessary-type-assertion
+2026-01-18T04:51:14.0154359Z ##[warning]  508:22  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0156550Z ##[warning]  509:16  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0158566Z ##[warning]  510:30  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0160529Z ##[warning]  511:24  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0162668Z ##[warning]  512:24  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0164417Z ##[warning]  543:43  warning  Unsafe return of an `any` typed value                                                                      @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0166204Z ##[warning]  543:43  warning  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0168018Z ##[warning]  543:48  warning  Unsafe member access .toUpperCase on an `any` value                                                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0169923Z ##[warning]  556:45  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0171886Z ##[warning]  557:49  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0173828Z ##[warning]  558:44  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0175024Z 
+2026-01-18T04:51:14.0175410Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/email-summarizer.ts
+2026-01-18T04:51:14.0176709Z ##[warning]  162:7   warning  Unexpected console statement                                                                               no-console
+2026-01-18T04:51:14.0178314Z ##[warning]  198:7   warning  Unexpected console statement                                                                               no-console
+2026-01-18T04:51:14.0179834Z ##[warning]  227:7   warning  Unexpected console statement                                                                               no-console
+2026-01-18T04:51:14.0181353Z ##[warning]  257:7   warning  Unexpected console statement                                                                               no-console
+2026-01-18T04:51:14.0183137Z ##[warning]  309:73  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0185119Z ##[warning]  319:38  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0187342Z ##[warning]  323:27  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0189372Z ##[warning]  362:43  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0191356Z ##[warning]  363:52  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0193351Z ##[warning]  371:27  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0195052Z ##[warning]  511:7   warning  Unexpected console statement                                                                               no-console
+2026-01-18T04:51:14.0195925Z 
+2026-01-18T04:51:14.0196554Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/explanation-generator.ts
+2026-01-18T04:51:14.0197639Z ##[warning]  137:7    warning  Unexpected console statement                                                                               no-console
+2026-01-18T04:51:14.0199375Z ##[warning]  161:7    warning  Unexpected console statement                                                                               no-console
+2026-01-18T04:51:14.0201176Z ##[warning]  195:139  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0203170Z ##[warning]  197:118  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0205131Z ##[warning]  199:121  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0207340Z ##[warning]  201:118  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0209324Z ##[warning]  229:41   warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0210371Z 
+2026-01-18T04:51:14.0210750Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/feedback-learner.ts
+2026-01-18T04:51:14.0211721Z ##[warning]  252:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0213335Z ##[warning]  264:9   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0214764Z ##[warning]  270:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0216435Z ##[warning]  301:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0217959Z ##[warning]  358:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0219380Z ##[warning]  443:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0220907Z ##[warning]  495:11  warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0222474Z ##[warning]  496:5   warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0224011Z ##[warning]  496:21  warning  Unsafe call of an `any` typed value                                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0225573Z ##[warning]  496:28  warning  Unsafe member access .map on an `any` value                                             @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0227419Z ##[warning]  496:36  warning  Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0229007Z ##[warning]  496:45  warning  Unsafe return of an `any` typed value                                                   @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0230677Z ##[warning]  498:27  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0232402Z ##[warning]  498:29  warning  Unsafe member access .timestamp on an `any` value                                       @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0234013Z ##[warning]  507:11  warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0235773Z ##[warning]  508:5   warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0237708Z ##[warning]  510:29  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0239434Z ##[warning]  510:36  warning  Unsafe member access .lastUpdated on an `any` value                                     @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0240387Z 
+2026-01-18T04:51:14.0240725Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/llm-client.ts
+2026-01-18T04:51:14.0241419Z ##[warning]  391:7   warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0242485Z ##[warning]  447:9   warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0243523Z ##[warning]  474:7   warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0244565Z ##[warning]  545:9   warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0245602Z ##[warning]  576:11  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0246510Z 
+2026-01-18T04:51:14.0246904Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/narrative-generator.ts
+2026-01-18T04:51:14.0247645Z ##[warning]  218:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0248694Z ##[warning]  268:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0249560Z 
+2026-01-18T04:51:14.0249918Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/pdf-extractor.ts
+2026-01-18T04:51:14.0250854Z ##[warning]   11:44  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0252290Z ##[warning]   11:60  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0253718Z ##[warning]  206:23  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0255179Z ##[warning]  209:18  warning  Unsafe member access .password on an `any` value        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0256951Z ##[warning]  213:18  warning  Unsafe member access .max on an `any` value             @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0258513Z ##[warning]  218:18  warning  Unsafe member access .pagerender on an `any` value      @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0260013Z ##[warning]  218:42  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0261446Z ##[warning]  219:15  warning  Unsafe assignment of an `any` value                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0262924Z ##[warning]  219:34  warning  Unsafe member access .pageIndex on an `any` value       @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0264387Z ##[warning]  221:11  warning  Unsafe return of an `any` typed value                   @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0265791Z ##[warning]  221:18  warning  Unsafe call of an `any` typed value                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0267498Z ##[warning]  221:27  warning  Unsafe member access .getTextContent on an `any` value  @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0268975Z ##[warning]  227:11  warning  Unsafe assignment of an `any` value                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0270424Z ##[warning]  230:37  warning  Unsafe member access .text on an `any` value            @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0271901Z ##[warning]  231:44  warning  Unsafe member access .numpages on an `any` value        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0273353Z ##[warning]  243:43  warning  Unsafe member access .info on an `any` value            @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0274963Z ##[warning]  327:11  warning  Unsafe assignment of an `any` value                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0276563Z ##[warning]  330:7   warning  Unsafe assignment of an `any` value                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0278051Z ##[warning]  330:23  warning  Unsafe member access .numpages on an `any` value        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0279528Z ##[warning]  331:38  warning  Unsafe member access .info on an `any` value            @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0280960Z ##[warning]  374:32  warning  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0282413Z ##[warning]  377:12  warning  Unsafe member access .Title on an `any` value           @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0283863Z ##[warning]  378:34  warning  Unsafe member access .Title on an `any` value           @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0285298Z ##[warning]  381:12  warning  Unsafe member access .Author on an `any` value          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0286988Z ##[warning]  382:35  warning  Unsafe member access .Author on an `any` value          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0288666Z ##[warning]  385:12  warning  Unsafe member access .Subject on an `any` value         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0290138Z ##[warning]  386:36  warning  Unsafe member access .Subject on an `any` value         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0291613Z ##[warning]  389:12  warning  Unsafe member access .Creator on an `any` value         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0293077Z ##[warning]  390:36  warning  Unsafe member access .Creator on an `any` value         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0294544Z ##[warning]  393:12  warning  Unsafe member access .Producer on an `any` value        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0296004Z ##[warning]  394:37  warning  Unsafe member access .Producer on an `any` value        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0297814Z ##[warning]  397:12  warning  Unsafe member access .CreationDate on an `any` value    @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0299325Z ##[warning]  398:40  warning  Unsafe member access .CreationDate on an `any` value    @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0300804Z ##[warning]  404:12  warning  Unsafe member access .ModDate on an `any` value         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0302264Z ##[warning]  405:40  warning  Unsafe member access .ModDate on an `any` value         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0303149Z 
+2026-01-18T04:51:14.0303528Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/preferences-store.ts
+2026-01-18T04:51:14.0304502Z ##[warning]  262:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0305929Z ##[warning]  273:9   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0307585Z ##[warning]  279:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0309018Z ##[warning]  304:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0310438Z ##[warning]  325:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0311877Z ##[warning]  381:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0313477Z ##[warning]  402:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0314892Z ##[warning]  435:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0316501Z ##[warning]  456:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0317976Z ##[warning]  488:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0319392Z ##[warning]  511:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0320803Z ##[warning]  576:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0322224Z ##[warning]  592:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0323639Z ##[warning]  611:7   warning  Unexpected console statement                                                            no-console
+2026-01-18T04:51:14.0325130Z ##[warning]  640:11  warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0327123Z ##[warning]  681:40  warning  Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0328716Z ##[warning]  683:7   warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0330248Z ##[warning]  683:13  warning  Unsafe call of an `any` typed value                                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0331821Z ##[warning]  683:19  warning  Unsafe member access .vips on an `any` value                                            @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0333750Z ##[warning]  683:31  warning  Unsafe member access .map on an `any` value                                             @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0336809Z ##[warning]  683:39  warning  Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0339644Z ##[warning]  683:48  warning  Unsafe return of an `any` typed value                                                   @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0342621Z ##[warning]  685:27  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0345880Z ##[warning]  685:29  warning  Unsafe member access .addedAt on an `any` value                                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0349246Z ##[warning]  687:7   warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0352100Z ##[warning]  687:17  warning  Unsafe call of an `any` typed value                                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0354948Z ##[warning]  687:23  warning  Unsafe member access .keywords on an `any` value                                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0357954Z ##[warning]  687:39  warning  Unsafe member access .map on an `any` value                                             @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0360738Z ##[warning]  687:47  warning  Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0363700Z ##[warning]  687:56  warning  Unsafe return of an `any` typed value                                                   @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0365504Z ##[warning]  689:27  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0367537Z ##[warning]  689:29  warning  Unsafe member access .addedAt on an `any` value                                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0369192Z ##[warning]  691:7   warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0370746Z ##[warning]  691:15  warning  Unsafe call of an `any` typed value                                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0372343Z ##[warning]  691:21  warning  Unsafe member access .topics on an `any` value                                          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0373977Z ##[warning]  691:35  warning  Unsafe member access .map on an `any` value                                             @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0375589Z ##[warning]  691:43  warning  Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0377653Z ##[warning]  691:52  warning  Unsafe return of an `any` typed value                                                   @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0379347Z ##[warning]  693:27  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0381052Z ##[warning]  693:29  warning  Unsafe member access .addedAt on an `any` value                                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0382651Z ##[warning]  695:7   warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0384185Z ##[warning]  695:21  warning  Unsafe call of an `any` typed value                                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0385793Z ##[warning]  695:27  warning  Unsafe member access .mutedSenders on an `any` value                                    @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0387698Z ##[warning]  695:47  warning  Unsafe member access .map on an `any` value                                             @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0389311Z ##[warning]  695:55  warning  Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0390885Z ##[warning]  695:64  warning  Unsafe return of an `any` typed value                                                   @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0392581Z ##[warning]  697:27  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0394277Z ##[warning]  697:29  warning  Unsafe member access .mutedAt on an `any` value                                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0395944Z ##[warning]  698:15  warning  Unsafe member access .expiresAt on an `any` value                                       @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0397953Z ##[warning]  698:49  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0399687Z ##[warning]  698:51  warning  Unsafe member access .expiresAt on an `any` value                                       @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0401591Z ##[warning]  700:30  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0403316Z ##[warning]  700:35  warning  Unsafe member access .lastModified on an `any` value                                    @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0404921Z ##[warning]  701:7   warning  Unsafe assignment of an `any` value                                                     @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0406730Z ##[warning]  701:21  warning  Unsafe member access .version on an `any` value                                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0408396Z ##[warning]  731:25  warning  Unexpected any. Specify a different type                                                @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0409306Z 
+2026-01-18T04:51:14.0409677Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/rag-retriever.ts
+2026-01-18T04:51:14.0410393Z ##[warning]  216:9  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0411451Z ##[warning]  232:9  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0412491Z ##[warning]  256:9  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0413191Z 
+2026-01-18T04:51:14.0413584Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/knowledge/supabase-vector-store.ts
+2026-01-18T04:51:14.0415342Z ##[warning]  184:7   warning  Unsafe assignment of type `SupabaseClient<any, any, "public", any, any>` to a variable of type `SupabaseClient<any, "public", "public", any, any>`  @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0417657Z ##[warning]  217:7   warning  Unsafe return of an `any` typed value                                                                                                               @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0419401Z ##[warning]  252:9   warning  Unexpected console statement                                                                                                                        no-console
+2026-01-18T04:51:14.0421165Z ##[warning]  255:7   warning  Unsafe return of an `any[]` typed value                                                                                                             @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0422962Z ##[warning]  255:32  warning  Unsafe return of an `any` typed value                                                                                                               @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0424893Z ##[warning]  287:15  warning  Unsafe array destructuring of a tuple element with an `any` value                                                                                   @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0426981Z ##[warning]  298:11  warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0428803Z ##[warning]  298:43  warning  Unsafe call of an `any` typed value                                                                                                                 @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0430626Z ##[warning]  298:48  warning  Unsafe member access .map on an `any` value                                                                                                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0432483Z ##[warning]  298:58  warning  Unexpected any. Specify a different type                                                                                                            @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0434293Z ##[warning]  300:11  warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0436486Z ##[warning]  300:19  warning  Unsafe member access .id on an `any` value                                                                                                          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0479949Z ##[warning]  301:11  warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0482061Z ##[warning]  301:24  warning  Unsafe member access .content on an `any` value                                                                                                     @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0483967Z ##[warning]  302:11  warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0485967Z ##[warning]  302:33  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0488197Z ##[warning]  302:37  warning  Unsafe member access .embedding on an `any` value                                                                                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0490499Z ##[warning]  303:11  warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0492421Z ##[warning]  303:28  warning  Unsafe member access .source_type on an `any` value                                                                                                 @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0494295Z ##[warning]  304:11  warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0496375Z ##[warning]  304:25  warning  Unsafe member access .metadata on an `any` value                                                                                                    @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0498478Z ##[warning]  305:32  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0500455Z ##[warning]  305:36  warning  Unsafe member access .created_at on an `any` value                                                                                                  @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0502471Z ##[warning]  306:32  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0504415Z ##[warning]  306:36  warning  Unsafe member access .updated_at on an `any` value                                                                                                  @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0506427Z ##[warning]  308:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0508347Z ##[warning]  308:25  warning  Unsafe member access .similarity on an `any` value                                                                                                  @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0510398Z ##[warning]  314:64  warning  Forbidden non-null assertion                                                                                                                        @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0512130Z ##[warning]  319:9   warning  Unexpected console statement                                                                                                                        no-console
+2026-01-18T04:51:14.0514028Z ##[warning]  335:15  warning  Unsafe array destructuring of a tuple element with an `any` value                                                                                   @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0515916Z ##[warning]  354:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0518018Z ##[warning]  354:18  warning  Unsafe member access .id on an `any` value                                                                                                          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0519877Z ##[warning]  355:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0521731Z ##[warning]  355:23  warning  Unsafe member access .content on an `any` value                                                                                                     @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0523750Z ##[warning]  356:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0525705Z ##[warning]  356:31  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0527889Z ##[warning]  356:36  warning  Unsafe member access .embedding on an `any` value                                                                                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0529718Z ##[warning]  357:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0531590Z ##[warning]  357:27  warning  Unsafe member access .source_type on an `any` value                                                                                                 @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0533418Z ##[warning]  358:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0535296Z ##[warning]  358:24  warning  Unsafe member access .metadata on an `any` value                                                                                                    @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0537567Z ##[warning]  359:30  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0539548Z ##[warning]  359:35  warning  Unsafe member access .created_at on an `any` value                                                                                                  @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0541566Z ##[warning]  360:30  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0543697Z ##[warning]  360:35  warning  Unsafe member access .updated_at on an `any` value                                                                                                  @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0545455Z ##[warning]  381:9   warning  Unexpected console statement                                                                                                                        no-console
+2026-01-18T04:51:14.0547352Z ##[warning]  407:9   warning  Unexpected console statement                                                                                                                        no-console
+2026-01-18T04:51:14.0549013Z ##[warning]  433:9   warning  Unexpected console statement                                                                                                                        no-console
+2026-01-18T04:51:14.0550755Z ##[warning]  505:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0552564Z ##[warning]  505:17  warning  Unsafe member access .id on an `any` value                                                                                                          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0554561Z ##[warning]  506:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0556587Z ##[warning]  506:22  warning  Unsafe member access .content on an `any` value                                                                                                     @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0558446Z ##[warning]  507:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0560378Z ##[warning]  507:31  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0562305Z ##[warning]  507:35  warning  Unsafe member access .embedding on an `any` value                                                                                                   @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0564132Z ##[warning]  508:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0565988Z ##[warning]  508:26  warning  Unsafe member access .source_type on an `any` value                                                                                                 @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0568049Z ##[warning]  509:9   warning  Unsafe assignment of an `any` value                                                                                                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0569911Z ##[warning]  509:23  warning  Unsafe member access .metadata on an `any` value                                                                                                    @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0571938Z ##[warning]  510:30  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0573884Z ##[warning]  510:34  warning  Unsafe member access .created_at on an `any` value                                                                                                  @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0576240Z ##[warning]  511:30  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`                                                              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0578303Z ##[warning]  511:34  warning  Unsafe member access .updated_at on an `any` value                                                                                                  @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0580090Z ##[warning]  532:9   warning  Unexpected console statement                                                                                                                        no-console
+2026-01-18T04:51:14.0581015Z 
+2026-01-18T04:51:14.0581401Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/session/redis-session-store.ts
+2026-01-18T04:51:14.0582301Z ##[warning]  181:9  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0583389Z ##[warning]  187:9  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0584454Z ##[warning]  305:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0585511Z ##[warning]  343:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0586839Z ##[warning]  358:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0588098Z ##[warning]  371:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0589144Z ##[warning]  408:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0590191Z ##[warning]  482:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0591336Z ##[warning]  503:7  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0592040Z 
+2026-01-18T04:51:14.0592407Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/src/session/shadow-processor.ts
+2026-01-18T04:51:14.0593476Z ##[warning]  365:31  warning  Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0595118Z ##[warning]  371:17  warning  Unsafe array destructuring of an `any` array value                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0597045Z ##[warning]  373:27  warning  Unsafe argument of type `any` assigned to a parameter of type `string`             @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0598786Z ##[warning]  373:38  warning  Unsafe argument of type `any` assigned to a parameter of type `DriveState | null`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0600499Z ##[warning]  373:48  warning  Unsafe argument of type `any` assigned to a parameter of type `DriveState`         @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0602205Z ##[warning]  373:58  warning  Unsafe argument of type `any` assigned to a parameter of type `TranscriptEvent`    @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0603875Z ##[warning]  378:17  warning  Unsafe array destructuring of an `any` array value                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0605525Z ##[warning]  380:27  warning  Unsafe argument of type `any` assigned to a parameter of type `string`             @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0607505Z ##[warning]  380:38  warning  Unsafe argument of type `any` assigned to a parameter of type `CommandIntent`      @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0609269Z ##[warning]  380:46  warning  Unsafe argument of type `any` assigned to a parameter of type `TranscriptEvent`    @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0610970Z ##[warning]  385:17  warning  Unsafe array destructuring of an `any` array value                                 @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0612632Z ##[warning]  387:27  warning  Unsafe argument of type `any` assigned to a parameter of type `Error`              @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0614533Z ##[warning]  387:34  warning  Unsafe argument of type `any` assigned to a parameter of type `TranscriptEvent`    @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0616300Z ##[warning]  439:9   warning  Unexpected console statement                                                       no-console
+2026-01-18T04:51:14.0617798Z ##[warning]  448:11  warning  Unexpected console statement                                                       no-console
+2026-01-18T04:51:14.0619236Z ##[warning]  478:9   warning  Unexpected console statement                                                       no-console
+2026-01-18T04:51:14.0620084Z 
+2026-01-18T04:51:14.0620502Z /home/runner/work/NexusAEC/NexusAEC/packages/intelligence/tests/session/shadow-processor.test.ts
+2026-01-18T04:51:14.0621888Z ##[warning]  437:37  warning  Unsafe argument of type `any` assigned to a parameter of type `StateChangeHandler`      @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0623749Z ##[warning]  460:37  warning  Unsafe argument of type `any` assigned to a parameter of type `StateChangeHandler`      @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0625555Z ##[warning]  461:37  warning  Unsafe argument of type `any` assigned to a parameter of type `StateChangeHandler`      @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0627611Z ##[warning]  481:41  warning  Unsafe argument of type `any` assigned to a parameter of type `CommandDetectedHandler`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0629618Z ##[warning]  514:36  warning  Unsafe argument of type `any` assigned to a parameter of type `ErrorHandler`            @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0631420Z ##[warning]  536:37  warning  Unsafe argument of type `any` assigned to a parameter of type `StateChangeHandler`      @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0633238Z ##[warning]  537:37  warning  Unsafe argument of type `any` assigned to a parameter of type `StateChangeHandler`      @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0635034Z ##[warning]  539:38  warning  Unsafe argument of type `any` assigned to a parameter of type `StateChangeHandler`      @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0637039Z ##[warning]  558:37  warning  Unsafe argument of type `any` assigned to a parameter of type `StateChangeHandler`      @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0638861Z ##[warning]  559:41  warning  Unsafe argument of type `any` assigned to a parameter of type `CommandDetectedHandler`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0639858Z 
+2026-01-18T04:51:14.0640144Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/src/agent.ts
+2026-01-18T04:51:14.0641155Z ##[error]   14:1  error  There should be at least one empty line between import groups             import/order
+2026-01-18T04:51:14.0642643Z ##[error]   15:1  error  There should be at least one empty line between import groups             import/order
+2026-01-18T04:51:14.0644062Z ##[error]   15:1  error  `@livekit/agents` type import should occur after import of `./health.js`  import/order
+2026-01-18T04:51:14.0645448Z ##[error]   17:1  error  There should be at least one empty line between import groups             import/order
+2026-01-18T04:51:14.0647059Z ##[error]   23:1  error  Dependency cycle detected                                                 import/no-cycle
+2026-01-18T04:51:14.0648605Z ##[error]  191:9  error  The two values in this comparison do not have a shared enum type          @typescript-eslint/no-unsafe-enum-comparison
+2026-01-18T04:51:14.0650284Z ##[error]  203:9  error  The two values in this comparison do not have a shared enum type          @typescript-eslint/no-unsafe-enum-comparison
+2026-01-18T04:51:14.0651236Z 
+2026-01-18T04:51:14.0651522Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/src/config.ts
+2026-01-18T04:51:14.0652501Z ##[error]  8:1  error  There should be at least one empty line between import groups  import/order
+2026-01-18T04:51:14.0653825Z ##[error]  9:1  error  `path` import should occur before import of `dotenv`           import/order
+2026-01-18T04:51:14.0654626Z 
+2026-01-18T04:51:14.0654911Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/src/health.ts
+2026-01-18T04:51:14.0655693Z ##[error]   8:1  error  There should be at least one empty line between import groups  import/order
+2026-01-18T04:51:14.0657279Z ##[error]   9:1  error  There should be at least one empty line between import groups  import/order
+2026-01-18T04:51:14.0658560Z ##[error]  10:1  error  Dependency cycle detected                                      import/no-cycle
+2026-01-18T04:51:14.0659352Z 
+2026-01-18T04:51:14.0659719Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/src/prompts/briefing-prompts.ts
+2026-01-18T04:51:14.0660507Z ##[error]  306:21  error  Expected { after 'if' condition  curly
+2026-01-18T04:51:14.0661557Z ##[error]  307:22  error  Expected { after 'if' condition  curly
+2026-01-18T04:51:14.0662575Z ##[error]  308:23  error  Expected { after 'if' condition  curly
+2026-01-18T04:51:14.0663582Z ##[error]  309:23  error  Expected { after 'if' condition  curly
+2026-01-18T04:51:14.0664581Z ##[error]  310:21  error  Expected { after 'if' condition  curly
+2026-01-18T04:51:14.0665271Z 
+2026-01-18T04:51:14.0665635Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/src/reasoning/reasoning-loop.ts
+2026-01-18T04:51:14.0667207Z ##[error]   15:1  error    There should be at least one empty line between import groups                                        import/order
+2026-01-18T04:51:14.0668986Z ##[error]   22:1  error    `../prompts/briefing-prompts.js` import should occur before import of `../prompts/system-prompt.js`  import/order
+2026-01-18T04:51:14.0670687Z ##[error]   41:1  error    `../stt/index.js` import should occur before import of `../tools/email-tools.js`                     import/order
+2026-01-18T04:51:14.0672534Z ##[warning]  577:9  warning  Prefer using an optional chain expression instead, as it's more concise and easier to read           @typescript-eslint/prefer-optional-chain
+2026-01-18T04:51:14.0673597Z 
+2026-01-18T04:51:14.0673942Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/src/stt/deepgram-config.ts
+2026-01-18T04:51:14.0674881Z ##[error]   13:1   error  There should be at least one empty line between import groups  import/order
+2026-01-18T04:51:14.0676419Z ##[error]  255:29  error  Expected { after 'if' condition                                curly
+2026-01-18T04:51:14.0677255Z 
+2026-01-18T04:51:14.0677610Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/src/tts/elevenlabs-config.ts
+2026-01-18T04:51:14.0678575Z ##[error]  13:1  error  There should be at least one empty line between import groups  import/order
+2026-01-18T04:51:14.0679401Z 
+2026-01-18T04:51:14.0679727Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/tests/reasoning.test.ts
+2026-01-18T04:51:14.0680456Z ##[error]  127:19  error  Expected { after 'if' condition  curly
+2026-01-18T04:51:14.0681174Z 
+2026-01-18T04:51:14.0681471Z /home/runner/work/NexusAEC/NexusAEC/packages/livekit-agent/tests/tts.test.ts
+2026-01-18T04:51:14.0682260Z ##[warning]  139:29  warning  Unsafe return of an error typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0683566Z ##[warning]  146:29  warning  Unsafe return of an error typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0684861Z ##[warning]  155:29  warning  Unsafe return of an error typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0686340Z ##[warning]  162:29  warning  Unsafe return of an error typed value  @typescript-eslint/no-unsafe-return
+2026-01-18T04:51:14.0687254Z 
+2026-01-18T04:51:14.0687506Z /home/runner/work/NexusAEC/NexusAEC/packages/logger/src/index.ts
+2026-01-18T04:51:14.0688260Z ##[warning]  331:9  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0689348Z ##[warning]  334:9  warning  Unexpected console statement  no-console
+2026-01-18T04:51:14.0690252Z 
+2026-01-18T04:51:14.0690539Z /home/runner/work/NexusAEC/NexusAEC/packages/secure-storage/src/index.ts
+2026-01-18T04:51:14.0691689Z ##[warning]   91:53  warning  Unsafe member access .product on an `error` typed value                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0693375Z ##[warning]  383:11  warning  Unsafe assignment of an error typed value                                      @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0694976Z ##[warning]  383:22  warning  Unsafe call of an `error` type typed value                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0696876Z ##[warning]  383:35  warning  Unsafe member access .getItem on an `error` typed value                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0698647Z ##[warning]  385:21  warning  Unsafe argument of type `any` assigned to a parameter of type `string`         @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0700293Z ##[warning]  394:5   warning  Unsafe call of an `error` type typed value                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0701909Z ##[warning]  394:18  warning  Unsafe member access .setItem on an `error` typed value                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0703520Z ##[warning]  403:11  warning  Unsafe assignment of an error typed value                                      @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0705257Z ##[warning]  403:20  warning  Unsafe call of an `error` type typed value                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0707075Z ##[warning]  403:33  warning  Unsafe member access .getItem on an `error` typed value                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0708685Z ##[warning]  410:13  warning  Unsafe assignment of an `any` value                                            @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0710307Z ##[warning]  410:31  warning  Unsafe argument of type `any` assigned to a parameter of type `string`         @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0711989Z ##[warning]  411:28  warning  Unsafe argument of type `any` assigned to a parameter of type `EncryptedData`  @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0713574Z ##[warning]  419:5   warning  Unsafe call of an `error` type typed value                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0715199Z ##[warning]  419:18  warning  Unsafe member access .removeItem on an `error` typed value                     @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0717053Z ##[warning]  424:12  warning  Unsafe call of an `error` type typed value                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0718697Z ##[warning]  424:25  warning  Unsafe member access .getItem on an `error` typed value                        @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0720371Z ##[warning]  429:38  warning  Unsafe member access .length on an `error` typed value                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0721993Z ##[warning]  430:13  warning  Unsafe assignment of an error typed value                                      @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0723568Z ##[warning]  430:23  warning  Unsafe call of an `error` type typed value                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0725632Z ##[warning]  430:36  warning  Unsafe member access .key on an `error` typed value                            @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0727947Z ##[warning]  431:11  warning  Unsafe call of an `error` type typed value                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0730114Z ##[warning]  431:20  warning  Unsafe member access .startsWith on an `error` typed value                     @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0731839Z ##[warning]  432:19  warning  Unsafe argument of type `any` assigned to a parameter of type `string`         @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0733454Z ##[warning]  432:19  warning  Unsafe call of an `error` type typed value                                     @typescript-eslint/no-unsafe-call
+2026-01-18T04:51:14.0735084Z ##[warning]  432:27  warning  Unsafe member access .slice on an `error` typed value                          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0736247Z 
+2026-01-18T04:51:14.0736543Z /home/runner/work/NexusAEC/NexusAEC/scripts/gmail-oauth.ts
+2026-01-18T04:51:14.0737914Z ##[warning]   27:1   warning  Caution: `dotenv` also has a named export `config`. Check if you meant to write `import {config} from 'dotenv'` instead  import/no-named-as-default-member
+2026-01-18T04:51:14.0739797Z ##[warning]   45:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0741629Z ##[warning]   89:38  warning  Promise returned in function argument where a void return was expected                                                   @typescript-eslint/no-misused-promises
+2026-01-18T04:51:14.0743646Z ##[warning]   90:38  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0745976Z ##[warning]  104:80  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0747921Z ##[warning]  198:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0749510Z ##[warning]  199:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0751078Z ##[warning]  231:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0752643Z ##[warning]  232:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0754212Z ##[warning]  233:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0755776Z ##[warning]  234:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0757588Z ##[warning]  237:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0759154Z ##[warning]  238:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0760705Z ##[warning]  245:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0762274Z ##[warning]  246:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0764138Z ##[warning]  246:54  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0766308Z ##[warning]  248:61  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0768266Z ##[warning]  252:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0769819Z ##[warning]  253:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0771371Z ##[warning]  254:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0773058Z ##[warning]  259:27  warning  Unsafe member access .message on an `any` value                                                                          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0774038Z 
+2026-01-18T04:51:14.0774257Z /home/runner/work/NexusAEC/NexusAEC/test-integration.ts
+2026-01-18T04:51:14.0775463Z ##[warning]   43:1   warning  Caution: `dotenv` also has a named export `config`. Check if you meant to write `import {config} from 'dotenv'` instead  import/no-named-as-default-member
+2026-01-18T04:51:14.0777537Z ##[warning]   57:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0779094Z ##[warning]   61:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0780824Z ##[warning]   63:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0782706Z ##[warning]   72:56  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0784762Z ##[warning]   73:58  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0786995Z ##[warning]   73:94  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0789078Z ##[warning]   74:46  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0791117Z ##[warning]   74:74  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0793168Z ##[warning]  114:49  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0794915Z ##[warning]  176:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0796589Z ##[warning]  177:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0798182Z ##[warning]  214:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0799732Z ##[warning]  215:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0801278Z ##[warning]  332:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0802986Z ##[warning]  333:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0804523Z ##[warning]  334:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0806170Z ##[warning]  337:9   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0807747Z ##[warning]  343:9   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0809301Z ##[warning]  344:35  warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0810854Z ##[warning]  367:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0812388Z ##[warning]  368:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0813920Z ##[warning]  369:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0815641Z ##[warning]  370:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0817527Z ##[warning]  373:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0819094Z ##[warning]  445:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0820785Z ##[warning]  457:26  warning  Unexpected any. Specify a different type                                                                                 @typescript-eslint/no-explicit-any
+2026-01-18T04:51:14.0822683Z ##[warning]  483:7   warning  Unsafe assignment of type `Map<any, any>` to a variable of type `Map<string, EmailSummary>`                              @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0824423Z ##[warning]  489:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0825971Z ##[warning]  491:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0827832Z ##[warning]  493:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0829714Z ##[warning]  530:36  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0831756Z ##[warning]  531:43  warning  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                @typescript-eslint/prefer-nullish-coalescing
+2026-01-18T04:51:14.0833499Z ##[warning]  546:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0835042Z ##[warning]  547:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0836723Z ##[warning]  548:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0838490Z ##[warning]  549:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0840069Z ##[warning]  550:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0841769Z ##[warning]  555:33  warning  Unsafe member access .message on an `any` value                                                                          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0842744Z 
+2026-01-18T04:51:14.0842943Z /home/runner/work/NexusAEC/NexusAEC/test-simple.ts
+2026-01-18T04:51:14.0844141Z ##[warning]   16:1   warning  Caution: `dotenv` also has a named export `config`. Check if you meant to write `import {config} from 'dotenv'` instead  import/no-named-as-default-member
+2026-01-18T04:51:14.0845899Z ##[warning]   29:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0847578Z ##[warning]   33:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0849121Z ##[warning]   35:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0851239Z ##[warning]   68:41  warning  Forbidden non-null assertion                                                                                             @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0853386Z ##[warning]   72:20  warning  Forbidden non-null assertion                                                                                             @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0855420Z ##[warning]   73:20  warning  Forbidden non-null assertion                                                                                             @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0857715Z ##[warning]  119:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0859607Z ##[warning]  120:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0861552Z ##[warning]  121:7   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0863476Z ##[warning]  137:15  warning  Forbidden non-null assertion                                                                                             @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0865428Z ##[warning]  160:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0867994Z ##[warning]  161:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0869965Z ##[warning]  162:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0871985Z ##[warning]  177:20  warning  Forbidden non-null assertion                                                                                             @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0874062Z ##[warning]  178:20  warning  Forbidden non-null assertion                                                                                             @typescript-eslint/no-non-null-assertion
+2026-01-18T04:51:14.0876395Z ##[warning]  184:46  warning  Unsafe argument of type `any[]` assigned to a parameter of type `number[]`                                               @typescript-eslint/no-unsafe-argument
+2026-01-18T04:51:14.0878655Z ##[warning]  228:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0881036Z ##[warning]  229:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0882987Z ##[warning]  230:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0884918Z ##[warning]  235:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0887191Z ##[warning]  240:33  warning  Unsafe member access .message on an `any` value                                                                          @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0888392Z 
+2026-01-18T04:51:14.0888661Z /home/runner/work/NexusAEC/NexusAEC/test-supabase-only.ts
+2026-01-18T04:51:14.0890144Z ##[warning]   11:1   warning  Caution: `dotenv` also has a named export `config`. Check if you meant to write `import {config} from 'dotenv'` instead  import/no-named-as-default-member
+2026-01-18T04:51:14.0892933Z ##[warning]   32:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0896187Z ##[warning]   36:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0899133Z ##[warning]   38:3   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0901073Z ##[warning]  117:9   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0903121Z ##[warning]  117:45  warning  Unsafe member access .asset_id on an `any` value                                                                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0905273Z ##[warning]  117:64  warning  Unsafe member access .name on an `any` value                                                                             @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0907797Z ##[warning]  117:79  warning  Unsafe member access .category on an `any` value                                                                         @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0909862Z ##[warning]  139:9   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0911956Z ##[warning]  152:19  warning  Unsafe array destructuring of a tuple element with an `any` value                                                        @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0914112Z ##[warning]  171:37  warning  Unsafe member access .id on an `any` value                                                                               @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0916455Z ##[warning]  178:19  warning  Unsafe array destructuring of a tuple element with an `any` value                                                        @typescript-eslint/no-unsafe-assignment
+2026-01-18T04:51:14.0918778Z ##[warning]  192:36  warning  Unsafe member access .length on an `any` value                                                                           @typescript-eslint/no-unsafe-member-access
+2026-01-18T04:51:14.0920778Z ##[warning]  204:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0922850Z ##[warning]  205:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0924739Z ##[warning]  206:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0927074Z ##[warning]  207:5   warning  Unexpected console statement                                                                                             no-console
+2026-01-18T04:51:14.0928345Z 
+2026-01-18T04:51:14.0928846Z ✖ 639 problems (90 errors, 549 warnings)
+2026-01-18T04:51:14.0929352Z   48 errors and 2 warnings potentially fixable with the `--fix` option.
+2026-01-18T04:51:14.0929689Z 
+2026-01-18T04:51:14.1008087Z  ELIFECYCLE  Command failed with exit code 1.
+2026-01-18T04:51:14.1198031Z ##[error]Process completed with exit code 1.

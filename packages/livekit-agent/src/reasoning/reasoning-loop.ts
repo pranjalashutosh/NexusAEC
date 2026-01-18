@@ -13,33 +13,26 @@
  */
 
 import { createLogger } from '@nexus-aec/logger';
-import { loadOpenAIConfig, type OpenAIConfig } from '../config.js';
+
+import { loadOpenAIConfig } from '../config.js';
+import { generateConfirmation, generateDisambiguationPrompt } from '../prompts/briefing-prompts.js';
+import { buildSystemPrompt, DEFAULT_SYSTEM_PROMPT_CONTEXT } from '../prompts/system-prompt.js';
+import { detectCommand, processTranscript } from '../stt/index.js';
+import { EMAIL_TOOLS, executeEmailTool } from '../tools/email-tools.js';
 import {
-  buildSystemPrompt,
-  type SystemPromptContext,
-  DEFAULT_SYSTEM_PROMPT_CONTEXT,
-} from '../prompts/system-prompt.js';
-import {
-  generateConfirmation,
-  generateDisambiguationPrompt,
-  type BriefingContext,
-} from '../prompts/briefing-prompts.js';
-import {
-  EMAIL_TOOLS,
-  executeEmailTool,
-  type EmailActionContext,
-  type ToolResult,
-} from '../tools/email-tools.js';
-import {
-  NAVIGATION_TOOLS,
-  executeNavigationTool,
   createBriefingState,
+  executeNavigationTool,
+  NAVIGATION_TOOLS,
   updateBriefingState,
-  type BriefingState,
-  type NavigationResult,
 } from '../tools/navigation-tools.js';
-import { processTranscript, detectCommand, type TranscriptEvent } from '../stt/index.js';
 import { preprocessTextForTTS, splitTextForStreaming } from '../tts/index.js';
+
+import type { OpenAIConfig } from '../config.js';
+import type { BriefingContext } from '../prompts/briefing-prompts.js';
+import type { SystemPromptContext } from '../prompts/system-prompt.js';
+import type { TranscriptEvent } from '../stt/index.js';
+import type { EmailActionContext, ToolResult } from '../tools/email-tools.js';
+import type { BriefingState, NavigationResult } from '../tools/navigation-tools.js';
 
 const logger = createLogger({ baseContext: { component: 'reasoning-loop' } });
 

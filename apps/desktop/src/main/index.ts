@@ -2,11 +2,13 @@
  * Electron Main Process
  */
 
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
+
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
+
+import { exportAuditTrail, getAuditTrail } from './audit-trail';
+import { approveDraft, deleteDraft, getDrafts } from './drafts';
 import { handleOAuthCallback, initiateOAuth } from './oauth';
-import { getAuditTrail, exportAuditTrail } from './audit-trail';
-import { getDrafts, approveDraft, deleteDraft } from './drafts';
 import { getPreferences, setPreferences, syncPreferences } from './preferences';
 
 let mainWindow: BrowserWindow | null = null;
@@ -33,10 +35,10 @@ function createWindow(): void {
 
   // Load the app
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    void mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
   // Show window when ready
@@ -46,7 +48,7 @@ function createWindow(): void {
 
   // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    void shell.openExternal(url);
     return { action: 'deny' };
   });
 
@@ -105,7 +107,7 @@ function registerIpcHandlers(): void {
 }
 
 // App lifecycle
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
 
