@@ -7,8 +7,9 @@
  * @see https://developers.google.com/identity/protocols/oauth2/native-app
  */
 
-import type { OAuthTokens, OAuthState } from '../interfaces/types';
 import { generateCodeVerifier, generateState, generateCodeChallenge } from './microsoft';
+
+import type { OAuthTokens, OAuthState } from '../interfaces/types';
 
 // =============================================================================
 // Configuration

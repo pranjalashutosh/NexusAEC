@@ -5,8 +5,9 @@
  * unified access for the briefing system's calendar proximity scoring.
  */
 
-import type { EmailProvider } from '../interfaces/email-provider';
 import { parseStandardId } from '../interfaces/email-provider';
+
+import type { EmailProvider } from '../interfaces/email-provider';
 import type {
   EmailSource,
   CalendarEvent,
@@ -163,7 +164,7 @@ export class CalendarSyncService {
 
           events.push(...response.items);
         } catch (error) {
-          if (!this.config.continueOnError) throw error;
+          if (!this.config.continueOnError) {throw error;}
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
@@ -191,7 +192,7 @@ export class CalendarSyncService {
 
     // Fetch from provider
     const provider = this.getProviderForId(eventId);
-    if (!provider) return null;
+    if (!provider) {return null;}
 
     const event = await provider.fetchCalendarEvent(eventId);
     if (event) {
@@ -272,7 +273,7 @@ export class CalendarSyncService {
       const isOngoing = start <= now && end > now;
       const isNext = !foundNext && start > now;
 
-      if (isNext) foundNext = true;
+      if (isNext) {foundNext = true;}
 
       proximities.push({
         event,
@@ -389,7 +390,7 @@ export class CalendarSyncService {
 
     return events.filter((e) => {
       // Check organizer
-      if (e.organizer.email.toLowerCase() === emailLower) return true;
+      if (e.organizer.email.toLowerCase() === emailLower) {return true;}
 
       // Check attendees
       return e.attendees.some((a) => a.email.toLowerCase() === emailLower);
@@ -528,7 +529,7 @@ export class CalendarSyncService {
    */
   private getProviderForId(id: string): EmailProvider | undefined {
     const parsed = parseStandardId(id);
-    if (!parsed) return undefined;
+    if (!parsed) {return undefined;}
     return this.providers.get(parsed.source);
   }
 
@@ -536,7 +537,7 @@ export class CalendarSyncService {
    * Get error message from unknown error
    */
   private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) return error.message;
+    if (error instanceof Error) {return error.message;}
     return String(error);
   }
 }

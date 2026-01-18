@@ -5,9 +5,9 @@
  * Uses secure storage for token persistence.
  */
 
-import type { OAuthTokens, EmailSource } from '../interfaces/types';
-import type { MicrosoftOAuthProvider } from './microsoft';
 import type { GoogleOAuthProvider } from './google';
+import type { MicrosoftOAuthProvider } from './microsoft';
+import type { OAuthTokens, EmailSource } from '../interfaces/types';
 
 // =============================================================================
 // Types
@@ -238,7 +238,7 @@ export class TokenManager {
 
     // Check if token is expired or expiring soon
     const provider = this.providers.get(source);
-    if (provider && provider.isTokenExpired(data.tokens, this.refreshBufferSeconds)) {
+    if (provider?.isTokenExpired(data.tokens, this.refreshBufferSeconds)) {
       // Token is expired or expiring soon, refresh it
       const newTokens = await this.refreshTokens(userId, source);
       return newTokens.accessToken;

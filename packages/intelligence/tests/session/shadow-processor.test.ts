@@ -7,7 +7,6 @@ import {
   ShadowProcessor,
   type ShadowProcessorOptions,
   type TranscriptEvent,
-  type CommandIntent,
 } from '../../src/session/shadow-processor';
 import { RedisSessionStore } from '../../src/session/redis-session-store';
 import {

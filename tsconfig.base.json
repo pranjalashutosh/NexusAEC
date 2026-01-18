@@ -55,7 +55,8 @@
       "@nexus-aec/encryption": ["packages/encryption/src/index.ts"],
       "@nexus-aec/secure-storage": ["packages/secure-storage/src/index.ts"],
       "@nexus-aec/logger": ["packages/logger/src/index.ts"],
-      "@nexus-aec/intelligence": ["packages/intelligence/src/index.ts"]
+      "@nexus-aec/intelligence": ["packages/intelligence/src/index.ts"],
+      "@nexus-aec/livekit-agent": ["packages/livekit-agent/src/index.ts"]
     }
   },
   "exclude": [

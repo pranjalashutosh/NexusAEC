@@ -298,133 +298,133 @@ V-201,Valve Assembly 201,Pressure regulation valve for north sector,Valve,North 
   - [x] 3.15 Define `Asset` schema type: `{ assetId: string (e.g., "P-104"), name: string, description: string, category: string, location: string, metadata: Record<string, string> }`
   - [x] 3.16 Create MVP seed data file (`seed-assets.json`): hardcode 20-50 sample NCE Asset IDs with descriptions for development/testing — **THIS IS THE STARTING POINT**
   - [x] 3.17 Create MVP seed data file (`seed-safety-manuals.json`): hardcode 5-10 safety manual excerpts (title, section, content) for development/testing
-  - [ ] 3.18 Implement `csv-parser.ts`: parse CSV file with columns `[AssetID, Name, Description, Category, Location, ...]`, validate required fields, return `Asset[]`
-  - [ ] 3.19 Implement `pdf-extractor.ts`: extract text from Safety Manual PDFs using `pdf-parse`, chunk into ~500 token segments with overlap
-  - [ ] 3.20 Implement `AssetIngestion` (`asset-ingestion.ts`): orchestrator that accepts source type ('seed' | 'csv' | 'pdf'), loads data via appropriate parser, generates embeddings (OpenAI ada-002), upserts to Supabase
-  - [ ] 3.21 Implement CLI `ingest-assets`: `npx ts-node cli/ingest-assets.ts --source seed` (MVP) or `--source csv --file ./data/assets.csv` (production)
-  - [ ] 3.22 Implement CLI `ingest-manuals`: `npx ts-node cli/ingest-manuals.ts --source seed` (MVP) or `--source pdf --dir ./data/manuals/` (production)
-  - [ ] 3.23 Implement CLI `list-assets`: verify ingested assets, show count by source_type
-  - [ ] 3.24 Document expected CSV format in README: provide `assets-template.csv` with example rows
+  - [x] 3.18 Implement `csv-parser.ts`: parse CSV file with columns `[AssetID, Name, Description, Category, Location, ...]`, validate required fields, return `Asset[]`
+  - [x] 3.19 Implement `pdf-extractor.ts`: extract text from Safety Manual PDFs using `pdf-parse`, chunk into ~500 token segments with overlap
+  - [x] 3.20 Implement `AssetIngestion` (`asset-ingestion.ts`): orchestrator that accepts source type ('seed' | 'csv' | 'pdf'), loads data via appropriate parser, generates embeddings (OpenAI ada-002), upserts to Supabase
+  - [x] 3.21 Implement CLI `ingest-assets`: `npx ts-node cli/ingest-assets.ts --source seed` (MVP) or `--source csv --file ./data/assets.csv` (production)
+  - [x] 3.22 Implement CLI `ingest-manuals`: `npx ts-node cli/ingest-manuals.ts --source seed` (MVP) or `--source pdf --dir ./data/manuals/` (production)
+  - [x] 3.23 Implement CLI `list-assets`: verify ingested assets, show count by source_type
+  - [x] 3.24 Document expected CSV format in README: provide `assets-template.csv` with example rows
 
   **RAG Retrieval**
-  - [ ] 3.25 Implement `RAGRetriever` (`knowledge/rag-retriever.ts`): semantic search for contextual grounding, filter by source_type, return top-k with scores
+  - [x] 3.25 Implement `RAGRetriever` (`knowledge/rag-retriever.ts`): semantic search for contextual grounding, filter by source_type, return top-k with scores
 
   **Briefing & Summarization**
-  - [ ] 3.26 Implement `llm-client.ts`: GPT-4o API integration with retry, rate limiting, streaming support
-  - [ ] 3.27 Implement `email-summarizer.ts`: generate concise summaries of email threads
-  - [ ] 3.28 Implement `narrative-generator.ts`: convert clusters + red flags + summaries into podcast-style briefing script
-  - [ ] 3.29 Implement `explanation-generator.ts`: generate "why this is a red flag" explanations
+  - [x] 3.26 Implement `llm-client.ts`: GPT-4o API integration with retry, rate limiting, streaming support
+  - [x] 3.27 Implement `email-summarizer.ts`: generate concise summaries of email threads
+  - [x] 3.28 Implement `narrative-generator.ts`: convert clusters + red flags + summaries into podcast-style briefing script
+  - [x] 3.29 Implement `explanation-generator.ts`: generate "why this is a red flag" explanations
 
   **Personalization**
-  - [ ] 3.30 Implement `preferences-store.ts`: encrypted local + synced storage for VIPs, keywords, topics, muted senders
-  - [ ] 3.31 Implement `feedback-learner.ts`: process user feedback to adjust scoring over time
+  - [x] 3.30 Implement `preferences-store.ts`: encrypted local + synced storage for VIPs, keywords, topics, muted senders
+  - [x] 3.31 Implement `feedback-learner.ts`: process user feedback to adjust scoring over time
 
 - [ ] **4.0 Voice Interface — LiveKit Voice Stack**
 
   **LiveKit Cloud Setup**
-  - [ ] 4.1 Provision LiveKit Cloud project, obtain API Key and Secret
-  - [ ] 4.2 Configure LiveKit project settings: room defaults, codec preferences, region selection
-  - [ ] 4.3 Set up LiveKit webhook endpoint for room events (participant joined/left, track published)
+  - [x] 4.1 Provision LiveKit Cloud project, obtain API Key and Secret
+  - [x] 4.2 Configure LiveKit project settings: room defaults, codec preferences, region selection
+  - [x] 4.3 Set up LiveKit webhook endpoint for room events (participant joined/left, track published)
 
   **LiveKit Backend Agent**
-  - [ ] 4.4 Initialize `packages/livekit-agent` package (Node.js or Python with `livekit-agents` SDK)
-  - [ ] 4.5 Implement `agent.ts`: LiveKit Agent that joins room, manages audio tracks, handles participant lifecycle
-  - [ ] 4.6 Implement agent auto-scaling: deploy as containerized service, scale based on active rooms
-  - [ ] 4.7 Create `Dockerfile` for agent deployment (LiveKit Agents framework)
+  - [x] 4.4 Initialize `packages/livekit-agent` package (Node.js or Python with `livekit-agents` SDK)
+  - [x] 4.5 Implement `agent.ts`: LiveKit Agent that joins room, manages audio tracks, handles participant lifecycle
+  - [x] 4.6 Implement agent auto-scaling: deploy as containerized service, scale based on active rooms
+  - [x] 4.7 Create `Dockerfile` for agent deployment (LiveKit Agents framework)
 
   **Speech-to-Text (Deepgram Nova-2)**
-  - [ ] 4.8 Configure Deepgram Nova-2 integration via LiveKit STT plugin
-  - [ ] 4.9 Implement custom vocabulary for domain terms: NCE Asset IDs (P-104, P-205), project names, VIP names
-  - [ ] 4.10 Configure accent/language support: en-US (default), en-GB, en-IN, en-AU via Deepgram model selection
-  - [ ] 4.11 Implement interim results handling for responsive UX
+  - [x] 4.8 Configure Deepgram Nova-2 integration via LiveKit STT plugin
+  - [x] 4.9 Implement custom vocabulary for domain terms: NCE Asset IDs (P-104, P-205), project names, VIP names
+  - [x] 4.10 Configure accent/language support: en-US (default), en-GB, en-IN, en-AU via Deepgram model selection
+  - [x] 4.11 Implement interim results handling for responsive UX
 
   **Text-to-Speech (ElevenLabs Turbo)**
-  - [ ] 4.12 Configure ElevenLabs Turbo v2.5 integration via LiveKit TTS plugin
-  - [ ] 4.13 Select/configure voice: professional, clear, appropriate pacing for in-motion listening
-  - [ ] 4.14 Implement streaming TTS for low-latency briefing playback
+  - [x] 4.12 Configure ElevenLabs Turbo v2.5 integration via LiveKit TTS plugin
+  - [x] 4.13 Select/configure voice: professional, clear, appropriate pacing for in-motion listening
+  - [x] 4.14 Implement streaming TTS for low-latency briefing playback
 
   **GPT-4o Reasoning Loop**
-  - [ ] 4.15 Implement `reasoning-loop.ts`: orchestrate STT transcript → GPT-4o → TTS response cycle
-  - [ ] 4.16 Define system prompt (`prompts/system-prompt.ts`): persona (executive assistant), safety constraints, tool usage instructions
-  - [ ] 4.17 Define briefing prompts (`prompts/briefing-prompts.ts`): templates for topic transitions, summaries, red-flag callouts
-  - [ ] 4.18 Implement function tools for email actions (`tools/email-tools.ts`): `mute_sender`, `prioritize_vip`, `create_folder`, `move_emails`, `mark_read`, `flag_followup`, `create_draft`, `search_emails`, `undo_last_action`
-  - [ ] 4.19 Implement function tools for navigation (`tools/navigation-tools.ts`): `skip_topic`, `next_item`, `go_back`, `repeat_that`, `go_deeper`, `pause_briefing`, `resume_briefing`, `stop_briefing`
-  - [ ] 4.20 Implement confirmation verbosity logic in reasoning loop: Low risk → "Done", Medium → action+count, High → confirm before execute
-  - [ ] 4.21 Implement disambiguation handling: when GPT-4o detects ambiguity, prompt user with top 2-3 options
-  - [ ] 4.22 Connect reasoning loop to `ShadowProcessor` for real-time state updates
+  - [x] 4.15 Implement `reasoning-loop.ts`: orchestrate STT transcript → GPT-4o → TTS response cycle
+  - [x] 4.16 Define system prompt (`prompts/system-prompt.ts`): persona (executive assistant), safety constraints, tool usage instructions
+  - [x] 4.17 Define briefing prompts (`prompts/briefing-prompts.ts`): templates for topic transitions, summaries, red-flag callouts
+  - [x] 4.18 Implement function tools for email actions (`tools/email-tools.ts`): `mute_sender`, `prioritize_vip`, `create_folder`, `move_emails`, `mark_read`, `flag_followup`, `create_draft`, `search_emails`, `undo_last_action`
+  - [x] 4.19 Implement function tools for navigation (`tools/navigation-tools.ts`): `skip_topic`, `next_item`, `go_back`, `repeat_that`, `go_deeper`, `pause_briefing`, `resume_briefing`, `stop_briefing`
+  - [x] 4.20 Implement confirmation verbosity logic in reasoning loop: Low risk → "Done", Medium → action+count, High → confirm before execute
+  - [x] 4.21 Implement disambiguation handling: when GPT-4o detects ambiguity, prompt user with top 2-3 options
+  - [x] 4.22 Connect reasoning loop to `ShadowProcessor` for real-time state updates
 
   **Barge-in & Interruption (LiveKit Native)**
-  - [ ] 4.23 Configure LiveKit agent for barge-in: agent listens while speaking, detects user speech via VAD
-  - [ ] 4.24 Implement interrupt handling: on user speech detection, pause TTS, process user input, decide resume/new-response
+  - [x] 4.23 Configure LiveKit agent for barge-in: agent listens while speaking, detects user speech via VAD
+  - [x] 4.24 Implement interrupt handling: on user speech detection, pause TTS, process user input, decide resume/new-response
 
-- [ ] **5.0 Mobile App — LiveKit Integration**
+- [x] **5.0 Mobile App — LiveKit Integration**
 
   **Project Setup**
-  - [ ] 5.1 Initialize React Native project with TypeScript, configure navigation (React Navigation), link shared packages
-  - [ ] 5.2 Install and configure `@livekit/react-native` SDK
-  - [ ] 5.3 Implement `livekit-token.ts`: service to fetch room access token from backend API
+  - [x] 5.1 Initialize React Native project with TypeScript, configure navigation (React Navigation), link shared packages
+  - [x] 5.2 Install and configure `@livekit/react-native` SDK
+  - [x] 5.3 Implement `livekit-token.ts`: service to fetch room access token from backend API
 
   **Onboarding Screens**
-  - [ ] 5.4 Implement `Welcome.tsx`: splash screen with value proposition, "Quick Start" and "Personalize" buttons
-  - [ ] 5.5 Implement `ConnectAccount.tsx`: OAuth buttons for Outlook and Gmail, loading state during sync, success/error feedback
-  - [ ] 5.6 Implement `VIPSelection.tsx`: display suggested contacts (8-12), toggle VIP status, search/add, "Skip for now"
-  - [ ] 5.7 Implement `TopicSelection.tsx`: display suggested topic chips (6-10), tap to select/deselect, manual add, "Skip for now"
-  - [ ] 5.8 Implement `KeywordSelection.tsx`: display default + suggested keywords, tap to select/deselect, manual add, "Skip for now"
-  - [ ] 5.9 Implement `Confirmation.tsx`: display summary of VIPs, topics, keywords; "Start My First Briefing" button
+  - [x] 5.4 Implement `Welcome.tsx`: splash screen with value proposition, "Quick Start" and "Personalize" buttons
+  - [x] 5.5 Implement `ConnectAccount.tsx`: OAuth buttons for Outlook and Gmail, loading state during sync, success/error feedback
+  - [x] 5.6 Implement `VIPSelection.tsx`: display suggested contacts (8-12), toggle VIP status, search/add, "Skip for now"
+  - [x] 5.7 Implement `TopicSelection.tsx`: display suggested topic chips (6-10), tap to select/deselect, manual add, "Skip for now"
+  - [x] 5.8 Implement `KeywordSelection.tsx`: display default + suggested keywords, tap to select/deselect, manual add, "Skip for now"
+  - [x] 5.9 Implement `Confirmation.tsx`: display summary of VIPs, topics, keywords; "Start My First Briefing" button
 
   **Briefing Room (LiveKit)**
-  - [ ] 5.10 Implement `LiveKitRoom.tsx`: wrapper component using `@livekit/react-native` `LiveKitRoom`, `RoomAudioRenderer`
-  - [ ] 5.11 Implement `BriefingRoom.tsx`: main briefing UI with LiveKit room connection, minimal in-motion controls
-  - [ ] 5.12 Implement `useLiveKitRoom.ts`: hook for connecting to room, handling connection state, auto-reconnect
-  - [ ] 5.13 Implement `PTTButton.tsx`: push-to-talk that sends data message to agent (or enables mic track)
-  - [ ] 5.14 Implement visual feedback for agent speaking vs listening state
+  - [x] 5.10 Implement `LiveKitRoom.tsx`: wrapper component using `@livekit/react-native` `LiveKitRoom`, `RoomAudioRenderer`
+  - [x] 5.11 Implement `BriefingRoom.tsx`: main briefing UI with LiveKit room connection, minimal in-motion controls
+  - [x] 5.12 Implement `useLiveKitRoom.ts`: hook for connecting to room, handling connection state, auto-reconnect
+  - [x] 5.13 Implement `PTTButton.tsx`: push-to-talk that sends data message to agent (or enables mic track)
+  - [x] 5.14 Implement visual feedback for agent speaking vs listening state
 
   **Dead Zone Handling (Network Resilience)**
-  - [ ] 5.15 Implement `useConnectionQuality.ts`: hook that subscribes to LiveKit `ConnectionQuality` events
-  - [ ] 5.16 Implement dead zone handling: on `ConnectionQuality.Poor` or `Lost`, show "Connection lost" overlay, pause UI
-  - [ ] 5.17 Implement auto-resume: on `ConnectionQuality.Good` restoration, reconnect to room, resume briefing from last position (via Redis state)
-  - [ ] 5.18 Implement `ConnectionQualityIndicator.tsx`: visual indicator (green/yellow/red) for real-time quality
+  - [x] 5.15 Implement `useConnectionQuality.ts`: hook that subscribes to LiveKit `ConnectionQuality` events
+  - [x] 5.16 Implement dead zone handling: on `ConnectionQuality.Poor` or `Lost`, show "Connection lost" overlay, pause UI
+  - [x] 5.17 Implement auto-resume: on `ConnectionQuality.Good` restoration, reconnect to room, resume briefing from last position (via Redis state)
+  - [x] 5.18 Implement `ConnectionQualityIndicator.tsx`: visual indicator (green/yellow/red) for real-time quality
 
   **Settings & Utilities**
-  - [ ] 5.19 Implement `Settings.tsx`: manage VIPs, keywords, topics, muted senders, verbosity preference, language variant
-  - [ ] 5.20 Implement `PrivacyDashboard.tsx`: show stored data, retention periods, "Clear My Data" button, link to revoke permissions
-  - [ ] 5.21 Implement `PendingActions.tsx`: list of queued commands (failed due to network), retry button, clear option
-  - [ ] 5.22 Implement `SyncStatus.tsx`: indicator showing sync state (syncing, synced, error), tap for details
-  - [ ] 5.23 Implement `useNetworkStatus.ts`: hook monitoring device connectivity, triggering offline queue sync on reconnect
-  - [ ] 5.24 Implement `offline-queue.ts`: queue failed commands, persist to storage, retry on connectivity restore, max 3 retries
-  - [ ] 5.25 Implement quiet mode: reduce/disable notifications, accessible via voice ("quiet mode on/off")
-  - [ ] 5.26 Implement emergency stop: "stop" / "cancel" voice command (handled by agent) halts briefing
-  - [ ] 5.27 Implement second account connection flow: mini-onboarding for adding Outlook/Gmail after initial setup
+  - [x] 5.19 Implement `Settings.tsx`: manage VIPs, keywords, topics, muted senders, verbosity preference, language variant
+  - [x] 5.20 Implement `PrivacyDashboard.tsx`: show stored data, retention periods, "Clear My Data" button, link to revoke permissions
+  - [x] 5.21 Implement `PendingActions.tsx`: list of queued commands (failed due to network), retry button, clear option
+  - [x] 5.22 Implement `SyncStatus.tsx`: indicator showing sync state (syncing, synced, error), tap for details
+  - [x] 5.23 Implement `useNetworkStatus.ts`: hook monitoring device connectivity, triggering offline queue sync on reconnect
+  - [x] 5.24 Implement `offline-queue.ts`: queue failed commands, persist to storage, retry on connectivity restore, max 3 retries
+  - [x] 5.25 Implement quiet mode: reduce/disable notifications, accessible via voice ("quiet mode on/off")
+  - [x] 5.26 Implement emergency stop: "stop" / "cancel" voice command (handled by agent) halts briefing
+  - [x] 5.27 Implement second account connection flow: mini-onboarding for adding Outlook/Gmail after initial setup
 
-- [ ] **6.0 Desktop App — Drafts Review, Audit Trail, Settings Sync**
-  - [ ] 6.1 Initialize Electron project with React renderer, TypeScript, link shared packages
-  - [ ] 6.2 Implement OAuth flows for desktop: deep link handling or browser redirect for Outlook and Gmail
-  - [ ] 6.3 Implement `DraftsList.tsx`: list "Drafts Pending Review" with filters (topic, sender, urgency, source), draft count badge
-  - [ ] 6.4 Implement `DraftCard.tsx`: draft preview (recipient, subject snippet, red-flag indicator, source badge, created date)
-  - [ ] 6.5 Implement `DraftDetail.tsx`: full draft content, original thread context, red-flag rationale, edit capability, "Approve & Send" button
-  - [ ] 6.6 Implement draft editing: rich text editor for modifying draft before sending
-  - [ ] 6.7 Implement "Approve & Send": user-initiated send via appropriate adapter (based on `source`), confirmation dialog, success/error feedback
-  - [ ] 6.8 Implement `SessionActivity.tsx`: per-session audit log showing all actions (timestamp, action, target, outcome)
-  - [ ] 6.9 Implement `AllActivity.tsx`: filterable history of all sessions, date range picker, action type filter
-  - [ ] 6.10 Implement `ActivityRow.tsx`: single audit entry display with undo button (if applicable)
-  - [ ] 6.11 Implement `UndoButton.tsx`: trigger undo for individual or batch-selected actions, confirmation dialog
-  - [ ] 6.12 Implement batch undo: select multiple actions in activity view, undo all at once (within 24-hour window)
-  - [ ] 6.13 Implement `audit-trail.ts`: store audit entries (encrypted), 30-day default retention, configurable
-  - [ ] 6.14 Implement `export.ts`: export audit trail to CSV and JSON formats, file save dialog
-  - [ ] 6.15 Implement `Settings.tsx`: mirror mobile settings (VIPs, keywords, verbosity), sync status
-  - [ ] 6.16 Implement `PrivacyDashboard.tsx`: mirror mobile privacy dashboard
-  - [ ] 6.17 Implement `draft-sync.ts`: sync draft references between mobile and desktop, real-time updates via API
-  - [ ] 6.18 Implement `preferences-sync.ts`: sync user preferences between mobile and desktop (conflict resolution: last-write-wins)
+- [x] **6.0 Desktop App — Drafts Review, Audit Trail, Settings Sync**
+  - [x] 6.1 Initialize Electron project with React renderer, TypeScript, link shared packages
+  - [x] 6.2 Implement OAuth flows for desktop: deep link handling or browser redirect for Outlook and Gmail
+  - [x] 6.3 Implement `DraftsList.tsx`: list "Drafts Pending Review" with filters (topic, sender, urgency, source), draft count badge
+  - [x] 6.4 Implement `DraftCard.tsx`: draft preview (recipient, subject snippet, red-flag indicator, source badge, created date)
+  - [x] 6.5 Implement `DraftDetail.tsx`: full draft content, original thread context, red-flag rationale, edit capability, "Approve & Send" button
+  - [x] 6.6 Implement draft editing: rich text editor for modifying draft before sending
+  - [x] 6.7 Implement "Approve & Send": user-initiated send via appropriate adapter (based on `source`), confirmation dialog, success/error feedback
+  - [x] 6.8 Implement `SessionActivity.tsx`: per-session audit log showing all actions (timestamp, action, target, outcome)
+  - [x] 6.9 Implement `AllActivity.tsx`: filterable history of all sessions, date range picker, action type filter
+  - [x] 6.10 Implement `ActivityRow.tsx`: single audit entry display with undo button (if applicable)
+  - [x] 6.11 Implement `UndoButton.tsx`: trigger undo for individual or batch-selected actions, confirmation dialog
+  - [x] 6.12 Implement batch undo: select multiple actions in activity view, undo all at once (within 24-hour window)
+  - [x] 6.13 Implement `audit-trail.ts`: store audit entries (encrypted), 30-day default retention, configurable
+  - [x] 6.14 Implement `export.ts`: export audit trail to CSV and JSON formats, file save dialog
+  - [x] 6.15 Implement `Settings.tsx`: mirror mobile settings (VIPs, keywords, verbosity), sync status
+  - [x] 6.16 Implement `PrivacyDashboard.tsx`: mirror mobile privacy dashboard
+  - [x] 6.17 Implement `draft-sync.ts`: sync draft references between mobile and desktop, real-time updates via API
+  - [x] 6.18 Implement `preferences-sync.ts`: sync user preferences between mobile and desktop (conflict resolution: last-write-wins)
 
-- [ ] **7.0 Backend API**
-  - [ ] 7.1 Initialize `apps/api` with Express or Fastify, TypeScript
-  - [ ] 7.2 Implement `/auth/microsoft/callback` and `/auth/google/callback` OAuth callback routes
-  - [ ] 7.3 Implement `/livekit/token` endpoint: generate room access tokens for authenticated users
-  - [ ] 7.4 Implement `/sync/drafts` endpoint: CRUD for draft references, source tracking
-  - [ ] 7.5 Implement `/sync/preferences` endpoint: sync user preferences (VIPs, keywords, etc.)
-  - [ ] 7.6 Implement `/webhooks/livekit` endpoint: handle LiveKit room events for analytics/logging
-  - [ ] 7.7 Implement JWT authentication middleware for all protected routes
-  - [ ] 7.8 Create `Dockerfile` for API deployment
+- [x] **7.0 Backend API**
+  - [x] 7.1 Initialize `apps/api` with Express or Fastify, TypeScript
+  - [x] 7.2 Implement `/auth/microsoft/callback` and `/auth/google/callback` OAuth callback routes
+  - [x] 7.3 Implement `/livekit/token` endpoint: generate room access tokens for authenticated users
+  - [x] 7.4 Implement `/sync/drafts` endpoint: CRUD for draft references, source tracking
+  - [x] 7.5 Implement `/sync/preferences` endpoint: sync user preferences (VIPs, keywords, etc.)
+  - [x] 7.6 Implement `/webhooks/livekit` endpoint: handle LiveKit room events for analytics/logging
+  - [x] 7.7 Implement JWT authentication middleware for all protected routes
+  - [x] 7.8 Create `Dockerfile` for API deployment
 
 ---
 

@@ -14,10 +14,12 @@ function createTestEmail(overrides: Partial<StandardEmail> = {}): StandardEmail 
     to: [{ email: 'recipient@example.com', name: 'Recipient' }],
     cc: [],
     bcc: [],
+    snippet: 'Test snippet',
+    body: 'Test body',
     receivedAt: new Date(),
-    hasAttachments: false,
+    isRead: false,
+    isStarred: false,
     labels: [],
-    isPendingReview: false,
   };
 
   return { ...defaults, ...overrides };

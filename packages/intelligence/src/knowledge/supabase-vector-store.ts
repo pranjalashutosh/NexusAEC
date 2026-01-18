@@ -5,6 +5,7 @@
  * Supports RAG (Retrieval Augmented Generation) workflows.
  */
 
+import { logger } from '@nexus-aec/logger';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -172,7 +173,6 @@ export class SupabaseVectorStore {
   private client: SupabaseClient;
   private tableName: string;
   private debug: boolean;
-  private ownClient: boolean;
 
   constructor(options: SupabaseVectorStoreOptions) {
     this.tableName = options.tableName ?? 'documents';
@@ -180,10 +180,8 @@ export class SupabaseVectorStore {
 
     if (options.client) {
       this.client = options.client;
-      this.ownClient = false;
     } else {
       this.client = createClient(options.supabaseUrl, options.supabaseKey);
-      this.ownClient = true;
     }
   }
 
@@ -213,7 +211,7 @@ export class SupabaseVectorStore {
       }
 
       if (this.debug) {
-        console.log(`[SupabaseVectorStore] Inserted document ${data.id}`);
+        logger.debug('SupabaseVectorStore inserted document', { documentId: data.id });
       }
 
       return data.id;

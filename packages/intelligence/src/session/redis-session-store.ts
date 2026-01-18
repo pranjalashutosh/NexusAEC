@@ -6,8 +6,10 @@
  */
 
 import Redis, { type RedisOptions } from 'ioredis';
-import type { DriveState } from './drive-state';
+
 import { validateDriveState } from './drive-state';
+
+import type { DriveState, UserAction } from './drive-state';
 
 /**
  * Configuration options for RedisSessionStore
@@ -64,11 +66,11 @@ interface SerializedDriveState {
     currentEmailId?: string;
     depth: number;
   };
-  interruptStatus: string;
+  interruptStatus: DriveState['interruptStatus'];
   startedAt: string; // ISO string
   updatedAt: string; // ISO string
   lastAction?: {
-    type: string;
+    type: UserAction['type'];
     timestamp: string; // ISO string
     utterance?: string;
     target?: string;
@@ -148,10 +150,18 @@ export class RedisSessionStore {
       this.client = options.client;
       this.ownClient = false;
     } else if (options.redisUrl) {
-      this.client = new Redis(options.redisUrl, options.redis);
+      if (options.redis) {
+        this.client = new Redis(options.redisUrl, options.redis);
+      } else {
+        this.client = new Redis(options.redisUrl);
+      }
       this.ownClient = true;
     } else {
-      this.client = new Redis(options.redis);
+      if (options.redis) {
+        this.client = new Redis(options.redis);
+      } else {
+        this.client = new Redis();
+      }
       this.ownClient = true;
     }
 
@@ -191,19 +201,26 @@ export class RedisSessionStore {
    */
   private serialize(state: DriveState): string {
     const serialized: SerializedDriveState = {
-      ...state,
+      sessionId: state.sessionId,
+      userId: state.userId,
+      position: state.position,
+      interruptStatus: state.interruptStatus,
       startedAt: state.startedAt.toISOString(),
       updatedAt: state.updatedAt.toISOString(),
-      lastAction: state.lastAction
+      ...(state.lastAction
         ? {
-            ...state.lastAction,
-            timestamp: state.lastAction.timestamp.toISOString(),
+            lastAction: {
+              ...state.lastAction,
+              timestamp: state.lastAction.timestamp.toISOString(),
+            },
           }
-        : undefined,
+        : {}),
       briefingSnapshot: {
         ...state.briefingSnapshot,
         generatedAt: state.briefingSnapshot.generatedAt.toISOString(),
       },
+      metadata: state.metadata,
+      ttl: state.ttl,
     };
 
     return JSON.stringify(serialized);
@@ -216,19 +233,26 @@ export class RedisSessionStore {
     const parsed = JSON.parse(data) as SerializedDriveState;
 
     const state: DriveState = {
-      ...parsed,
+      sessionId: parsed.sessionId,
+      userId: parsed.userId,
+      position: parsed.position,
+      interruptStatus: parsed.interruptStatus,
       startedAt: new Date(parsed.startedAt),
       updatedAt: new Date(parsed.updatedAt),
-      lastAction: parsed.lastAction
+      ...(parsed.lastAction
         ? {
-            ...parsed.lastAction,
-            timestamp: new Date(parsed.lastAction.timestamp),
+            lastAction: {
+              ...parsed.lastAction,
+              timestamp: new Date(parsed.lastAction.timestamp),
+            },
           }
-        : undefined,
+        : {}),
       briefingSnapshot: {
         ...parsed.briefingSnapshot,
         generatedAt: new Date(parsed.briefingSnapshot.generatedAt),
       },
+      metadata: parsed.metadata,
+      ttl: parsed.ttl,
     };
 
     // Validate deserialized state

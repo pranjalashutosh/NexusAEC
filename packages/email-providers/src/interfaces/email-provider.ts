@@ -382,10 +382,10 @@ export function createStandardId(source: EmailSource, providerId: string): strin
  */
 export function parseStandardId(standardId: string): { source: EmailSource; providerId: string } | null {
   const parts = standardId.split(':');
-  if (parts.length < 2) return null;
+  if (parts.length < 2) {return null;}
 
   const sourceStr = parts[0]?.toUpperCase();
-  if (sourceStr !== 'OUTLOOK' && sourceStr !== 'GMAIL') return null;
+  if (sourceStr !== 'OUTLOOK' && sourceStr !== 'GMAIL') {return null;}
 
   return {
     source: sourceStr,

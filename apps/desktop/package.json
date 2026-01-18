@@ -1,0 +1,59 @@
+{
+  "name": "@nexus-aec/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NexusAEC Desktop App - Draft Review, Audit Trail, Settings Sync",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
+    "dev:main": "tsc -p tsconfig.main.json --watch",
+    "dev:renderer": "vite",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "vite build",
+    "start": "electron .",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "package": "electron-builder",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@nexus-aec/shared-types": "workspace:*",
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.9",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "typescript": "^5.4.5",
+    "vite": "^5.4.0",
+    "vitest": "^2.0.5"
+  },
+  "build": {
+    "appId": "com.nexusaec.desktop",
+    "productName": "NexusAEC",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

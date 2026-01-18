@@ -7,15 +7,16 @@
  * @see https://learn.microsoft.com/en-us/graph/api/resources/mail-api-overview
  */
 
-import type {
-  EmailProvider,
-  EmailProviderConfig,
-  EmailProviderError,
-} from '../interfaces/email-provider';
 import {
   EmailProviderError as EmailProviderErrorClass,
   createStandardId,
   parseStandardId,
+} from '../interfaces/email-provider';
+
+import type {
+  EmailProvider,
+  EmailProviderConfig,
+  EmailProviderError,
 } from '../interfaces/email-provider';
 import type {
   EmailSource,
@@ -256,7 +257,7 @@ export class OutlookAdapter implements EmailProvider {
           const thread = await this.fetchThread(createStandardId('OUTLOOK', msg.conversationId));
           if (thread) {
             threads.push(thread);
-            if (threads.length >= pageSize) break;
+            if (threads.length >= pageSize) {break;}
           }
         }
       }
@@ -279,7 +280,7 @@ export class OutlookAdapter implements EmailProvider {
 
   async fetchEmail(emailId: string): Promise<StandardEmail | null> {
     const parsed = parseStandardId(emailId);
-    if (!parsed || parsed.source !== 'OUTLOOK') return null;
+    if (!parsed || parsed.source !== 'OUTLOOK') {return null;}
 
     try {
       const message = await this.graphRequest<GraphMessage>(
@@ -287,21 +288,21 @@ export class OutlookAdapter implements EmailProvider {
       );
       return this.normalizeMessage(message);
     } catch (error) {
-      if (this.isNotFoundError(error)) return null;
+      if (this.isNotFoundError(error)) {return null;}
       throw this.wrapError(error, 'Failed to fetch email');
     }
   }
 
   async fetchThread(threadId: string): Promise<StandardThread | null> {
     const parsed = parseStandardId(threadId);
-    if (!parsed || parsed.source !== 'OUTLOOK') return null;
+    if (!parsed || parsed.source !== 'OUTLOOK') {return null;}
 
     try {
       const response = await this.graphRequest<GraphPagedResponse<GraphMessage>>(
         `/me/messages?$filter=conversationId eq '${parsed.providerId}'&$orderby=receivedDateTime asc&$expand=attachments`
       );
 
-      if (response.value.length === 0) return null;
+      if (response.value.length === 0) {return null;}
 
       const messages = response.value.map((msg) => this.normalizeMessage(msg));
       const latestMessage = messages[messages.length - 1]!;
@@ -309,7 +310,7 @@ export class OutlookAdapter implements EmailProvider {
       // Collect unique participants
       const participantMap = new Map<string, EmailAddress>();
       for (const msg of messages) {
-        if (msg.from) participantMap.set(msg.from.email, msg.from);
+        if (msg.from) {participantMap.set(msg.from.email, msg.from);}
         for (const recipient of [...msg.to, ...msg.cc]) {
           participantMap.set(recipient.email, recipient);
         }
@@ -330,17 +331,17 @@ export class OutlookAdapter implements EmailProvider {
         labels: latestMessage.labels,
       };
     } catch (error) {
-      if (this.isNotFoundError(error)) return null;
+      if (this.isNotFoundError(error)) {return null;}
       throw this.wrapError(error, 'Failed to fetch thread');
     }
   }
 
   async fetchThreadMessages(threadId: string): Promise<StandardEmail[]> {
     const thread = await this.fetchThread(threadId);
-    if (!thread) return [];
+    if (!thread) {return [];}
 
     const parsed = parseStandardId(threadId);
-    if (!parsed) return [];
+    if (!parsed) {return [];}
 
     const response = await this.graphRequest<GraphPagedResponse<GraphMessage>>(
       `/me/messages?$filter=conversationId eq '${parsed.providerId}'&$orderby=receivedDateTime asc&$expand=attachments`
@@ -371,7 +372,7 @@ export class OutlookAdapter implements EmailProvider {
 
     for (const emailId of emailIds) {
       const msgParsed = parseStandardId(emailId);
-      if (!msgParsed || msgParsed.source !== 'OUTLOOK') continue;
+      if (!msgParsed || msgParsed.source !== 'OUTLOOK') {continue;}
 
       await this.graphRequest(`/me/messages/${msgParsed.providerId}/move`, {
         method: 'POST',
@@ -384,10 +385,10 @@ export class OutlookAdapter implements EmailProvider {
     // Outlook uses categories instead of labels
     for (const emailId of emailIds) {
       const email = await this.fetchEmail(emailId);
-      if (!email) continue;
+      if (!email) {continue;}
 
       const parsed = parseStandardId(emailId);
-      if (!parsed) continue;
+      if (!parsed) {continue;}
 
       const existingCategories = email.labels;
       const newCategories = [...new Set([...existingCategories, ...labelIds])];
@@ -402,10 +403,10 @@ export class OutlookAdapter implements EmailProvider {
   async removeLabels(emailIds: string[], labelIds: string[]): Promise<void> {
     for (const emailId of emailIds) {
       const email = await this.fetchEmail(emailId);
-      if (!email) continue;
+      if (!email) {continue;}
 
       const parsed = parseStandardId(emailId);
-      if (!parsed) continue;
+      if (!parsed) {continue;}
 
       const newCategories = email.labels.filter((c) => !labelIds.includes(c));
 
@@ -429,7 +430,7 @@ export class OutlookAdapter implements EmailProvider {
   async deleteEmails(emailIds: string[]): Promise<void> {
     for (const emailId of emailIds) {
       const parsed = parseStandardId(emailId);
-      if (!parsed || parsed.source !== 'OUTLOOK') continue;
+      if (!parsed || parsed.source !== 'OUTLOOK') {continue;}
 
       await this.graphRequest(`/me/messages/${parsed.providerId}`, {
         method: 'DELETE',
@@ -461,7 +462,7 @@ export class OutlookAdapter implements EmailProvider {
 
   async fetchDraft(draftId: string): Promise<StandardDraft | null> {
     const parsed = parseStandardId(draftId);
-    if (!parsed || parsed.source !== 'OUTLOOK') return null;
+    if (!parsed || parsed.source !== 'OUTLOOK') {return null;}
 
     try {
       const message = await this.graphRequest<GraphMessage>(
@@ -469,7 +470,7 @@ export class OutlookAdapter implements EmailProvider {
       );
       return this.normalizeDraft(message);
     } catch (error) {
-      if (this.isNotFoundError(error)) return null;
+      if (this.isNotFoundError(error)) {return null;}
       throw this.wrapError(error, 'Failed to fetch draft');
     }
   }
@@ -576,7 +577,7 @@ export class OutlookAdapter implements EmailProvider {
 
   async deleteDraft(draftId: string): Promise<void> {
     const parsed = parseStandardId(draftId);
-    if (!parsed || parsed.source !== 'OUTLOOK') return;
+    if (!parsed || parsed.source !== 'OUTLOOK') {return;}
 
     await this.graphRequest(`/me/messages/${parsed.providerId}`, {
       method: 'DELETE',
@@ -665,7 +666,7 @@ export class OutlookAdapter implements EmailProvider {
 
   async fetchCalendarEvent(eventId: string): Promise<CalendarEvent | null> {
     const parsed = parseStandardId(eventId);
-    if (!parsed || parsed.source !== 'OUTLOOK') return null;
+    if (!parsed || parsed.source !== 'OUTLOOK') {return null;}
 
     try {
       const event = await this.graphRequest<GraphEvent>(
@@ -673,7 +674,7 @@ export class OutlookAdapter implements EmailProvider {
       );
       return this.normalizeEvent(event);
     } catch (error) {
-      if (this.isNotFoundError(error)) return null;
+      if (this.isNotFoundError(error)) {return null;}
       throw this.wrapError(error, 'Failed to fetch calendar event');
     }
   }
@@ -805,7 +806,7 @@ export class OutlookAdapter implements EmailProvider {
   ): Promise<void> {
     for (const emailId of emailIds) {
       const parsed = parseStandardId(emailId);
-      if (!parsed || parsed.source !== 'OUTLOOK') continue;
+      if (!parsed || parsed.source !== 'OUTLOOK') {continue;}
 
       await this.graphRequest(`/me/messages/${parsed.providerId}`, {
         method: 'PATCH',
@@ -1117,7 +1118,7 @@ export class OutlookAdapter implements EmailProvider {
   }
 
   private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) return error.message;
+    if (error instanceof Error) {return error.message;}
     return String(error);
   }
 }

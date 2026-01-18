@@ -132,7 +132,6 @@ export {
   type SafetyDocument,
   type SafetyDocumentDocument,
   type IngestionSource,
-  type IngestionResult,
   type AssetQueryOptions,
   type AssetSearchResult,
   validateAsset,
@@ -172,3 +171,74 @@ export {
   type IngestionProgress,
   type IngestionResult,
 } from './knowledge/asset-ingestion';
+
+// Export RAG retriever
+export {
+  RAGRetriever,
+  type RAGQueryOptions,
+  type RAGResult,
+  type RetrievalStats,
+  type RAGRetrieverOptions,
+} from './knowledge/rag-retriever';
+
+// Export LLM client
+export {
+  LLMClient,
+  type LLMMessage,
+  type MessageRole,
+  type LLMCompletionOptions,
+  type LLMCompletionResult,
+  type StreamChunkCallback,
+  type RateLimiterOptions,
+  type RetryOptions,
+  type LLMClientOptions,
+} from './knowledge/llm-client';
+
+// Export Email summarizer
+export {
+  EmailSummarizer,
+  type SummarizationMode,
+  type EmailSummary,
+  type EmailSummarizerOptions,
+} from './knowledge/email-summarizer';
+
+// Export Narrative generator
+export {
+  NarrativeGenerator,
+  type NarrativeStyle,
+  type ScriptSection,
+  type ScriptSegment,
+  type BriefingScript,
+  type BriefingInput,
+  type NarrativeGeneratorOptions,
+} from './knowledge/narrative-generator';
+
+// Export Explanation generator
+export {
+  ExplanationGenerator,
+  type ExplanationStyle,
+  type RedFlagExplanation,
+  type ExplanationGeneratorOptions,
+} from './knowledge/explanation-generator';
+
+// Export Preferences store
+export {
+  PreferencesStore,
+  type VipContact,
+  type CustomKeyword,
+  type TopicPreference,
+  type MutedSender,
+  type UserPreferences,
+  type PreferencesStoreOptions,
+  type ConflictResolution,
+} from './knowledge/preferences-store';
+
+// Export Feedback learner
+export {
+  FeedbackLearner,
+  type FeedbackType,
+  type FeedbackRecord,
+  type WeightAdjustments,
+  type LearningStats,
+  type FeedbackLearnerOptions,
+} from './knowledge/feedback-learner';

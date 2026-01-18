@@ -11,9 +11,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { SupabaseVectorStore, type VectorDocumentInsert } from './supabase-vector-store';
-import { parseAssetCSV } from './csv-parser';
-import { extractPDF } from './pdf-extractor';
+
 import {
   type Asset,
   type SafetyDocument,
@@ -22,6 +20,13 @@ import {
   assetToContent,
   safetyDocumentToContent,
 } from './asset-types';
+import { parseAssetCSV } from './csv-parser';
+import { extractPDF } from './pdf-extractor';
+import {
+  SupabaseVectorStore,
+  type SourceType,
+  type VectorDocumentInsert,
+} from './supabase-vector-store';
 
 /**
  * Embedding generator function type
@@ -182,7 +187,7 @@ export class AssetIngestion {
       continueOnError: options.continueOnError ?? true,
       clearExisting: options.clearExisting ?? false,
       maxConcurrency: options.maxConcurrency ?? 5,
-      onProgress: options.onProgress,
+      ...(options.onProgress ? { onProgress: options.onProgress } : {}),
     };
   }
 
@@ -235,11 +240,16 @@ export class AssetIngestion {
       });
 
       // Convert parse errors to ingestion errors
-      const errors = parseResult.errors.map((err) => ({
-        itemId: err.assetId,
-        error: err.error,
-        index: err.row,
-      }));
+      const errors = parseResult.errors.map((err) => {
+        const e: { itemId?: string; error: string; index?: number } = {
+          error: err.error,
+          index: err.row,
+        };
+        if (err.assetId) {
+          e.itemId = err.assetId;
+        }
+        return e;
+      });
 
       if (parseResult.assets.length === 0) {
         return {
@@ -333,7 +343,7 @@ export class AssetIngestion {
         title: metadata.title,
         content: pdfResult.text,
         type: metadata.type,
-        relatedAssets: metadata.relatedAssets,
+        relatedAssets: metadata.relatedAssets ?? [],
         metadata: {
           ...metadata.metadata,
           pageCount: String(pdfResult.pageCount),
@@ -371,7 +381,7 @@ export class AssetIngestion {
 
     // Clear existing data if requested
     if (this.options.clearExisting) {
-      await this.vectorStore.deleteBySourceType('asset');
+      await this.vectorStore.deleteBySourceType('ASSET');
     }
 
     // Report loading phase
@@ -390,8 +400,9 @@ export class AssetIngestion {
       for (let i = 0; i < assets.length; i++) {
         if (!validateAsset(assets[i])) {
           result.failed++;
+          const itemId = assets[i]?.assetId;
           result.errors.push({
-            itemId: assets[i]?.assetId,
+            ...(itemId ? { itemId } : {}),
             error: 'Asset validation failed',
             index: i,
           });
@@ -413,12 +424,12 @@ export class AssetIngestion {
     const batches = this.createBatches(validAssets, this.options.batchSize);
 
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex];
+      const batch = batches[batchIndex] ?? [];
 
       try {
         await this.processBatch(
           batch,
-          'asset',
+          'ASSET',
           assetToContent,
           result,
           batchIndex * this.options.batchSize
@@ -476,7 +487,7 @@ export class AssetIngestion {
 
     // Clear existing data if requested
     if (this.options.clearExisting) {
-      await this.vectorStore.deleteBySourceType('safety_manual');
+      await this.vectorStore.deleteBySourceType('SAFETY_MANUAL');
     }
 
     // Report loading phase
@@ -495,8 +506,9 @@ export class AssetIngestion {
       for (let i = 0; i < documents.length; i++) {
         if (!validateSafetyDocument(documents[i])) {
           result.failed++;
+          const itemId = documents[i]?.id;
           result.errors.push({
-            itemId: documents[i]?.id,
+            ...(itemId ? { itemId } : {}),
             error: 'Safety document validation failed',
             index: i,
           });
@@ -518,12 +530,12 @@ export class AssetIngestion {
     const batches = this.createBatches(validDocuments, this.options.batchSize);
 
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex];
+      const batch = batches[batchIndex] ?? [];
 
       try {
         await this.processBatch(
           batch,
-          'safety_manual',
+          'SAFETY_MANUAL',
           safetyDocumentToContent,
           result,
           batchIndex * this.options.batchSize
@@ -568,7 +580,7 @@ export class AssetIngestion {
    */
   private async processBatch<T extends Asset | SafetyDocument>(
     batch: T[],
-    sourceType: 'asset' | 'safety_manual',
+    sourceType: SourceType,
     toContent: (item: T) => string,
     result: IngestionResult,
     baseIndex: number
@@ -600,11 +612,20 @@ export class AssetIngestion {
     for (let i = 0; i < batch.length; i++) {
       const item = batch[i];
       const embeddingResult = embeddingResults[i];
+      if (!item || !embeddingResult) {
+        result.failed++;
+        result.errors.push({
+          error: 'Internal error: missing batch item or embedding result',
+          index: baseIndex + i,
+        });
+        continue;
+      }
 
       if (embeddingResult.error) {
         result.failed++;
+        const itemId = 'assetId' in item ? item.assetId : item.id;
         result.errors.push({
-          itemId: 'assetId' in item ? item.assetId : item.id,
+          ...(itemId ? { itemId } : {}),
           error: embeddingResult.error,
           index: baseIndex + i,
         });
@@ -632,8 +653,10 @@ export class AssetIngestion {
         const errorMessage = error instanceof Error ? error.message : String(error);
         result.failed += documents.length;
         documents.forEach((doc, i) => {
+          const itemId =
+            typeof doc.metadata?.['id'] === 'string' ? (doc.metadata['id']) : undefined;
           result.errors.push({
-            itemId: doc.metadata.id as string,
+            ...(itemId ? { itemId } : {}),
             error: `Failed to store: ${errorMessage}`,
             index: baseIndex + i,
           });
@@ -647,8 +670,8 @@ export class AssetIngestion {
    */
   private async generateEmbeddingWithRetry(
     text: string,
-    item: Asset | SafetyDocument,
-    index: number,
+    _item: Asset | SafetyDocument,
+    _index: number,
     retries = 3
   ): Promise<{ embedding?: number[]; error?: string }> {
     for (let attempt = 0; attempt < retries; attempt++) {
@@ -683,6 +706,9 @@ export class AssetIngestion {
     for (let i = 0; i < promiseFns.length; i++) {
       const index = i;
       const promiseFn = promiseFns[i];
+      if (!promiseFn) {
+        continue;
+      }
 
       const p = promiseFn().then((result) => {
         results[index] = result;

@@ -5,8 +5,10 @@
  * Validates required fields and handles optional metadata.
  */
 
-import { parse } from 'csv-parse/sync';
 import fs from 'fs';
+
+import { parse } from 'csv-parse/sync';
+
 import {
   type Asset,
   type AssetCriticality,
@@ -209,7 +211,11 @@ export function parseAssetCSV(filePath: string, options: CSVParseOptions = {}): 
       return result;
     }
 
-    const headers = Object.keys(records[0]);
+    const firstRecord = records[0];
+    if (!firstRecord) {
+      return result;
+    }
+    const headers = Object.keys(firstRecord);
 
     // Map column names to standard property names
     const columnMap = buildColumnMap(headers, columnMapping);
@@ -245,13 +251,17 @@ export function parseAssetCSV(filePath: string, options: CSVParseOptions = {}): 
         result.stats.successCount++;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        const assetId = record[columnMap['assetId']] || undefined;
+        const assetIdCol = columnMap['assetId'];
+        const assetIdValue = assetIdCol ? record[assetIdCol] : undefined;
 
-        result.errors.push({
+        const rowErr: { row: number; assetId?: string; error: string } = {
           row: rowNumber,
-          assetId,
           error: errorMessage,
-        });
+        };
+        if (assetIdValue) {
+          rowErr.assetId = assetIdValue;
+        }
+        result.errors.push(rowErr);
 
         result.stats.failureCount++;
 
@@ -321,7 +331,11 @@ export function parseAssetCSVString(
       return result;
     }
 
-    const headers = Object.keys(records[0]);
+    const firstRecord = records[0];
+    if (!firstRecord) {
+      return result;
+    }
+    const headers = Object.keys(firstRecord);
     const columnMap = buildColumnMap(headers, columnMapping);
 
     const missingColumns = REQUIRED_COLUMNS.filter(
@@ -352,13 +366,17 @@ export function parseAssetCSVString(
         result.stats.successCount++;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        const assetId = record[columnMap['assetId']] || undefined;
+        const assetIdCol = columnMap['assetId'];
+        const assetIdValue = assetIdCol ? record[assetIdCol] : undefined;
 
-        result.errors.push({
+        const rowErr: { row: number; assetId?: string; error: string } = {
           row: rowNumber,
-          assetId,
           error: errorMessage,
-        });
+        };
+        if (assetIdValue) {
+          rowErr.assetId = assetIdValue;
+        }
+        result.errors.push(rowErr);
 
         result.stats.failureCount++;
 
@@ -423,32 +441,41 @@ function parseAssetRecord(
   columnMap: Record<string, string>,
   options: { normalizeCategories: boolean; skipValidation: boolean }
 ): Asset {
+  // Resolve column names safely (avoids "undefined cannot be used as index type")
+  const assetIdCol = columnMap['assetId'];
+  const nameCol = columnMap['name'];
+  const descCol = columnMap['description'];
+  const categoryCol = columnMap['category'];
+  const locationCol = columnMap['location'];
+  const criticalityCol = columnMap['criticality'];
+  const statusCol = columnMap['status'];
+
   // Extract required fields
-  const assetId = record[columnMap['assetId']]?.trim();
-  const name = record[columnMap['name']]?.trim();
-  const description = record[columnMap['description']]?.trim();
-  let category = record[columnMap['category']]?.trim();
-  const location = record[columnMap['location']]?.trim();
+  const assetId = assetIdCol ? record[assetIdCol]?.trim() : undefined;
+  const name = nameCol ? record[nameCol]?.trim() : undefined;
+  const description = descCol ? record[descCol]?.trim() : undefined;
+  let category = categoryCol ? record[categoryCol]?.trim() : undefined;
+  const location = locationCol ? record[locationCol]?.trim() : undefined;
 
   // Validate required fields (unless skipValidation is true)
   if (!options.skipValidation) {
-    if (!assetId) throw new Error('AssetID is required');
-    if (!name) throw new Error('Name is required');
-    if (!description) throw new Error('Description is required');
-    if (!category) throw new Error('Category is required');
-    if (!location) throw new Error('Location is required');
+    if (!assetId) {throw new Error('AssetID is required');}
+    if (!name) {throw new Error('Name is required');}
+    if (!description) {throw new Error('Description is required');}
+    if (!category) {throw new Error('Category is required');}
+    if (!location) {throw new Error('Location is required');}
   }
 
   // Normalize category if requested
   if (options.normalizeCategories) {
-    category = normalizeAssetCategory(category) as string;
+    category = normalizeAssetCategory(category ?? '');
   }
 
   // Extract optional fields
-  const criticality = record[columnMap['criticality']]?.trim() as
+  const criticality = (criticalityCol ? record[criticalityCol]?.trim() : undefined) as
     | AssetCriticality
     | undefined;
-  const status = record[columnMap['status']]?.trim() as AssetStatus | undefined;
+  const status = (statusCol ? record[statusCol]?.trim() : undefined) as AssetStatus | undefined;
 
   // Extract metadata from remaining columns
   const metadata: Record<string, string> = {};
@@ -524,7 +551,7 @@ function toCamelCase(str: string): string {
  * @returns Detected delimiter (comma, semicolon, or tab)
  */
 export function detectDelimiter(content: string): ',' | ';' | '\t' {
-  const firstLine = content.split('\n')[0];
+  const firstLine = content.split('\n')[0] ?? '';
 
   const commaCount = (firstLine.match(/,/g) || []).length;
   const semicolonCount = (firstLine.match(/;/g) || []).length;

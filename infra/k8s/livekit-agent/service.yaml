@@ -1,0 +1,25 @@
+# =============================================================================
+# LiveKit Agent Service
+# =============================================================================
+# Exposes the agent health endpoints for monitoring
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: livekit-agent
+  namespace: nexus-aec
+  labels:
+    app.kubernetes.io/name: livekit-agent
+    app.kubernetes.io/component: voice-agent
+    app.kubernetes.io/part-of: nexus-aec
+spec:
+  type: ClusterIP
+  
+  selector:
+    app.kubernetes.io/name: livekit-agent
+  
+  ports:
+    - name: health
+      port: 8080
+      targetPort: health
+      protocol: TCP

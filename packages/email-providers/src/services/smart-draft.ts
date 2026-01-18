@@ -8,8 +8,9 @@
  * - Pending review tracking for voice-created drafts
  */
 
-import type { EmailProvider } from '../interfaces/email-provider';
 import { parseStandardId } from '../interfaces/email-provider';
+
+import type { EmailProvider } from '../interfaces/email-provider';
 import type {
   EmailSource,
   StandardDraft,
@@ -304,7 +305,7 @@ export class SmartDraftService {
    */
   async deleteDraft(draftId: string): Promise<void> {
     const provider = this.getProviderForId(draftId);
-    if (!provider) return;
+    if (!provider) {return;}
 
     await provider.deleteDraft(draftId);
   }
@@ -443,7 +444,7 @@ export class SmartDraftService {
    */
   private getProviderForId(id: string): EmailProvider | undefined {
     const parsed = parseStandardId(id);
-    if (!parsed) return undefined;
+    if (!parsed) {return undefined;}
     return this.providers.get(parsed.source);
   }
 

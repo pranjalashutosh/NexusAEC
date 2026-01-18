@@ -10,8 +10,6 @@
  * - Session recovery after network drops
  */
 
-import type { RedisSessionStore } from './redis-session-store';
-import type { DriveState, UserAction } from './drive-state';
 import {
   updateDriveState,
   navigateToNextItem,
@@ -20,6 +18,9 @@ import {
   goDeeper,
   InterruptStatus,
 } from './drive-state';
+
+import type { DriveState, UserAction } from './drive-state';
+import type { RedisSessionStore } from './redis-session-store';
 
 /**
  * Transcript event from LiveKit

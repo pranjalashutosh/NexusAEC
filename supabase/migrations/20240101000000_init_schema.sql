@@ -4,14 +4,17 @@
 -- Enable pgvector extension for vector similarity search
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- Enable UUID generation
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Enable pgcrypto for gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Note: Using gen_random_uuid() which is built into PostgreSQL 13+
+-- No need for uuid-ossp extension
 
 -- =============================================================================
 -- Documents Table (Vector Store for Knowledge Base)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS documents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     content TEXT NOT NULL,
     embedding vector(1536), -- OpenAI ada-002 embedding dimension
     source_type VARCHAR(50) NOT NULL CHECK (source_type IN ('ASSET', 'SAFETY_MANUAL', 'PROCEDURE')),
@@ -35,7 +38,7 @@ CREATE INDEX IF NOT EXISTS documents_metadata_idx ON documents USING GIN (metada
 -- Assets Table (Structured asset data)
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS assets (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     asset_id VARCHAR(100) UNIQUE NOT NULL, -- e.g., "P-104"
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -56,7 +59,7 @@ CREATE INDEX IF NOT EXISTS assets_location_idx ON assets (location);
 -- User Preferences Table
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS user_preferences (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(255) UNIQUE NOT NULL,
     vips JSONB DEFAULT '[]',
     topics JSONB DEFAULT '[]',
@@ -75,7 +78,7 @@ CREATE INDEX IF NOT EXISTS user_preferences_user_id_idx ON user_preferences (use
 -- Audit Trail Table
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS audit_entries (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id VARCHAR(255) NOT NULL,
     user_id VARCHAR(255) NOT NULL,
     action_type VARCHAR(50) NOT NULL,
@@ -93,7 +96,7 @@ CREATE INDEX IF NOT EXISTS audit_entries_created_idx ON audit_entries (created_a
 -- Drafts Table (Draft references for "Drafts Pending Review")
 -- =============================================================================
 CREATE TABLE IF NOT EXISTS drafts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(255) NOT NULL,
     provider_draft_id VARCHAR(255) NOT NULL, -- ID in Gmail/Outlook
     source VARCHAR(20) NOT NULL CHECK (source IN ('OUTLOOK', 'GMAIL')),

@@ -16,10 +16,11 @@
  */
 
 import { Command } from 'commander';
-import { createClient } from '@supabase/supabase-js';
-import { OpenAI } from 'openai';
 import { config } from 'dotenv';
+import { OpenAI } from 'openai';
+
 import { SupabaseVectorStore } from '../src/knowledge/supabase-vector-store';
+
 import type { Asset, SafetyDocument } from '../src/knowledge/asset-types';
 
 // Load environment variables
@@ -146,16 +147,18 @@ async function main() {
   }
 
   try {
-    // Initialize Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const vectorStore = new SupabaseVectorStore(supabase);
+    // Initialize vector store (wraps Supabase client internally)
+    const vectorStore = new SupabaseVectorStore({
+      supabaseUrl,
+      supabaseKey: supabaseAnonKey,
+    });
 
     console.log('\n📊 NexusAEC Knowledge Base');
     console.log('─'.repeat(50));
 
     // Get counts
-    const assetCount = await vectorStore.count('asset');
-    const manualCount = await vectorStore.count('safety_manual');
+    const assetCount = await vectorStore.count('ASSET');
+    const manualCount = await vectorStore.count('SAFETY_MANUAL');
 
     // If only count requested, display and exit
     if (options.count) {
@@ -199,22 +202,22 @@ async function main() {
       // Search based on type
       if (options.type === 'asset' || options.type === 'all') {
         const assetResults = await vectorStore.search(queryEmbedding, {
-          sourceType: 'asset',
           limit,
-          similarityThreshold,
+          minSimilarity: similarityThreshold,
+          sourceType: 'ASSET',
         });
 
-        assets = assetResults.map((result) => result.metadata as unknown as Asset);
+        assets = assetResults.map((result) => result.document.metadata as unknown as Asset);
       }
 
       if (options.type === 'manual' || options.type === 'all') {
         const manualResults = await vectorStore.search(queryEmbedding, {
-          sourceType: 'safety_manual',
           limit,
-          similarityThreshold,
+          minSimilarity: similarityThreshold,
+          sourceType: 'SAFETY_MANUAL',
         });
 
-        manuals = manualResults.map((result) => result.metadata as unknown as SafetyDocument);
+        manuals = manualResults.map((result) => result.document.metadata as unknown as SafetyDocument);
       }
 
       console.log(`\nFound ${assets.length} assets and ${manuals.length} safety manuals`);
@@ -229,7 +232,7 @@ async function main() {
       // Fetch assets
       if (options.type === 'asset' || options.type === 'all') {
         const assetDocs = await vectorStore.list({
-          sourceType: 'asset',
+          sourceType: 'ASSET',
           limit,
           offset,
         });
@@ -240,7 +243,7 @@ async function main() {
       // Fetch safety manuals
       if (options.type === 'manual' || options.type === 'all') {
         const manualDocs = await vectorStore.list({
-          sourceType: 'safety_manual',
+          sourceType: 'SAFETY_MANUAL',
           limit,
           offset,
         });
@@ -280,4 +283,4 @@ async function main() {
 }
 
 // Run CLI
-main();
+void main();

@@ -4,7 +4,6 @@
 
 import {
   type DriveState,
-  type BriefingPosition,
   type UserAction,
   type CreateDriveStateOptions,
   type UpdateDriveStateOptions,
@@ -426,7 +425,7 @@ describe('DriveState Types', () => {
       expect(deeperState.position.depth).toBe(1);
       expect(deeperState.interruptStatus).toBe(InterruptStatus.GOING_DEEPER);
       expect(deeperState.lastAction?.type).toBe('GO_DEEPER');
-      expect(deeperState.lastAction?.metadata?.depth).toBe(1);
+      expect(deeperState.lastAction?.metadata?.['depth']).toBe(1);
     });
 
     it('should increase depth up to maximum (2)', () => {

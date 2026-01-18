@@ -6,6 +6,7 @@
 
 import fs from 'fs';
 import path from 'path';
+
 import { validateAsset, type Asset } from '../src/knowledge/asset-types';
 
 const DATA_DIR = path.join(__dirname, '../data');
@@ -47,7 +48,7 @@ function validateSeedAssets(): void {
   assets.forEach((asset, index) => {
     if (validateAsset(asset)) {
       validCount++;
-      const a = asset as Asset;
+      const a = asset;
       console.log(`✓ [${index + 1}/${assets.length}] ${a.assetId} - ${a.name}`);
     } else {
       invalidCount++;

@@ -13,11 +13,12 @@
  *   SUPABASE_ANON_KEY - Supabase anonymous key
  */
 
-import { Command } from 'commander';
-import { createClient } from '@supabase/supabase-js';
-import { OpenAI } from 'openai';
-import { config } from 'dotenv';
 import path from 'path';
+
+import { Command } from 'commander';
+import { config } from 'dotenv';
+import { OpenAI } from 'openai';
+
 import { AssetIngestion, type IngestionProgress } from '../src/knowledge/asset-ingestion';
 import { SupabaseVectorStore } from '../src/knowledge/supabase-vector-store';
 
@@ -139,9 +140,11 @@ async function main() {
   console.log('');
 
   try {
-    // Initialize Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const vectorStore = new SupabaseVectorStore(supabase);
+    // Initialize vector store (wraps Supabase client internally)
+    const vectorStore = new SupabaseVectorStore({
+      supabaseUrl,
+      supabaseKey: supabaseAnonKey,
+    });
 
     // Create embedding generator
     const embeddingGenerator = createEmbeddingGenerator(openaiApiKey, options.embeddingModel);
@@ -152,11 +155,10 @@ async function main() {
       clearExisting: options.clear,
       skipValidation: options.skipValidation,
       maxConcurrency: parseInt(options.maxConcurrency, 10),
-      onProgress: options.progress ? displayProgress : undefined,
+      ...(options.progress ? { onProgress: displayProgress } : {}),
     });
 
     // Start ingestion
-    const startTime = Date.now();
     let result;
 
     if (fileExt === '.csv') {
@@ -199,4 +201,4 @@ async function main() {
 }
 
 // Run CLI
-main();
+void main();

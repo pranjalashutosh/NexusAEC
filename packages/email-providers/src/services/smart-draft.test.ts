@@ -7,6 +7,7 @@ import {
   SmartDraftError,
   isSmartDraftError,
 } from './smart-draft';
+
 import type { EmailProvider } from '../interfaces/email-provider';
 import type { StandardEmail, StandardDraft, SyncStatus } from '../interfaces/types';
 

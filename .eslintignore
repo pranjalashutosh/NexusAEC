@@ -16,6 +16,9 @@ coverage/
 # Generated files
 *.generated.ts
 *.generated.tsx
+*.d.ts
+*.d.mts
+*.d.cts
 
 # Config files (handled separately)
 *.config.js
@@ -30,4 +33,8 @@ apps/mobile/android/
 # Desktop specific
 apps/desktop/out/
 apps/desktop/release/
+
+# Ignore JavaScript sources (TypeScript is the source of truth)
+**/*.js
+**/*.jsx
 

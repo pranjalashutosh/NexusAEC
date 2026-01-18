@@ -1,0 +1,10 @@
+# =============================================================================
+# NexusAEC Namespace
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nexus-aec
+  labels:
+    app.kubernetes.io/name: nexus-aec
+    app.kubernetes.io/component: voice-agent

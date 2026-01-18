@@ -2,7 +2,6 @@ import type { StandardEmail, VIP, Contact } from '@nexus-aec/shared-types';
 import {
   VipDetector,
   type VipDetectorOptions,
-  type VipDetectionResult,
 } from '../../src/red-flags/vip-detector';
 
 // Helper to create test emails
@@ -526,11 +525,9 @@ describe('VipDetector', () => {
 
   describe('Edge Cases', () => {
     it('should handle contact with no interaction count', () => {
-      const contact = createTestContact({
-        email: 'no-count@example.com',
-        interactionCount: undefined,
-        lastInteractionAt: undefined, // No recency boost
-      });
+      const contact = createTestContact({ email: 'no-count@example.com' });
+      delete contact.interactionCount;
+      delete contact.lastInteractionAt; // No recency boost
       const detector = new VipDetector({ contacts: [contact] });
       const email = createTestEmail({ from: { email: 'no-count@example.com' } });
 
@@ -541,10 +538,8 @@ describe('VipDetector', () => {
     });
 
     it('should handle contact with no last interaction date', () => {
-      const contact = createTestContact({
-        email: 'no-date@example.com',
-        lastInteractionAt: undefined,
-      });
+      const contact = createTestContact({ email: 'no-date@example.com' });
+      delete contact.lastInteractionAt;
       const detector = new VipDetector({ contacts: [contact] });
       const email = createTestEmail({ from: { email: 'no-date@example.com' } });
 
@@ -555,10 +550,8 @@ describe('VipDetector', () => {
     });
 
     it('should handle contact with no job title', () => {
-      const contact = createTestContact({
-        email: 'no-title@example.com',
-        jobTitle: undefined,
-      });
+      const contact = createTestContact({ email: 'no-title@example.com' });
+      delete contact.jobTitle;
       const detector = new VipDetector({ contacts: [contact] });
       const email = createTestEmail({ from: { email: 'no-title@example.com' } });
 

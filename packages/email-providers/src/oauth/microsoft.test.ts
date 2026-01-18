@@ -111,16 +111,15 @@ describe('MicrosoftOAuthProvider', () => {
   });
 
   describe('constructor', () => {
-    it('should use default tenant if not specified', () => {
+    it('should use default tenant if not specified', async () => {
       const providerWithoutTenant = new MicrosoftOAuthProvider({
         clientId: 'test-id',
         redirectUri: 'http://localhost/callback',
       });
 
       // We can verify by checking the auth URL
-      providerWithoutTenant.getAuthorizationUrl().then(({ url }) => {
-        expect(url).toContain('login.microsoftonline.com/common');
-      });
+      const { url } = await providerWithoutTenant.getAuthorizationUrl();
+      expect(url).toContain('login.microsoftonline.com/common');
     });
 
     it('should use default scopes if not specified', async () => {

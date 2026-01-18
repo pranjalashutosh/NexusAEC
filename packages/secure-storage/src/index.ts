@@ -93,10 +93,10 @@ export function detectPlatform(): StoragePlatform {
     // This will be refined when native modules are available
     if (typeof global !== 'undefined') {
       const g = global as Record<string, unknown>;
-      if (g.__ANDROID__) {
+      if (g['__ANDROID__']) {
         return 'android';
       }
-      if (g.__IOS__) {
+      if (g['__IOS__']) {
         return 'ios';
       }
     }
@@ -380,12 +380,14 @@ export class EncryptedWebStorage implements ISecureStorage {
 
     const fullKey = this.getFullKey(key);
     const encrypted = await encrypt(value, this.encryptionKey);
+    const existing = localStorage.getItem(fullKey);
+    const createdAt = existing
+      ? (JSON.parse(existing) as { createdAt?: string }).createdAt ?? new Date().toISOString()
+      : new Date().toISOString();
 
     const item = {
       ...encrypted,
-      createdAt: localStorage.getItem(fullKey)
-        ? JSON.parse(localStorage.getItem(fullKey)!).createdAt
-        : new Date().toISOString(),
+      createdAt,
       updatedAt: new Date().toISOString(),
     };
 
@@ -548,8 +550,10 @@ export async function createSecureStorageWithPassword(
     case 'android':
       // Native storage doesn't need password - it uses platform keychain
       // But for fallback, we'll derive a key
-      const { key } = await deriveKey(password);
-      return new NativeSecureStorage({ ...options, encryptionKey: key });
+      {
+        const { key } = await deriveKey(password);
+        return new NativeSecureStorage({ ...options, encryptionKey: key });
+      }
 
     default:
       return EncryptedMemoryStorage.createWithPassword(password, options);

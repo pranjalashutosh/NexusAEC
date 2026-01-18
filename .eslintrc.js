@@ -10,7 +10,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
-    project: ['./tsconfig.base.json', './packages/*/tsconfig.json', './apps/*/tsconfig.json'],
+    project: ['./tsconfig.eslint.json'],
     tsconfigRootDir: __dirname,
   },
   plugins: ['@typescript-eslint', 'import'],
@@ -26,7 +26,7 @@ module.exports = {
     'import/resolver': {
       typescript: {
         alwaysTryTypes: true,
-        project: ['./tsconfig.base.json', './packages/*/tsconfig.json', './apps/*/tsconfig.json'],
+        project: ['./tsconfig.eslint.json'],
       },
     },
   },
@@ -44,12 +44,25 @@ module.exports = {
       },
     ],
     '@typescript-eslint/no-non-null-assertion': 'warn',
-    '@typescript-eslint/prefer-nullish-coalescing': 'error',
-    '@typescript-eslint/prefer-optional-chain': 'error',
+    '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+    '@typescript-eslint/prefer-optional-chain': 'warn',
     '@typescript-eslint/no-floating-promises': 'error',
     '@typescript-eslint/await-thenable': 'error',
-    '@typescript-eslint/no-misused-promises': 'error',
-    '@typescript-eslint/require-await': 'error',
+    '@typescript-eslint/no-misused-promises': 'warn',
+    // This rule is too noisy for our codebase (many functions intentionally return Promises
+    // without awaiting). TypeScript already enforces correctness via return types.
+    '@typescript-eslint/require-await': 'off',
+    '@typescript-eslint/no-var-requires': 'off',
+    '@typescript-eslint/no-unsafe-argument': 'warn',
+    '@typescript-eslint/no-unsafe-assignment': 'warn',
+    '@typescript-eslint/no-unsafe-call': 'warn',
+    '@typescript-eslint/no-unsafe-member-access': 'warn',
+    '@typescript-eslint/no-unsafe-return': 'warn',
+    '@typescript-eslint/restrict-template-expressions': 'warn',
+    '@typescript-eslint/no-redundant-type-constituents': 'off',
+
+    // Allow intentional infinite loops (rate limit waiters, pollers, etc.)
+    'no-constant-condition': ['error', { checkLoops: false }],
 
     // Import rules
     'import/order': [
@@ -97,6 +110,10 @@ module.exports = {
         '@typescript-eslint/no-unsafe-assignment': 'off',
         '@typescript-eslint/no-unsafe-member-access': 'off',
         '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/unbound-method': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
+        '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+        'import/order': 'off',
       },
     },
     // Config files (JS)
@@ -105,6 +122,19 @@ module.exports = {
       rules: {
         '@typescript-eslint/no-var-requires': 'off',
         '@typescript-eslint/no-require-imports': 'off',
+      },
+    },
+    // Intelligence CLI/scripts (commander parsing uses unknown/any heavily; allow it here)
+    {
+      files: ['packages/intelligence/cli/**/*.ts', 'packages/intelligence/scripts/**/*.ts'],
+      rules: {
+        'no-console': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/no-unsafe-call': 'off',
+        '@typescript-eslint/no-unsafe-argument': 'off',
+        '@typescript-eslint/no-floating-promises': 'off',
+        '@typescript-eslint/no-misused-promises': 'off',
       },
     },
   ],

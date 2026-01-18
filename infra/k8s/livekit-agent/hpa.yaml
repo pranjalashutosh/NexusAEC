@@ -1,0 +1,70 @@
+# =============================================================================
+# LiveKit Agent Horizontal Pod Autoscaler
+# =============================================================================
+# Scales the agent deployment based on CPU and memory utilization
+# 
+# Scaling strategy:
+# - Min replicas: 2 (for high availability)
+# - Max replicas: 50 (based on expected peak load)
+# - Scale up: When CPU > 70% or Memory > 80%
+# - Scale down: Gradual (300s stabilization window)
+# =============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: livekit-agent-hpa
+  namespace: nexus-aec
+  labels:
+    app.kubernetes.io/name: livekit-agent
+    app.kubernetes.io/component: voice-agent
+    app.kubernetes.io/part-of: nexus-aec
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: livekit-agent
+  
+  # Replica bounds
+  minReplicas: 2
+  maxReplicas: 50
+  
+  # Scaling metrics
+  metrics:
+    # Scale based on CPU utilization
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    
+    # Scale based on memory utilization
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  
+  # Scaling behavior
+  behavior:
+    # Scale up quickly when needed
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+      selectPolicy: Max
+    
+    # Scale down gradually to avoid flapping
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+      selectPolicy: Max

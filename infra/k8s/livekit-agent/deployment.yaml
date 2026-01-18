@@ -1,0 +1,124 @@
+# =============================================================================
+# LiveKit Agent Deployment
+# =============================================================================
+# Deploys the voice agent as a scalable service
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: livekit-agent
+  namespace: nexus-aec
+  labels:
+    app.kubernetes.io/name: livekit-agent
+    app.kubernetes.io/component: voice-agent
+    app.kubernetes.io/part-of: nexus-aec
+spec:
+  # Initial replicas - HPA will manage scaling
+  replicas: 2
+  
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: livekit-agent
+  
+  # Rolling update strategy for zero-downtime deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: livekit-agent
+        app.kubernetes.io/component: voice-agent
+        app.kubernetes.io/part-of: nexus-aec
+      annotations:
+        # Force rolling restart when config changes
+        checksum/config: "{{ include (print $.Template.BasePath \"/configmap.yaml\") . | sha256sum }}"
+    spec:
+      # Service account for RBAC (if needed)
+      serviceAccountName: default
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      
+      # Termination grace period for graceful shutdown
+      terminationGracePeriodSeconds: 30
+      
+      containers:
+        - name: agent
+          image: nexus-aec-agent:latest
+          imagePullPolicy: Always
+          
+          ports:
+            - name: health
+              containerPort: 8080
+              protocol: TCP
+          
+          # Environment from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: livekit-agent-config
+            - secretRef:
+                name: livekit-agent-secrets
+          
+          # Resource limits and requests
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          
+          # Liveness probe - is the process alive?
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          # Readiness probe - is the agent ready to handle rooms?
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          
+          # Startup probe - allow slow startup
+          startupProbe:
+            httpGet:
+              path: /health
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          
+          # Security context for container
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+      
+      # Topology spread for high availability
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: livekit-agent

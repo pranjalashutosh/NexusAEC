@@ -15,12 +15,21 @@ function createTestEmail(overrides: Partial<StandardEmail> = {}): StandardEmail 
     cc: [],
     bcc: [],
     receivedAt: new Date(),
-    hasAttachments: false,
+    snippet: 'Test snippet',
+    body: 'Test body',
+    isRead: false,
+    isStarred: false,
     labels: [],
-    isPendingReview: false,
   };
 
-  return { ...defaults, ...overrides };
+  const { threadId, snippet, body, ...rest } = overrides;
+  return {
+    ...defaults,
+    ...(threadId !== undefined ? { threadId } : {}),
+    ...(snippet !== undefined ? { snippet } : {}),
+    ...(body !== undefined ? { body } : {}),
+    ...rest,
+  };
 }
 
 /**
@@ -117,12 +126,12 @@ describe('TopicClusterer', () => {
       const emails = [
         createTestEmail({
           id: 'email-1',
-          threadId: undefined,
+          threadId: 'thread-a',
           subject: 'Marketing Campaign Launch Strategy',
         }),
         createTestEmail({
           id: 'email-2',
-          threadId: undefined,
+          threadId: 'thread-b',
           subject: 'Engineering Infrastructure Database Migration',
         }),
       ];

@@ -7,15 +7,16 @@
  * @see https://developers.google.com/gmail/api/reference/rest
  */
 
-import type {
-  EmailProvider,
-  EmailProviderConfig,
-  EmailProviderError,
-} from '../interfaces/email-provider';
 import {
   EmailProviderError as EmailProviderErrorClass,
   createStandardId,
   parseStandardId,
+} from '../interfaces/email-provider';
+
+import type {
+  EmailProvider,
+  EmailProviderConfig,
+  EmailProviderError,
 } from '../interfaces/email-provider';
 import type {
   EmailSource,
@@ -267,7 +268,7 @@ export class GmailAdapter implements EmailProvider {
 
   async fetchEmail(emailId: string): Promise<StandardEmail | null> {
     const parsed = parseStandardId(emailId);
-    if (!parsed || parsed.source !== 'GMAIL') return null;
+    if (!parsed || parsed.source !== 'GMAIL') {return null;}
 
     try {
       const message = await this.gmailRequest<GmailMessage>(
@@ -275,21 +276,21 @@ export class GmailAdapter implements EmailProvider {
       );
       return this.normalizeMessage(message);
     } catch (error) {
-      if (this.isNotFoundError(error)) return null;
+      if (this.isNotFoundError(error)) {return null;}
       throw this.wrapError(error, 'Failed to fetch email');
     }
   }
 
   async fetchThread(threadId: string): Promise<StandardThread | null> {
     const parsed = parseStandardId(threadId);
-    if (!parsed || parsed.source !== 'GMAIL') return null;
+    if (!parsed || parsed.source !== 'GMAIL') {return null;}
 
     try {
       const thread = await this.gmailRequest<GmailThread>(
         `/users/me/threads/${parsed.providerId}?format=full`
       );
 
-      if (!thread.messages?.length) return null;
+      if (!thread.messages?.length) {return null;}
 
       const messages = thread.messages.map((msg) => this.normalizeMessage(msg));
       const latestMessage = messages[messages.length - 1]!;
@@ -297,7 +298,7 @@ export class GmailAdapter implements EmailProvider {
       // Collect unique participants
       const participantMap = new Map<string, EmailAddress>();
       for (const msg of messages) {
-        if (msg.from) participantMap.set(msg.from.email, msg.from);
+        if (msg.from) {participantMap.set(msg.from.email, msg.from);}
         for (const recipient of [...msg.to, ...msg.cc]) {
           participantMap.set(recipient.email, recipient);
         }
@@ -318,17 +319,17 @@ export class GmailAdapter implements EmailProvider {
         labels: latestMessage.labels,
       };
     } catch (error) {
-      if (this.isNotFoundError(error)) return null;
+      if (this.isNotFoundError(error)) {return null;}
       throw this.wrapError(error, 'Failed to fetch thread');
     }
   }
 
   async fetchThreadMessages(threadId: string): Promise<StandardEmail[]> {
     const thread = await this.fetchThread(threadId);
-    if (!thread) return [];
+    if (!thread) {return [];}
 
     const parsed = parseStandardId(threadId);
-    if (!parsed) return [];
+    if (!parsed) {return [];}
 
     const gmailThread = await this.gmailRequest<GmailThread>(
       `/users/me/threads/${parsed.providerId}?format=full`
@@ -424,7 +425,7 @@ export class GmailAdapter implements EmailProvider {
 
   async fetchDraft(draftId: string): Promise<StandardDraft | null> {
     const parsed = parseStandardId(draftId);
-    if (!parsed || parsed.source !== 'GMAIL') return null;
+    if (!parsed || parsed.source !== 'GMAIL') {return null;}
 
     try {
       const draft = await this.gmailRequest<GmailDraft>(
@@ -432,7 +433,7 @@ export class GmailAdapter implements EmailProvider {
       );
       return this.normalizeDraft(draft);
     } catch (error) {
-      if (this.isNotFoundError(error)) return null;
+      if (this.isNotFoundError(error)) {return null;}
       throw this.wrapError(error, 'Failed to fetch draft');
     }
   }
@@ -543,7 +544,7 @@ export class GmailAdapter implements EmailProvider {
 
   async deleteDraft(draftId: string): Promise<void> {
     const parsed = parseStandardId(draftId);
-    if (!parsed || parsed.source !== 'GMAIL') return;
+    if (!parsed || parsed.source !== 'GMAIL') {return;}
 
     await this.gmailRequest(`/users/me/drafts/${parsed.providerId}`, {
       method: 'DELETE',
@@ -641,7 +642,7 @@ export class GmailAdapter implements EmailProvider {
 
   async fetchCalendarEvent(eventId: string): Promise<CalendarEvent | null> {
     const parsed = parseStandardId(eventId);
-    if (!parsed || parsed.source !== 'GMAIL') return null;
+    if (!parsed || parsed.source !== 'GMAIL') {return null;}
 
     try {
       const event = await this.calendarRequest<GoogleCalendarEvent>(
@@ -649,7 +650,7 @@ export class GmailAdapter implements EmailProvider {
       );
       return this.normalizeCalendarEvent(event, 'primary');
     } catch (error) {
-      if (this.isNotFoundError(error)) return null;
+      if (this.isNotFoundError(error)) {return null;}
       throw this.wrapError(error, 'Failed to fetch calendar event');
     }
   }
@@ -803,7 +804,7 @@ export class GmailAdapter implements EmailProvider {
       })
       .filter((id): id is string => id !== null);
 
-    if (ids.length === 0) return;
+    if (ids.length === 0) {return;}
 
     await this.gmailRequest('/users/me/messages/batchModify', {
       method: 'POST',
@@ -1025,7 +1026,7 @@ export class GmailAdapter implements EmailProvider {
   }
 
   private parseEmailAddress(value: string): EmailAddress | null {
-    if (!value) return null;
+    if (!value) {return null;}
 
     const trimmed = value.trim();
 
@@ -1049,7 +1050,7 @@ export class GmailAdapter implements EmailProvider {
   }
 
   private parseEmailAddresses(value: string): EmailAddress[] {
-    if (!value) return [];
+    if (!value) {return [];}
 
     // Split by comma, handling quoted names
     const addresses: EmailAddress[] = [];
@@ -1236,7 +1237,7 @@ export class GmailAdapter implements EmailProvider {
   }
 
   private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) return error.message;
+    if (error instanceof Error) {return error.message;}
     return String(error);
   }
 }

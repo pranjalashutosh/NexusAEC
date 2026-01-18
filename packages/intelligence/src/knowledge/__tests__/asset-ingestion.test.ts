@@ -131,7 +131,7 @@ describe('AssetIngestion', () => {
 
       await customIngestion.ingestAssetsFromJSON('/path/to/assets.json');
 
-      expect(mockVectorStore.deleteBySourceType).toHaveBeenCalledWith('asset');
+      expect(mockVectorStore.deleteBySourceType).toHaveBeenCalledWith('ASSET');
     });
 
     it('should validate assets by default', async () => {
@@ -386,7 +386,7 @@ describe('AssetIngestion', () => {
 
       await customIngestion.ingestSafetyDocumentsFromJSON('/path/to/manuals.json');
 
-      expect(mockVectorStore.deleteBySourceType).toHaveBeenCalledWith('safety_manual');
+      expect(mockVectorStore.deleteBySourceType).toHaveBeenCalledWith('SAFETY_MANUAL');
     });
 
     it('should handle non-array JSON', async () => {

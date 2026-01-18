@@ -173,7 +173,8 @@ function extractKeywords(text: string): Set<string> {
  */
 function calculateSimilarity(set1: Set<string>, set2: Set<string>): number {
   if (set1.size === 0 && set2.size === 0) {
-    return 1.0; // Both empty = identical
+    // No signal to compare => treat as no similarity to avoid false clustering
+    return 0.0;
   }
 
   if (set1.size === 0 || set2.size === 0) {

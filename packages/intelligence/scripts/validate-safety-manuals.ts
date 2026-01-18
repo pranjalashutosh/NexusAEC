@@ -4,6 +4,7 @@
 
 import fs from 'fs';
 import path from 'path';
+
 import { validateSafetyDocument, type SafetyDocument } from '../src/knowledge/asset-types';
 
 const DATA_DIR = path.join(__dirname, '../data');
@@ -45,7 +46,7 @@ function validateSafetyManuals(): void {
   documents.forEach((doc, index) => {
     if (validateSafetyDocument(doc)) {
       validCount++;
-      const d = doc as SafetyDocument;
+      const d = doc;
       console.log(`✓ [${index + 1}/${documents.length}] ${d.id} - ${d.title.substring(0, 60)}...`);
     } else {
       invalidCount++;

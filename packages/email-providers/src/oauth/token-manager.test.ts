@@ -8,6 +8,7 @@ import {
   isTokenManagerError,
   InMemoryTokenStorage,
 } from './token-manager';
+
 import type { OAuthTokens, EmailSource } from '../interfaces/types';
 
 // Mock OAuth provider

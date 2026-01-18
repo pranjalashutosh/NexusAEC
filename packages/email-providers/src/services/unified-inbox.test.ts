@@ -3,6 +3,7 @@
  */
 
 import { UnifiedInboxService } from './unified-inbox';
+
 import type { EmailProvider } from '../interfaces/email-provider';
 import type {
   StandardEmail,

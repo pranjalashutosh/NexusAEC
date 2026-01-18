@@ -4,6 +4,7 @@
 
 import { OutlookAdapter } from './outlook-adapter';
 import { createStandardId, parseStandardId } from '../interfaces/email-provider';
+
 import type { OAuthTokens } from '../interfaces/types';
 
 // Mock fetch globally

@@ -13,13 +13,15 @@
  *   SUPABASE_ANON_KEY - Supabase anonymous key
  */
 
-import { Command } from 'commander';
-import { createClient } from '@supabase/supabase-js';
-import { OpenAI } from 'openai';
-import { config } from 'dotenv';
 import path from 'path';
+
+import { Command } from 'commander';
+import { config } from 'dotenv';
+import { OpenAI } from 'openai';
+
 import { AssetIngestion, type IngestionProgress } from '../src/knowledge/asset-ingestion';
 import { SupabaseVectorStore } from '../src/knowledge/supabase-vector-store';
+
 import type { SafetyDocument } from '../src/knowledge/asset-types';
 
 // Load environment variables
@@ -161,9 +163,11 @@ async function ingestFromJSON(options: any) {
   console.log('');
 
   try {
-    // Initialize Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const vectorStore = new SupabaseVectorStore(supabase);
+    // Initialize vector store (wraps Supabase client internally)
+    const vectorStore = new SupabaseVectorStore({
+      supabaseUrl,
+      supabaseKey: supabaseAnonKey,
+    });
 
     // Create embedding generator
     const embeddingGenerator = createEmbeddingGenerator(openaiApiKey, options.embeddingModel);
@@ -174,7 +178,7 @@ async function ingestFromJSON(options: any) {
       clearExisting: options.clear,
       skipValidation: options.skipValidation,
       maxConcurrency: parseInt(options.maxConcurrency, 10),
-      onProgress: options.progress ? displayProgress : undefined,
+      ...(options.progress ? { onProgress: displayProgress } : {}),
     });
 
     // Start ingestion
@@ -267,9 +271,11 @@ async function ingestFromPDF(options: any) {
   console.log('');
 
   try {
-    // Initialize Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const vectorStore = new SupabaseVectorStore(supabase);
+    // Initialize vector store (wraps Supabase client internally)
+    const vectorStore = new SupabaseVectorStore({
+      supabaseUrl,
+      supabaseKey: supabaseAnonKey,
+    });
 
     // Create embedding generator
     const embeddingGenerator = createEmbeddingGenerator(openaiApiKey, options.embeddingModel);
@@ -277,7 +283,7 @@ async function ingestFromPDF(options: any) {
     // Create ingestion instance
     const ingestion = new AssetIngestion(vectorStore, embeddingGenerator, {
       maxConcurrency: parseInt(options.maxConcurrency, 10),
-      onProgress: options.progress ? displayProgress : undefined,
+      ...(options.progress ? { onProgress: displayProgress } : {}),
     });
 
     // Start ingestion
@@ -347,4 +353,4 @@ function validateEnvironment(): {
 }
 
 // Run CLI
-main();
+void main();

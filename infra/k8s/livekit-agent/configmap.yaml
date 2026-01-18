@@ -1,0 +1,44 @@
+# =============================================================================
+# LiveKit Agent ConfigMap
+# =============================================================================
+# Non-sensitive configuration for the voice agent
+# Secrets are stored separately in secret.yaml
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: livekit-agent-config
+  namespace: nexus-aec
+  labels:
+    app.kubernetes.io/name: livekit-agent
+    app.kubernetes.io/component: voice-agent
+    app.kubernetes.io/part-of: nexus-aec
+data:
+  # Node.js environment
+  NODE_ENV: "production"
+  
+  # Health check port
+  PORT: "8080"
+  
+  # LiveKit configuration (non-sensitive)
+  LIVEKIT_MAX_PARTICIPANTS: "2"
+  LIVEKIT_EMPTY_TIMEOUT: "300"
+  LIVEKIT_RECORDING_ENABLED: "false"
+  
+  # Deepgram configuration
+  DEEPGRAM_MODEL: "nova-2"
+  DEEPGRAM_LANGUAGE: "en-US"
+  DEEPGRAM_INTERIM_RESULTS: "true"
+  DEEPGRAM_PUNCTUATE: "true"
+  DEEPGRAM_SMART_FORMAT: "true"
+  
+  # ElevenLabs configuration
+  ELEVENLABS_MODEL_ID: "eleven_turbo_v2_5"
+  ELEVENLABS_STABILITY: "0.5"
+  ELEVENLABS_SIMILARITY_BOOST: "0.75"
+  ELEVENLABS_OUTPUT_FORMAT: "pcm_24000"
+  
+  # OpenAI configuration
+  OPENAI_MODEL: "gpt-4o"
+  OPENAI_MAX_TOKENS: "1024"
+  OPENAI_TEMPERATURE: "0.7"

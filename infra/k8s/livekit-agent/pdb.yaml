@@ -1,0 +1,22 @@
+# =============================================================================
+# LiveKit Agent Pod Disruption Budget
+# =============================================================================
+# Ensures high availability during voluntary disruptions
+# (e.g., node maintenance, cluster upgrades)
+# =============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: livekit-agent-pdb
+  namespace: nexus-aec
+  labels:
+    app.kubernetes.io/name: livekit-agent
+    app.kubernetes.io/component: voice-agent
+    app.kubernetes.io/part-of: nexus-aec
+spec:
+  # Always keep at least 1 pod available
+  minAvailable: 1
+  
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: livekit-agent

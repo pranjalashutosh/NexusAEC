@@ -5,8 +5,35 @@
  * Supports both file paths and buffer inputs, with configurable extraction options.
  */
 
-import pdf from 'pdf-parse';
 import fs from 'fs';
+
+// pdf-parse's typings can be inconsistent under NodeNext; normalize to a callable function.
+type PdfParseFn = (data: Buffer, options?: any) => Promise<any>;
+
+// Lazy-load pdf-parse to avoid importing pdfjs-dist (which requires browser DOM APIs)
+// at module initialization time. This allows the intelligence package to be imported
+// in Node.js environments without triggering DOMMatrix/ImageData errors.
+let pdfParse: PdfParseFn | null = null;
+
+async function getPdfParse(): Promise<PdfParseFn> {
+  if (!pdfParse) {
+    // Use require() instead of dynamic import() to keep Jest/ts-jest compatible
+    // in Node runtimes where vm-based module loading can break dynamic import.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const pdfParseModule = require('pdf-parse') as unknown as {
+      default?: PdfParseFn;
+    } | PdfParseFn;
+
+    if (typeof pdfParseModule === 'function') {
+      pdfParse = pdfParseModule;
+    } else if (pdfParseModule && typeof (pdfParseModule as { default?: unknown }).default === 'function') {
+      pdfParse = (pdfParseModule as { default: PdfParseFn }).default;
+    } else {
+      throw new Error('Failed to load pdf-parse module');
+    }
+  }
+  return pdfParse;
+}
 
 /**
  * Result of PDF extraction operation
@@ -174,7 +201,8 @@ export async function extractPDFFromBuffer(
   } = options;
 
   try {
-    // Parse PDF with pdf-parse
+    // Parse PDF with pdf-parse (lazy-loaded)
+    const pdfParseFn = await getPdfParse();
     const pdfOptions: any = {};
 
     if (password) {
@@ -196,10 +224,11 @@ export async function extractPDFFromBuffer(
       };
     }
 
-    const data = await pdf(buffer, pdfOptions);
+    const data = await pdfParseFn(buffer, pdfOptions);
 
     // Extract text content
-    let text = data.text;
+    let text: string = String(data?.text ?? '');
+    const pageCount: number = Number(data?.numpages ?? 0);
 
     // Apply text processing
     if (normalizeWhitespace) {
@@ -215,12 +244,12 @@ export async function extractPDFFromBuffer(
 
     // Calculate statistics
     const characterCount = text.length;
-    const wordCount = text.split(/\s+/).filter((word) => word.length > 0).length;
-    const avgCharsPerPage = data.numpages > 0 ? characterCount / data.numpages : 0;
+    const wordCount = text.split(/\s+/).filter((word: string) => word.length > 0).length;
+    const avgCharsPerPage = pageCount > 0 ? characterCount / pageCount : 0;
 
     return {
       text,
-      pageCount: data.numpages,
+      pageCount,
       metadata,
       stats: {
         characterCount,
@@ -260,6 +289,9 @@ export async function extractPages(
   const sortedPages = [...pages].sort((a, b) => a - b);
   const minPage = sortedPages[0];
   const maxPage = sortedPages[sortedPages.length - 1];
+  if (minPage === undefined || maxPage === undefined) {
+    throw new Error('Unable to determine page range from pages array');
+  }
 
   return await extractPDF(filePath, {
     ...options,
@@ -291,7 +323,8 @@ export async function getPDFMetadata(filePath: string): Promise<{
     const dataBuffer = fs.readFileSync(filePath);
 
     // Extract metadata only (don't process text)
-    const data = await pdf(dataBuffer, { max: 0 });
+    const pdfParseFn = await getPdfParse();
+    const data = await pdfParseFn(dataBuffer, { max: 0 });
 
     return {
       pageCount: data.numpages,
@@ -327,7 +360,8 @@ export async function isValidPDF(filePath: string): Promise<boolean> {
     }
 
     // Try to parse it
-    await pdf(dataBuffer, { max: 0 });
+    const pdfParseFn = await getPdfParse();
+    await pdfParseFn(dataBuffer, { max: 0 });
     return true;
   } catch {
     return false;
@@ -361,11 +395,17 @@ function extractMetadata(info: any): PDFExtractionResult['metadata'] {
   }
 
   if (info.CreationDate) {
-    metadata.creationDate = parsePDFDate(info.CreationDate);
+    const d = parsePDFDate(String(info.CreationDate));
+    if (d) {
+      metadata.creationDate = d;
+    }
   }
 
   if (info.ModDate) {
-    metadata.modificationDate = parsePDFDate(info.ModDate);
+    const d = parsePDFDate(String(info.ModDate));
+    if (d) {
+      metadata.modificationDate = d;
+    }
   }
 
   return metadata;
@@ -378,7 +418,7 @@ function extractMetadata(info: any): PDFExtractionResult['metadata'] {
 function parsePDFDate(dateStr: string): Date | undefined {
   try {
     // Remove 'D:' prefix if present
-    let str = dateStr.replace(/^D:/, '');
+    const str = dateStr.replace(/^D:/, '');
 
     // Extract date components
     const year = parseInt(str.substring(0, 4), 10);
@@ -514,8 +554,12 @@ export function extractTableOfContents(text: string): Array<{
   for (const line of lines) {
     const match = line.match(tocPattern);
     if (match) {
-      const title = match[1].trim();
-      const page = parseInt(match[2], 10);
+      const title = (match[1] ?? '').trim();
+      const pageStr = match[2];
+      if (!title || !pageStr) {
+        continue;
+      }
+      const page = parseInt(pageStr, 10);
 
       // Filter out noise (too short, likely not a real TOC entry)
       if (title.length > 3 && page > 0 && page < 9999) {

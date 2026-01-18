@@ -268,6 +268,7 @@ export function createInitialDriveState(options: CreateDriveStateOptions): Drive
 
   const firstTopicId = options.topicIds[0];
   const firstTopicEmails = firstTopicId ? options.topicEmailMap[firstTopicId] ?? [] : [];
+  const firstEmailId = firstTopicEmails[0];
 
   return {
     sessionId: options.sessionId,
@@ -278,8 +279,8 @@ export function createInitialDriveState(options: CreateDriveStateOptions): Drive
       totalTopics: options.topicIds.length,
       totalItemsInTopic: firstTopicEmails.length,
       itemsRemaining: totalEmails,
-      currentTopicId: firstTopicId,
-      currentEmailId: firstTopicEmails[0],
+      ...(firstTopicId ? { currentTopicId: firstTopicId } : {}),
+      ...(firstEmailId ? { currentEmailId: firstEmailId } : {}),
       depth: 0,
     },
     interruptStatus: InterruptStatus.NONE,
@@ -294,9 +295,9 @@ export function createInitialDriveState(options: CreateDriveStateOptions): Drive
     metadata: {
       roomName: options.roomName,
       sources: options.sources,
-      preferencesVersion: options.preferencesVersion,
-      clientType: options.clientType,
-      clientVersion: options.clientVersion,
+      ...(options.preferencesVersion ? { preferencesVersion: options.preferencesVersion } : {}),
+      ...(options.clientType ? { clientType: options.clientType } : {}),
+      ...(options.clientVersion ? { clientVersion: options.clientVersion } : {}),
     },
     ttl: options.ttl ?? 86400, // 24 hours default
   };
@@ -348,10 +349,14 @@ export function navigateToNextItem(state: DriveState): DriveState {
 
   // Move to next item in current topic
   if (nextItemIndex < currentTopicEmails.length) {
+    const nextEmailId = currentTopicEmails[nextItemIndex];
+    if (!nextEmailId) {
+      return state;
+    }
     return updateDriveState(state, {
       position: {
         itemIndex: nextItemIndex,
-        currentEmailId: currentTopicEmails[nextItemIndex],
+        currentEmailId: nextEmailId,
         itemsRemaining: position.itemsRemaining - 1,
         depth: 0, // Reset depth when moving to new item
       },
@@ -366,7 +371,11 @@ export function navigateToNextItem(state: DriveState): DriveState {
   const nextTopicIndex = position.topicIndex + 1;
   if (nextTopicIndex < briefingSnapshot.topicIds.length) {
     const nextTopic = briefingSnapshot.topicIds[nextTopicIndex];
+    if (!nextTopic) {
+      return state;
+    }
     const nextTopicEmails = nextTopic ? briefingSnapshot.topicEmailMap[nextTopic] ?? [] : [];
+    const nextEmailId = nextTopicEmails[0];
 
     return updateDriveState(state, {
       position: {
@@ -374,7 +383,7 @@ export function navigateToNextItem(state: DriveState): DriveState {
         itemIndex: 0,
         totalItemsInTopic: nextTopicEmails.length,
         currentTopicId: nextTopic,
-        currentEmailId: nextTopicEmails[0],
+        ...(nextEmailId ? { currentEmailId: nextEmailId } : {}),
         itemsRemaining: position.itemsRemaining - 1,
         depth: 0,
       },
@@ -402,11 +411,15 @@ export function navigateToPreviousItem(state: DriveState): DriveState {
       ? briefingSnapshot.topicEmailMap[currentTopic] ?? []
       : [];
     const prevItemIndex = position.itemIndex - 1;
+    const prevEmailId = currentTopicEmails[prevItemIndex];
+    if (!prevEmailId) {
+      return state;
+    }
 
     return updateDriveState(state, {
       position: {
         itemIndex: prevItemIndex,
-        currentEmailId: currentTopicEmails[prevItemIndex],
+        currentEmailId: prevEmailId,
         itemsRemaining: position.itemsRemaining + 1,
         depth: 0,
       },
@@ -423,14 +436,15 @@ export function navigateToPreviousItem(state: DriveState): DriveState {
     const prevTopic = briefingSnapshot.topicIds[prevTopicIndex];
     const prevTopicEmails = prevTopic ? briefingSnapshot.topicEmailMap[prevTopic] ?? [] : [];
     const lastItemIndex = Math.max(0, prevTopicEmails.length - 1);
+    const prevEmailId = prevTopicEmails[lastItemIndex];
 
     return updateDriveState(state, {
       position: {
         topicIndex: prevTopicIndex,
         itemIndex: lastItemIndex,
         totalItemsInTopic: prevTopicEmails.length,
-        currentTopicId: prevTopic,
-        currentEmailId: prevTopicEmails[lastItemIndex],
+        ...(prevTopic ? { currentTopicId: prevTopic } : {}),
+        ...(prevEmailId ? { currentEmailId: prevEmailId } : {}),
         itemsRemaining: position.itemsRemaining + 1,
         depth: 0,
       },
@@ -458,6 +472,7 @@ export function skipCurrentTopic(state: DriveState): DriveState {
 
   const nextTopic = briefingSnapshot.topicIds[nextTopicIndex];
   const nextTopicEmails = nextTopic ? briefingSnapshot.topicEmailMap[nextTopic] ?? [] : [];
+  const nextEmailId = nextTopicEmails[0];
 
   // Calculate items skipped in current topic
   const currentTopic = briefingSnapshot.topicIds[position.topicIndex];
@@ -471,8 +486,8 @@ export function skipCurrentTopic(state: DriveState): DriveState {
       topicIndex: nextTopicIndex,
       itemIndex: 0,
       totalItemsInTopic: nextTopicEmails.length,
-      currentTopicId: nextTopic,
-      currentEmailId: nextTopicEmails[0],
+      ...(nextTopic ? { currentTopicId: nextTopic } : {}),
+      ...(nextEmailId ? { currentEmailId: nextEmailId } : {}),
       itemsRemaining: Math.max(0, position.itemsRemaining - itemsSkipped),
       depth: 0,
     },
@@ -480,7 +495,7 @@ export function skipCurrentTopic(state: DriveState): DriveState {
     lastAction: {
       type: 'SKIP',
       timestamp: new Date(),
-      target: currentTopic,
+      ...(currentTopic ? { target: currentTopic } : {}),
     },
   });
 }
@@ -503,7 +518,7 @@ export function goDeeper(state: DriveState): DriveState {
     lastAction: {
       type: 'GO_DEEPER',
       timestamp: new Date(),
-      target: state.position.currentEmailId,
+      ...(state.position.currentEmailId ? { target: state.position.currentEmailId } : {}),
       metadata: { depth: state.position.depth + 1 },
     },
   });

@@ -1,0 +1,62 @@
+/**
+ * Tools module exports
+ */
+
+// Email tools
+export {
+  EMAIL_TOOLS,
+  getEmailTool,
+  executeEmailTool,
+  executeMuteSender,
+  executePrioritizeVip,
+  executeMarkRead,
+  executeFlagFollowup,
+  executeCreateDraft,
+  executeArchiveEmail,
+  executeUndoLastAction,
+  EMAIL_TOOL_EXECUTORS,
+  muteSenderTool,
+  prioritizeVipTool,
+  createFolderTool,
+  moveEmailsTool,
+  markReadTool,
+  flagFollowupTool,
+  createDraftTool,
+  searchEmailsTool,
+  undoLastActionTool,
+  archiveEmailTool,
+  type ToolDefinition,
+  type ToolResult,
+  type EmailActionContext,
+  type ToolExecutor,
+} from './email-tools.js';
+
+// Navigation tools
+export {
+  NAVIGATION_TOOLS,
+  getNavigationTool,
+  executeNavigationTool,
+  executeSkipTopic,
+  executeNextItem,
+  executeGoBack,
+  executeRepeatThat,
+  executeGoDeeper,
+  executePauseBriefing,
+  executeResumeBriefing,
+  executeStopBriefing,
+  NAVIGATION_TOOL_EXECUTORS,
+  skipTopicTool,
+  nextItemTool,
+  goBackTool,
+  repeatThatTool,
+  goDeeperTool,
+  pauseBriefingTool,
+  resumeBriefingTool,
+  stopBriefingTool,
+  createBriefingState,
+  updateBriefingState,
+  type NavigationResult,
+  type NavigationAction,
+  type BriefingState,
+  type NavigationExecutor,
+} from './navigation-tools.js';
