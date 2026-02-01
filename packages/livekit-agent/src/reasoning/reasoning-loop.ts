@@ -13,6 +13,7 @@
  */
 
 import { createLogger } from '@nexus-aec/logger';
+import OpenAI from 'openai';
 
 import { loadOpenAIConfig } from '../config.js';
 import { generateConfirmation, generateDisambiguationPrompt } from '../prompts/briefing-prompts.js';
@@ -150,137 +151,111 @@ interface ChatCompletionResponse {
 }
 
 /**
- * Call OpenAI chat completion API
- * This is a simplified interface - actual implementation would use OpenAI SDK
+ * Call OpenAI chat completion API with tool support
  */
 async function callChatCompletion(
   messages: ConversationMessage[],
   tools: Array<{ type: 'function'; function: Record<string, unknown> }>,
   config: OpenAIConfig
 ): Promise<ChatCompletionResponse> {
-  // In production, this would call the actual OpenAI API
-  // For now, return a mock response for development
-  logger.debug('Calling chat completion', {
+  logger.debug('Calling OpenAI chat completion', {
     messageCount: messages.length,
     toolCount: tools.length,
     model: config.model,
   });
 
-  // This is a placeholder - actual implementation would use fetch or OpenAI SDK
-  const response = await mockChatCompletion(messages, tools);
-  return response;
-}
+  // Initialize OpenAI client
+  const openai = new OpenAI({ apiKey: config.apiKey });
 
-/**
- * Mock chat completion for development/testing
- */
-async function mockChatCompletion(
-  messages: ConversationMessage[],
-  _tools: Array<{ type: 'function'; function: Record<string, unknown> }>
-): Promise<ChatCompletionResponse> {
-  // Get the last user message
-  const lastUserMessage = messages
-    .filter((m) => m.role === 'user')
-    .pop();
+  // Build messages array for OpenAI API
+  const openaiMessages: OpenAI.ChatCompletionMessageParam[] = messages.map((msg) => {
+    if (msg.role === 'system') {
+      return { role: 'system' as const, content: msg.content };
+    }
+    if (msg.role === 'user') {
+      return { role: 'user' as const, content: msg.content };
+    }
+    if (msg.role === 'tool' && msg.tool_call_id) {
+      return {
+        role: 'tool' as const,
+        content: msg.content,
+        tool_call_id: msg.tool_call_id,
+      };
+    }
+    // Assistant message
+    const assistantMsg: OpenAI.ChatCompletionAssistantMessageParam = {
+      role: 'assistant' as const,
+      content: msg.content,
+    };
+    if (msg.tool_calls && msg.tool_calls.length > 0) {
+      assistantMsg.tool_calls = msg.tool_calls.map((tc) => ({
+        id: tc.id,
+        type: 'function' as const,
+        function: {
+          name: tc.function.name,
+          arguments: tc.function.arguments,
+        },
+      }));
+    }
+    return assistantMsg;
+  });
 
-  const userText = lastUserMessage?.content?.toLowerCase() ?? '';
+  // Build tools array for OpenAI API (only if we have tools)
+  const openaiTools: OpenAI.ChatCompletionTool[] = tools.map((tool) => ({
+    type: 'function' as const,
+    function: tool.function as unknown as OpenAI.FunctionDefinition,
+  }));
 
-  // Simple mock responses based on user input
-  let responseContent = "I'm here to help with your email briefing.";
-  let toolCalls: ChatCompletionResponse['choices'][0]['message']['tool_calls'] = undefined;
-
-  // Detect intents and mock responses
-  if (userText.includes('skip') || userText.includes('next topic')) {
-    toolCalls = [{
-      id: 'call_1',
-      type: 'function',
-      function: {
-        name: 'skip_topic',
-        arguments: '{}',
-      },
-    }];
-    responseContent = '';
-  } else if (userText.includes('next')) {
-    toolCalls = [{
-      id: 'call_1',
-      type: 'function',
-      function: {
-        name: 'next_item',
-        arguments: '{}',
-      },
-    }];
-    responseContent = '';
-  } else if (userText.includes('flag') || userText.includes('follow up')) {
-    toolCalls = [{
-      id: 'call_1',
-      type: 'function',
-      function: {
-        name: 'flag_followup',
-        arguments: '{"due_date": "tomorrow"}',
-      },
-    }];
-    responseContent = '';
-  } else if (userText.includes('mute')) {
-    toolCalls = [{
-      id: 'call_1',
-      type: 'function',
-      function: {
-        name: 'mute_sender',
-        arguments: '{"sender_email": "example@email.com"}',
-      },
-    }];
-    responseContent = '';
-  } else if (userText.includes('repeat')) {
-    toolCalls = [{
-      id: 'call_1',
-      type: 'function',
-      function: {
-        name: 'repeat_that',
-        arguments: '{}',
-      },
-    }];
-    responseContent = '';
-  } else if (userText.includes('pause')) {
-    toolCalls = [{
-      id: 'call_1',
-      type: 'function',
-      function: {
-        name: 'pause_briefing',
-        arguments: '{}',
-      },
-    }];
-    responseContent = '';
-  } else if (userText.includes('stop') || userText.includes('done')) {
-    toolCalls = [{
-      id: 'call_1',
-      type: 'function',
-      function: {
-        name: 'stop_briefing',
-        arguments: '{}',
-      },
-    }];
-    responseContent = '';
-  } else if (userText.includes('yes') || userText.includes('confirm')) {
-    responseContent = 'Done.';
-  } else if (userText.includes('no') || userText.includes('cancel')) {
-    responseContent = "Okay, cancelled.";
-  }
-
-  const message: ChatCompletionResponse['choices'][0]['message'] = {
-    role: 'assistant',
-    content: responseContent || null,
+  // Build request params, conditionally including tools
+  const requestParams: OpenAI.ChatCompletionCreateParamsNonStreaming = {
+    model: config.model,
+    messages: openaiMessages,
+    max_tokens: config.maxTokens,
+    temperature: config.temperature,
   };
 
-  if (toolCalls) {
-    message.tool_calls = toolCalls;
+  // Only add tools if we have any (avoids undefined with exactOptionalPropertyTypes)
+  if (openaiTools.length > 0) {
+    requestParams.tools = openaiTools;
   }
 
-  return {
-    choices: [{
-      message,
-      finish_reason: toolCalls ? 'tool_calls' : 'stop',
-    }],
-  };
+  try {
+    const response = await openai.chat.completions.create(requestParams);
+
+    const choice = response.choices[0];
+    const toolCalls = choice?.message?.tool_calls;
+
+    // Build the response, handling tool_calls explicitly
+    const responseMessage: ChatCompletionResponse['choices'][0]['message'] = {
+      role: 'assistant',
+      content: choice?.message?.content ?? null,
+    };
+
+    if (toolCalls && toolCalls.length > 0) {
+      responseMessage.tool_calls = toolCalls
+        .filter((tc): tc is OpenAI.ChatCompletionMessageToolCall & { type: 'function' } =>
+          tc.type === 'function'
+        )
+        .map((tc) => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: {
+            name: tc.function.name,
+            arguments: tc.function.arguments,
+          },
+        }));
+    }
+
+    return {
+      choices: [{
+        message: responseMessage,
+        finish_reason: choice?.finish_reason ?? 'stop',
+      }],
+    };
+  } catch (error) {
+    logger.error('OpenAI API error', error instanceof Error ? error : null);
+    throw error;
+  }
 }
 
 // =============================================================================

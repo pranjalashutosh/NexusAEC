@@ -120,6 +120,12 @@ function getOAuthConfig(): {
 const pendingOAuthStates = new Map<string, OAuthState>();
 
 /**
+ * Completed OAuth results for mobile polling
+ * Key: state parameter, Value: AuthSuccessResponse | AuthErrorResponse
+ */
+const completedOAuthResults = new Map<string, AuthSuccessResponse | AuthErrorResponse>();
+
+/**
  * Store an OAuth state for later verification
  */
 function storePendingState(oauthState: OAuthState): void {
@@ -140,6 +146,20 @@ function consumePendingState(state: string): OAuthState | undefined {
     pendingOAuthStates.delete(state);
   }
   return oauthState;
+}
+
+/**
+ * Store a completed OAuth result for mobile polling
+ * Auto-expires after 5 minutes
+ */
+function storeCompletedResult(
+  state: string,
+  result: AuthSuccessResponse | AuthErrorResponse,
+): void {
+  completedOAuthResults.set(state, result);
+  setTimeout(() => {
+    completedOAuthResults.delete(state);
+  }, 5 * 60 * 1000);
 }
 
 // =============================================================================
@@ -306,6 +326,44 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       return handleOAuthCallback(request, reply, 'GMAIL');
     }
   );
+
+  // ---------------------------------------------------------------------------
+  // OAuth Result Polling (for mobile clients)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Poll for OAuth result
+   * GET /auth/result/:state
+   *
+   * Mobile clients call this after opening the authorization URL in a browser.
+   * Returns 202 (pending) while waiting, 200 with result when complete.
+   */
+  app.get<{ Params: { state: string } }>(
+    '/auth/result/:state',
+    async (request, reply) => {
+      const { state } = request.params;
+
+      // Check if the result is ready
+      const result = completedOAuthResults.get(state);
+      if (result) {
+        // Consume the result (one-time read)
+        completedOAuthResults.delete(state);
+        return reply.send(result);
+      }
+
+      // Check if the state is still pending (flow in progress)
+      if (pendingOAuthStates.has(state)) {
+        return reply.status(202).send({ status: 'pending' });
+      }
+
+      // State not found — expired or never existed
+      return reply.status(404).send({
+        success: false,
+        error: 'OAuth state not found or expired',
+        code: 'STATE_NOT_FOUND',
+      } satisfies AuthErrorResponse);
+    }
+  );
 }
 
 // =============================================================================
@@ -448,16 +506,24 @@ async function handleOAuthCallback(
       response.displayName = displayName;
     }
 
+    // Store result for mobile polling
+    storeCompletedResult(state, response);
+
     return reply.send(response);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     logger.error('Token exchange failed', null, { source, errorMessage: message });
 
-    return reply.status(500).send({
+    const errorResponse: AuthErrorResponse = {
       success: false,
       error: `Token exchange failed: ${message}`,
       code: 'TOKEN_EXCHANGE_FAILED',
-    } satisfies AuthErrorResponse);
+    };
+
+    // Store error result for mobile polling
+    storeCompletedResult(state, errorResponse);
+
+    return reply.status(500).send(errorResponse);
   }
 }
 
@@ -470,6 +536,7 @@ async function handleOAuthCallback(
  */
 export function resetAuthState(): void {
   pendingOAuthStates.clear();
+  completedOAuthResults.clear();
   tokenManager = null;
   microsoftProvider = null;
   googleProvider = null;

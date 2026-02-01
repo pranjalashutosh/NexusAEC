@@ -11,9 +11,13 @@
  * - create_draft
  * - search_emails
  * - undo_last_action
+ * - archive_email
  */
 
 import { createLogger } from '@nexus-aec/logger';
+import { isEmailProviderError } from '@nexus-aec/email-providers';
+
+import type { UnifiedInboxService, SmartDraftService, EmailQueryFilters } from '@nexus-aec/email-providers';
 
 const logger = createLogger({ baseContext: { component: 'email-tools' } });
 
@@ -72,12 +76,149 @@ export type ToolExecutor = (
 ) => Promise<ToolResult>;
 
 // =============================================================================
-// Tool Definitions
+// Service Registry
+// =============================================================================
+
+let _inboxService: UnifiedInboxService | null = null;
+let _draftService: SmartDraftService | null = null;
+
+/**
+ * Register email services for use by tool executors.
+ * Call this after user authenticates and providers are ready.
+ */
+export function setEmailServices(
+  inbox: UnifiedInboxService,
+  draft?: SmartDraftService
+): void {
+  _inboxService = inbox;
+  if (draft !== undefined) {
+    _draftService = draft;
+  }
+  logger.info('Email services registered');
+}
+
+/**
+ * Clear email services (call on disconnect/shutdown)
+ */
+export function clearEmailServices(): void {
+  _inboxService = null;
+  _draftService = null;
+  logger.info('Email services cleared');
+}
+
+/**
+ * Get the inbox service or throw if not initialized
+ */
+function getInboxService(): UnifiedInboxService {
+  if (!_inboxService) {
+    throw new Error('Email services not initialized. Call setEmailServices() after authentication.');
+  }
+  return _inboxService;
+}
+
+// =============================================================================
+// Local State (VIP / Mute — no provider equivalent)
+// =============================================================================
+
+const vipList = new Set<string>();
+const muteList = new Map<string, { until: Date | null }>();
+
+/**
+ * Check if a sender email is on the VIP list
+ */
+export function isVip(email: string): boolean {
+  return vipList.has(email);
+}
+
+/**
+ * Check if a sender email is currently muted
+ */
+export function isMuted(email: string): boolean {
+  const entry = muteList.get(email);
+  if (!entry) {return false;}
+  if (entry.until && entry.until < new Date()) {
+    muteList.delete(email);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Compute mute expiration date
+ */
+function computeExpiration(duration: string): Date | null {
+  if (duration === 'forever') {return null;}
+  const now = new Date();
+  switch (duration) {
+    case '1_day': return new Date(now.getTime() + 86400000);
+    case '1_week': return new Date(now.getTime() + 7 * 86400000);
+    case '1_month': return new Date(now.getTime() + 30 * 86400000);
+    default: return new Date(now.getTime() + 86400000);
+  }
+}
+
+// =============================================================================
+// Error Handling
 // =============================================================================
 
 /**
- * Mute sender tool definition
+ * Map provider errors to human-friendly voice messages
  */
+function handleProviderError(error: unknown, actionDescription: string): ToolResult {
+  if (isEmailProviderError(error)) {
+    switch (error.code) {
+      case 'AUTH_EXPIRED':
+      case 'AUTH_INVALID':
+        return {
+          success: false,
+          message: 'Your email session has expired. Please reconnect your email account.',
+          riskLevel: 'high',
+        };
+      case 'RATE_LIMITED':
+        return {
+          success: false,
+          message: "I'm being rate limited by the email provider. I'll try again in a moment.",
+          riskLevel: 'low',
+        };
+      case 'NOT_FOUND':
+        return {
+          success: false,
+          message: "I couldn't find that email. It may have been moved or deleted.",
+          riskLevel: 'low',
+        };
+      case 'NETWORK_ERROR':
+        return {
+          success: false,
+          message: "I'm having trouble reaching the email server. Please check your connection.",
+          riskLevel: 'medium',
+        };
+      default:
+        break;
+    }
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (message.includes('Email services not initialized')) {
+    return {
+      success: false,
+      message: 'Email is not connected yet. Please connect your email account first.',
+      riskLevel: 'medium',
+    };
+  }
+
+  logger.error(`Failed to ${actionDescription}`, error instanceof Error ? error : new Error(message));
+  return {
+    success: false,
+    message: `Failed to ${actionDescription}. Please try again.`,
+    riskLevel: 'low',
+  };
+}
+
+// =============================================================================
+// Tool Definitions
+// =============================================================================
+
 export const muteSenderTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -101,9 +242,6 @@ export const muteSenderTool: ToolDefinition = {
   },
 };
 
-/**
- * Prioritize VIP tool definition
- */
 export const prioritizeVipTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -126,9 +264,6 @@ export const prioritizeVipTool: ToolDefinition = {
   },
 };
 
-/**
- * Create folder tool definition
- */
 export const createFolderTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -151,9 +286,6 @@ export const createFolderTool: ToolDefinition = {
   },
 };
 
-/**
- * Move emails tool definition
- */
 export const moveEmailsTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -176,9 +308,6 @@ export const moveEmailsTool: ToolDefinition = {
   },
 };
 
-/**
- * Mark read tool definition
- */
 export const markReadTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -197,9 +326,6 @@ export const markReadTool: ToolDefinition = {
   },
 };
 
-/**
- * Flag for follow-up tool definition
- */
 export const flagFollowupTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -227,9 +353,6 @@ export const flagFollowupTool: ToolDefinition = {
   },
 };
 
-/**
- * Create draft tool definition
- */
 export const createDraftTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -257,9 +380,6 @@ export const createDraftTool: ToolDefinition = {
   },
 };
 
-/**
- * Search emails tool definition
- */
 export const searchEmailsTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -292,9 +412,6 @@ export const searchEmailsTool: ToolDefinition = {
   },
 };
 
-/**
- * Undo last action tool definition
- */
 export const undoLastActionTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -308,9 +425,6 @@ export const undoLastActionTool: ToolDefinition = {
   },
 };
 
-/**
- * Archive email tool definition
- */
 export const archiveEmailTool: ToolDefinition = {
   type: 'function',
   function: {
@@ -333,9 +447,6 @@ export const archiveEmailTool: ToolDefinition = {
 // All Email Tools
 // =============================================================================
 
-/**
- * All email tool definitions
- */
 export const EMAIL_TOOLS: ToolDefinition[] = [
   muteSenderTool,
   prioritizeVipTool,
@@ -349,20 +460,14 @@ export const EMAIL_TOOLS: ToolDefinition[] = [
   archiveEmailTool,
 ];
 
-/**
- * Get tool by name
- */
 export function getEmailTool(name: string): ToolDefinition | undefined {
   return EMAIL_TOOLS.find((t) => t.function.name === name);
 }
 
 // =============================================================================
-// Tool Executors
+// Action History (for undo)
 // =============================================================================
 
-/**
- * Action history for undo functionality
- */
 const actionHistory: Array<{
   action: string;
   args: Record<string, unknown>;
@@ -371,14 +476,8 @@ const actionHistory: Array<{
   reversible: boolean;
 }> = [];
 
-/**
- * Maximum actions to keep in history
- */
 const MAX_HISTORY_SIZE = 50;
 
-/**
- * Record an action in history
- */
 function recordAction(
   action: string,
   args: Record<string, unknown>,
@@ -393,14 +492,17 @@ function recordAction(
     reversible,
   });
 
-  // Trim history if too large
   while (actionHistory.length > MAX_HISTORY_SIZE) {
     actionHistory.shift();
   }
 }
 
+// =============================================================================
+// Tool Executors
+// =============================================================================
+
 /**
- * Execute mute_sender
+ * Execute mute_sender — local-only (no provider equivalent)
  */
 export async function executeMuteSender(
   args: Record<string, unknown>,
@@ -411,7 +513,6 @@ export async function executeMuteSender(
 
   logger.info('Executing mute_sender', { senderEmail, duration, context });
 
-  // Check if muting a VIP
   if (context.isVip) {
     return {
       success: false,
@@ -421,10 +522,12 @@ export async function executeMuteSender(
     };
   }
 
-  // Record for undo
-  recordAction('mute_sender', args, context, true);
+  const wasMuted = muteList.has(senderEmail);
+  const until = computeExpiration(duration);
+  muteList.set(senderEmail, { until });
 
-  // TODO: Actually mute via email provider
+  recordAction('mute_sender', { ...args, _wasMuted: wasMuted }, context, true);
+
   return {
     success: true,
     message: `Muted ${context.from ?? senderEmail} for ${duration.replace('_', ' ')}.`,
@@ -433,7 +536,7 @@ export async function executeMuteSender(
 }
 
 /**
- * Execute prioritize_vip
+ * Execute prioritize_vip — local-only (no provider equivalent)
  */
 export async function executePrioritizeVip(
   args: Record<string, unknown>,
@@ -444,41 +547,53 @@ export async function executePrioritizeVip(
 
   logger.info('Executing prioritize_vip', { senderEmail, senderName, context });
 
-  // Record for undo
-  recordAction('prioritize_vip', args, context, true);
+  const wasVip = vipList.has(senderEmail);
+  vipList.add(senderEmail);
 
-  // TODO: Actually add to VIP list
+  recordAction('prioritize_vip', { ...args, _wasVip: wasVip }, context, true);
+
   return {
     success: true,
-    message: `Added ${senderName} to your VIP list.`,
+    message: wasVip
+      ? `${senderName} is already on your VIP list.`
+      : `Added ${senderName} to your VIP list.`,
     riskLevel: 'medium',
   };
 }
 
 /**
- * Execute mark_read
+ * Execute mark_read — calls inbox.markRead()
  */
 export async function executeMarkRead(
   args: Record<string, unknown>,
   context: EmailActionContext
 ): Promise<ToolResult> {
-  const emailIds = (args['email_ids'] as string)?.split(',') ?? [context.emailId];
+  const emailIds = (args['email_ids'] as string)?.split(',').map((s) => s.trim()) ?? [context.emailId];
 
   logger.info('Executing mark_read', { emailIds, context });
 
-  // Record for undo
-  recordAction('mark_read', args, context, true);
+  try {
+    const inbox = getInboxService();
+    const result = await inbox.markRead(emailIds);
 
-  // TODO: Actually mark as read via email provider
-  return {
-    success: true,
-    message: emailIds.length === 1 ? 'Marked as read.' : `Marked ${emailIds.length} emails as read.`,
-    riskLevel: 'low',
-  };
+    if (!result.allSucceeded) {
+      logger.warn('Partial markRead failure', { errors: result.errors });
+    }
+
+    recordAction('mark_read', { email_ids: emailIds.join(',') }, context, true);
+
+    return {
+      success: true,
+      message: emailIds.length === 1 ? 'Marked as read.' : `Marked ${emailIds.length} emails as read.`,
+      riskLevel: 'low',
+    };
+  } catch (error) {
+    return handleProviderError(error, 'mark as read');
+  }
 }
 
 /**
- * Execute flag_followup
+ * Execute flag_followup — calls inbox.flagEmails()
  */
 export async function executeFlagFollowup(
   args: Record<string, unknown>,
@@ -486,24 +601,28 @@ export async function executeFlagFollowup(
 ): Promise<ToolResult> {
   const emailId = (args['email_id'] as string) ?? context.emailId;
   const dueDate = (args['due_date'] as string) ?? 'no_date';
-  const note = args['note'] as string | undefined;
 
-  logger.info('Executing flag_followup', { emailId, dueDate, note, context });
+  logger.info('Executing flag_followup', { emailId, dueDate, context });
 
-  // Record for undo
-  recordAction('flag_followup', args, context, true);
+  try {
+    const inbox = getInboxService();
+    await inbox.flagEmails([emailId]);
 
-  // TODO: Actually flag via email provider
-  const dueDateText = dueDate !== 'no_date' ? ` for ${dueDate.replace('_', ' ')}` : '';
-  return {
-    success: true,
-    message: `Flagged for follow-up${dueDateText}.`,
-    riskLevel: 'medium',
-  };
+    recordAction('flag_followup', { email_id: emailId, due_date: dueDate }, context, true);
+
+    const dueDateText = dueDate !== 'no_date' ? ` for ${dueDate.replace('_', ' ')}` : '';
+    return {
+      success: true,
+      message: `Flagged for follow-up${dueDateText}.`,
+      riskLevel: 'medium',
+    };
+  } catch (error) {
+    return handleProviderError(error, 'flag email');
+  }
 }
 
 /**
- * Execute create_draft
+ * Execute create_draft — uses SmartDraftService or falls back to inbox.createDraft()
  */
 export async function executeCreateDraft(
   args: Record<string, unknown>,
@@ -515,18 +634,47 @@ export async function executeCreateDraft(
 
   logger.info('Executing create_draft', { inReplyTo, tone, context });
 
-  // This requires confirmation before sending
-  return {
-    success: true,
-    message: `I've drafted a ${tone} reply. Would you like me to read it back before saving?`,
-    data: { draftBody: body, inReplyTo },
-    requiresConfirmation: true,
-    riskLevel: 'high',
-  };
+  try {
+    const inbox = getInboxService();
+    const originalEmail = await inbox.fetchEmail(inReplyTo);
+
+    if (_draftService && originalEmail) {
+      const draft = await _draftService.createReply(originalEmail, {
+        bodyText: body,
+      });
+      return {
+        success: true,
+        message: `I've drafted a ${tone} reply. Would you like me to read it back before saving?`,
+        data: { draftId: draft.id, draftBody: body, inReplyTo },
+        requiresConfirmation: true,
+        riskLevel: 'high',
+      };
+    }
+
+    // Fallback: create draft via UnifiedInboxService
+    const draft = await inbox.createDraft({
+      subject: context.subject ? `Re: ${context.subject}` : 'Re:',
+      to: context.from ? [{ email: context.from }] : [],
+      bodyText: body,
+      inReplyToMessageId: inReplyTo,
+      isPendingReview: true,
+      reviewRationale: 'Created via voice command',
+    });
+
+    return {
+      success: true,
+      message: `I've drafted a ${tone} reply. Would you like me to read it back before saving?`,
+      data: { draftId: draft.id, draftBody: body, inReplyTo },
+      requiresConfirmation: true,
+      riskLevel: 'high',
+    };
+  } catch (error) {
+    return handleProviderError(error, 'create draft');
+  }
 }
 
 /**
- * Execute archive_email
+ * Execute archive_email — calls inbox.archiveEmails()
  */
 export async function executeArchiveEmail(
   args: Record<string, unknown>,
@@ -536,19 +684,180 @@ export async function executeArchiveEmail(
 
   logger.info('Executing archive_email', { emailId, context });
 
-  // Record for undo
-  recordAction('archive_email', args, context, true);
+  try {
+    const inbox = getInboxService();
+    await inbox.archiveEmails([emailId]);
 
-  // TODO: Actually archive via email provider
-  return {
-    success: true,
-    message: 'Archived.',
-    riskLevel: 'low',
-  };
+    recordAction('archive_email', { email_id: emailId }, context, true);
+
+    return {
+      success: true,
+      message: 'Archived.',
+      riskLevel: 'low',
+    };
+  } catch (error) {
+    return handleProviderError(error, 'archive email');
+  }
 }
 
 /**
- * Execute undo_last_action
+ * Execute create_folder — calls inbox.createFolder()
+ */
+export async function executeCreateFolder(
+  args: Record<string, unknown>,
+  context: EmailActionContext
+): Promise<ToolResult> {
+  const folderName = args['folder_name'] as string;
+  const parentFolder = args['parent_folder'] as string | undefined;
+
+  logger.info('Executing create_folder', { folderName, parentFolder, context });
+
+  try {
+    const inbox = getInboxService();
+    const sources = inbox.getActiveSources();
+    const source = sources[0];
+    if (!source) {
+      return { success: false, message: 'No email provider connected.', riskLevel: 'low' };
+    }
+
+    const folder = await inbox.createFolder(folderName, source, parentFolder);
+
+    recordAction('create_folder', { folder_name: folderName, folder_id: folder.id }, context, true);
+
+    return {
+      success: true,
+      message: `Created folder "${folderName}".`,
+      data: { folderId: folder.id },
+      riskLevel: 'medium',
+    };
+  } catch (error) {
+    return handleProviderError(error, 'create folder');
+  }
+}
+
+/**
+ * Execute move_emails — resolves folder name, then calls inbox.moveToFolder()
+ */
+export async function executeMoveEmails(
+  args: Record<string, unknown>,
+  context: EmailActionContext
+): Promise<ToolResult> {
+  const emailIds = (args['email_ids'] as string)?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+  const targetFolder = args['target_folder'] as string;
+
+  logger.info('Executing move_emails', { emailIds, targetFolder, context });
+
+  if (emailIds.length === 0) {
+    return { success: false, message: 'No email IDs provided.', riskLevel: 'low' };
+  }
+
+  try {
+    const inbox = getInboxService();
+    const { folders } = await inbox.fetchFolders();
+    const matchedFolder = folders.find(
+      (f) => f.name.toLowerCase() === targetFolder.toLowerCase() || f.id === targetFolder
+    );
+
+    if (!matchedFolder) {
+      return {
+        success: false,
+        message: `Folder "${targetFolder}" not found. Would you like me to create it?`,
+        requiresConfirmation: true,
+        riskLevel: 'medium',
+      };
+    }
+
+    await inbox.moveToFolder(emailIds, matchedFolder.id);
+
+    // Move is not reversible (unknown source folder)
+    recordAction('move_emails', {
+      email_ids: emailIds.join(','),
+      target_folder: matchedFolder.id,
+    }, context, false);
+
+    return {
+      success: true,
+      message: emailIds.length === 1
+        ? `Moved to "${matchedFolder.name}".`
+        : `Moved ${emailIds.length} emails to "${matchedFolder.name}".`,
+      riskLevel: 'low',
+    };
+  } catch (error) {
+    return handleProviderError(error, 'move emails');
+  }
+}
+
+/**
+ * Execute search_emails — calls inbox.fetchUnread() with filters
+ */
+export async function executeSearchEmails(
+  args: Record<string, unknown>,
+  context: EmailActionContext
+): Promise<ToolResult> {
+  const query = args['query'] as string;
+  const from = args['from'] as string | undefined;
+  const dateRange = args['date_range'] as string | undefined;
+  const hasAttachment = args['has_attachment'] as string | undefined;
+
+  logger.info('Executing search_emails', { query, from, dateRange, hasAttachment, context });
+
+  try {
+    const inbox = getInboxService();
+
+    const filters: EmailQueryFilters = { query };
+    if (from) {filters.from = from;}
+    if (hasAttachment === 'true') {filters.hasAttachments = true;}
+    if (dateRange) {
+      const now = new Date();
+      switch (dateRange) {
+        case 'today':
+          filters.after = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'yesterday': {
+          const y = new Date(now);
+          y.setDate(y.getDate() - 1);
+          filters.after = new Date(y.getFullYear(), y.getMonth(), y.getDate());
+          filters.before = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        }
+        case 'this_week': {
+          const w = new Date(now);
+          w.setDate(w.getDate() - now.getDay());
+          filters.after = w;
+          break;
+        }
+        case 'this_month':
+          filters.after = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        // 'all_time' — no date filter
+      }
+    }
+
+    const result = await inbox.fetchUnread(filters, { pageSize: 10 });
+
+    return {
+      success: true,
+      message: result.items.length === 0
+        ? 'No emails found matching your search.'
+        : `Found ${result.items.length} email${result.items.length > 1 ? 's' : ''}. ${result.items.slice(0, 3).map((e) => `"${e.subject}" from ${e.from.name ?? e.from.email}`).join('; ')}.`,
+      data: {
+        count: result.items.length,
+        emails: result.items.slice(0, 5).map((e) => ({
+          id: e.id,
+          subject: e.subject,
+          from: e.from.email,
+          receivedAt: e.receivedAt,
+        })),
+      },
+      riskLevel: 'low',
+    };
+  } catch (error) {
+    return handleProviderError(error, 'search emails');
+  }
+}
+
+/**
+ * Execute undo_last_action — dispatches reverse provider calls
  */
 export async function executeUndoLastAction(
   _args: Record<string, unknown>,
@@ -574,21 +883,61 @@ export async function executeUndoLastAction(
 
   logger.info('Executing undo', { lastAction });
 
-  // TODO: Actually reverse the action
-  return {
-    success: true,
-    message: `Undid ${lastAction.action.replace('_', ' ')}.`,
-    riskLevel: 'low',
-  };
+  try {
+    switch (lastAction.action) {
+      case 'mark_read': {
+        const ids = (lastAction.args['email_ids'] as string)?.split(',').map((s) => s.trim()) ?? [];
+        const inbox = getInboxService();
+        await inbox.markUnread(ids);
+        return { success: true, message: 'Undid mark as read.', riskLevel: 'low' };
+      }
+      case 'flag_followup': {
+        const id = lastAction.args['email_id'] as string;
+        const inbox = getInboxService();
+        await inbox.unflagEmails([id]);
+        return { success: true, message: 'Removed follow-up flag.', riskLevel: 'low' };
+      }
+      case 'archive_email': {
+        const id = lastAction.args['email_id'] as string;
+        const inbox = getInboxService();
+        const { folders } = await inbox.fetchFolders();
+        const inboxFolder = folders.find((f) => f.systemType === 'inbox');
+        if (inboxFolder) {
+          await inbox.moveToFolder([id], inboxFolder.id);
+        }
+        return { success: true, message: 'Moved back to inbox.', riskLevel: 'low' };
+      }
+      case 'mute_sender': {
+        const email = lastAction.args['sender_email'] as string;
+        muteList.delete(email);
+        return { success: true, message: `Unmuted ${email}.`, riskLevel: 'low' };
+      }
+      case 'prioritize_vip': {
+        const email = lastAction.args['sender_email'] as string;
+        const wasVip = lastAction.args['_wasVip'] as boolean;
+        if (!wasVip) {vipList.delete(email);}
+        return { success: true, message: `Removed ${email} from VIP list.`, riskLevel: 'low' };
+      }
+      case 'create_folder': {
+        const folderId = lastAction.args['folder_id'] as string;
+        if (folderId) {
+          const inbox = getInboxService();
+          await inbox.deleteFolder(folderId);
+        }
+        return { success: true, message: 'Deleted the folder.', riskLevel: 'low' };
+      }
+      default:
+        return { success: true, message: `Undid ${lastAction.action.replace('_', ' ')}.`, riskLevel: 'low' };
+    }
+  } catch (error) {
+    return handleProviderError(error, `undo ${lastAction.action}`);
+  }
 }
 
 // =============================================================================
 // Tool Executor Registry
 // =============================================================================
 
-/**
- * Map of tool names to executors
- */
 export const EMAIL_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   mute_sender: executeMuteSender,
   prioritize_vip: executePrioritizeVip,
@@ -597,6 +946,9 @@ export const EMAIL_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   create_draft: executeCreateDraft,
   archive_email: executeArchiveEmail,
   undo_last_action: executeUndoLastAction,
+  create_folder: executeCreateFolder,
+  move_emails: executeMoveEmails,
+  search_emails: executeSearchEmails,
 };
 
 /**

@@ -6,6 +6,9 @@
 
 import { createLogger } from '@nexus-aec/logger';
 
+import { getTokenManagerInstance } from './auth';
+
+import type { EmailSource } from '@nexus-aec/email-providers';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 const logger = createLogger({ baseContext: { component: 'livekit-token-routes' } });
@@ -166,6 +169,57 @@ function generateRoomName(userId: string): string {
 }
 
 // =============================================================================
+// Email Metadata Injection
+// =============================================================================
+
+/**
+ * Build email credential metadata for a user.
+ *
+ * Fetches the user's stored OAuth tokens (from the auth flow) and packages
+ * them into the metadata structure expected by the livekit-agent's
+ * email-bootstrap module: { email: { userId, outlook?, gmail? } }
+ */
+async function buildEmailMetadata(
+  userId: string
+): Promise<Record<string, unknown> | null> {
+  try {
+    const tokenManager = getTokenManagerInstance();
+
+    const sources: EmailSource[] = ['OUTLOOK', 'GMAIL'];
+    const emailMeta: Record<string, unknown> = { userId };
+    let hasAnyTokens = false;
+
+    for (const source of sources) {
+      const data = await tokenManager.getTokens(userId, source);
+      if (data?.tokens) {
+        const key = source === 'OUTLOOK' ? 'outlook' : 'gmail';
+        emailMeta[key] = data.tokens;
+        hasAnyTokens = true;
+      }
+    }
+
+    if (!hasAnyTokens) {
+      logger.debug('No stored email tokens for user', { userId });
+      return null;
+    }
+
+    logger.info('Email tokens embedded in metadata', {
+      userId,
+      hasOutlook: !!emailMeta['outlook'],
+      hasGmail: !!emailMeta['gmail'],
+    });
+
+    return { email: emailMeta };
+  } catch (error) {
+    logger.warn('Failed to build email metadata', {
+      userId,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+// =============================================================================
 // Route Handlers
 // =============================================================================
 
@@ -210,6 +264,13 @@ export function registerLiveKitTokenRoutes(app: FastifyInstance): void {
         // Generate or use provided room name
         const room = roomName ?? generateRoomName(userId);
 
+        // Build participant metadata: merge client-provided metadata with email tokens
+        const emailMeta = await buildEmailMetadata(userId);
+        const combinedMetadata: Record<string, unknown> = {
+          ...(metadata ?? {}),
+          ...(emailMeta ?? {}),
+        };
+
         // Build options with only defined properties
         const tokenOptions: Parameters<typeof generateAccessToken>[0] = {
           apiKey: config.apiKey,
@@ -221,8 +282,8 @@ export function registerLiveKitTokenRoutes(app: FastifyInstance): void {
         if (name) {
           tokenOptions.name = name;
         }
-        if (metadata) {
-          tokenOptions.metadata = JSON.stringify(metadata);
+        if (Object.keys(combinedMetadata).length > 0) {
+          tokenOptions.metadata = JSON.stringify(combinedMetadata);
         }
 
         // Generate the access token
@@ -232,6 +293,7 @@ export function registerLiveKitTokenRoutes(app: FastifyInstance): void {
           userId,
           roomName: room,
           expiresAt,
+          hasEmailTokens: !!emailMeta,
         });
 
         return reply.send({

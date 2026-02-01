@@ -71,11 +71,24 @@ export * from './tools/index.js';
 // Reasoning loop exports
 export * from './reasoning/index.js';
 
-// Reasoning loop will be exported here once implemented in Task 4.15
-// export { ReasoningLoop } from './reasoning-loop.js';
+// Briefing pipeline (intelligence layer → voice agent)
+export { runBriefingPipeline } from './briefing-pipeline.js';
+export type {
+  BriefingData,
+  BriefingTopic,
+  ScoredEmail,
+  BriefingPipelineOptions,
+} from './briefing-pipeline.js';
 
-// Tools will be exported here once implemented in Tasks 4.18-4.19
-// export { emailTools, navigationTools } from './tools/index.js';
+// Email bootstrap (wires email-providers into voice agent)
+export {
+  bootstrapEmailServices,
+  bootstrapFromMetadata,
+  teardownEmailServices,
+  parseEmailCredentials,
+} from './email-bootstrap.js';
 
-// Prompts will be exported here once implemented in Tasks 4.16-4.17
-// export { systemPrompt, briefingPrompts } from './prompts/index.js';
+export type {
+  EmailCredentials,
+  EmailBootstrapResult,
+} from './email-bootstrap.js';

@@ -1,5 +1,8 @@
 /**
  * LiveKit hook and provider
+ *
+ * Manages a real LiveKit Room connection for voice briefings.
+ * Uses livekit-client Room class with the token service for authentication.
  */
 
 import React, {
@@ -7,9 +10,20 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from 'react';
+import {
+  Room,
+  RoomEvent,
+  ConnectionState,
+  DataPacket_Kind,
+  type RemoteParticipant,
+} from 'livekit-client';
+
+import { getLiveKitToken } from '../services/livekit-token';
 
 /**
  * LiveKit room state
@@ -61,6 +75,31 @@ interface LiveKitContextValue {
 
 const LiveKitContext = createContext<LiveKitContextValue | undefined>(undefined);
 
+function getServerUrl(): string {
+  const envUrl =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+      ?.env?.LIVEKIT_URL;
+  return envUrl ?? 'wss://localhost:7880';
+}
+
+/**
+ * Map livekit-client ConnectionState to our RoomState
+ */
+function mapConnectionState(state: ConnectionState): RoomState {
+  switch (state) {
+    case ConnectionState.Connected:
+      return 'connected';
+    case ConnectionState.Connecting:
+      return 'connecting';
+    case ConnectionState.Reconnecting:
+      return 'reconnecting';
+    case ConnectionState.Disconnected:
+      return 'disconnected';
+    default:
+      return 'disconnected';
+  }
+}
+
 /**
  * LiveKit provider component
  */
@@ -73,51 +112,108 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
 
+  const roomRef = useRef<Room | null>(null);
+
+  /**
+   * Build participant list from the Room object
+   */
+  const syncParticipants = useCallback((room: Room) => {
+    const parts: Participant[] = [];
+
+    // Local participant
+    const local = room.localParticipant;
+    parts.push({
+      identity: local.identity,
+      name: local.name,
+      isLocal: true,
+      isSpeaking: local.isSpeaking,
+    });
+    setIsUserSpeaking(local.isSpeaking);
+
+    // Remote participants
+    room.remoteParticipants.forEach((remote) => {
+      parts.push({
+        identity: remote.identity,
+        name: remote.name,
+        isLocal: false,
+        isSpeaking: remote.isSpeaking,
+      });
+    });
+
+    setParticipants(parts);
+
+    // Check if agent is speaking (agent identity typically starts with "agent")
+    const agent = Array.from(room.remoteParticipants.values()).find(
+      (p) => p.identity.startsWith('agent') || p.kind === 1, // ParticipantKind.AGENT = 1
+    );
+    setIsAgentSpeaking(agent?.isSpeaking ?? false);
+  }, []);
+
+  /**
+   * Set up event listeners on the Room
+   */
+  const attachRoomListeners = useCallback((room: Room) => {
+    room.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+      setRoomState(mapConnectionState(state));
+    });
+
+    room.on(RoomEvent.ParticipantConnected, () => {
+      syncParticipants(room);
+    });
+
+    room.on(RoomEvent.ParticipantDisconnected, () => {
+      syncParticipants(room);
+    });
+
+    room.on(RoomEvent.ActiveSpeakersChanged, () => {
+      syncParticipants(room);
+    });
+
+    room.on(RoomEvent.Disconnected, () => {
+      setRoomState('disconnected');
+      setParticipants([]);
+      setIsAgentSpeaking(false);
+      setIsUserSpeaking(false);
+    });
+  }, [syncParticipants]);
+
   const connect = useCallback(async (name: string) => {
     try {
       setRoomState('connecting');
       setRoomName(name);
 
-      // In a real app, fetch token from backend
-      // const tokenResponse = await fetch(`${API_URL}/livekit/token?room=${name}`);
-      // const { token } = await tokenResponse.json();
-      const mockToken = 'mock-token-for-development';
-      setToken(mockToken);
+      // Fetch a real token from the backend API
+      const tokenResponse = await getLiveKitToken({ roomName: name });
+      setToken(tokenResponse.token);
 
-      // Simulate connection delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Create a new Room and connect
+      const room = new Room();
+      roomRef.current = room;
 
-      // In a real app, connect using @livekit/react-native
-      // const room = new Room();
-      // await room.connect(LIVEKIT_URL, token);
+      attachRoomListeners(room);
+
+      const serverUrl = getServerUrl();
+      await room.connect(serverUrl, tokenResponse.token);
 
       setRoomState('connected');
 
-      // Add mock agent participant
-      setParticipants([
-        {
-          identity: 'agent',
-          name: 'Nexus',
-          isLocal: false,
-          isSpeaking: false,
-        },
-        {
-          identity: 'user',
-          name: 'You',
-          isLocal: true,
-          isSpeaking: false,
-        },
-      ]);
+      // Enable microphone for voice interaction
+      await room.localParticipant.setMicrophoneEnabled(true);
+
+      syncParticipants(room);
     } catch (error) {
       console.error('Failed to connect to LiveKit:', error);
       setRoomState('error');
       throw error;
     }
-  }, []);
+  }, [attachRoomListeners, syncParticipants]);
 
   const disconnect = useCallback(async () => {
-    // In a real app, disconnect from room
-    // await room.disconnect();
+    const room = roomRef.current;
+    if (room) {
+      await room.disconnect();
+      roomRef.current = null;
+    }
 
     setRoomState('disconnected');
     setRoomName(null);
@@ -128,21 +224,34 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
   }, []);
 
   const toggleMic = useCallback(() => {
-    setIsMicEnabled((prev) => !prev);
-    // In a real app, toggle local audio track
-    // localParticipant.setMicrophoneEnabled(!isMicEnabled);
-  }, []);
+    const room = roomRef.current;
+    if (room) {
+      const newEnabled = !isMicEnabled;
+      setIsMicEnabled(newEnabled);
+      void room.localParticipant.setMicrophoneEnabled(newEnabled);
+    }
+  }, [isMicEnabled]);
 
   const sendMessage = useCallback((message: string) => {
-    // In a real app, send data message through LiveKit
-    // room.localParticipant.publishData(encoder.encode(message), DataPacket_Kind.RELIABLE);
-    console.log('Sending message to agent:', message);
+    const room = roomRef.current;
+    if (room) {
+      const encoder = new TextEncoder();
+      void room.localParticipant.publishData(
+        encoder.encode(message),
+        { reliable: true },
+      );
+    }
+  }, []);
 
-    // Simulate agent response
-    setIsAgentSpeaking(true);
-    setTimeout(() => {
-      setIsAgentSpeaking(false);
-    }, 2000);
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      const room = roomRef.current;
+      if (room) {
+        void room.disconnect();
+        roomRef.current = null;
+      }
+    };
   }, []);
 
   const value = useMemo<LiveKitContextValue>(

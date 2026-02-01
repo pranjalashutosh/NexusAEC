@@ -1,5 +1,8 @@
 /**
  * Authentication hook and provider
+ *
+ * Handles real OAuth 2.0 flows for Google (Gmail) and Microsoft (Outlook)
+ * by coordinating with the backend API endpoints.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +15,7 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
+import { Linking } from 'react-native';
 
 /**
  * Connected account information
@@ -75,6 +79,105 @@ const defaultPreferences: UserPreferences = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// =============================================================================
+// API Helpers
+// =============================================================================
+
+function getApiBaseUrl(): string {
+  const envApiUrl =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+      ?.env?.API_BASE_URL;
+  return envApiUrl ?? 'http://localhost:3000';
+}
+
+interface InitiateAuthResponse {
+  authorizationUrl: string;
+  state: string;
+}
+
+interface AuthSuccessResult {
+  success: true;
+  provider: string;
+  userId: string;
+  email?: string;
+  displayName?: string;
+}
+
+interface AuthPendingResult {
+  status: 'pending';
+}
+
+type PollResult = AuthSuccessResult | AuthPendingResult | { success: false; error: string };
+
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Initiate OAuth flow with the backend
+ */
+async function initiateOAuth(provider: 'google' | 'microsoft'): Promise<InitiateAuthResponse> {
+  const apiUrl = getApiBaseUrl();
+  const endpoint = provider === 'google' ? '/auth/google' : '/auth/microsoft';
+
+  const response = await fetch(`${apiUrl}${endpoint}`, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to initiate OAuth: ${response.status} ${text}`);
+  }
+
+  return response.json() as Promise<InitiateAuthResponse>;
+}
+
+/**
+ * Poll the backend for OAuth completion
+ */
+async function pollForResult(state: string): Promise<AuthSuccessResult> {
+  const apiUrl = getApiBaseUrl();
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < POLL_TIMEOUT_MS) {
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+
+    const response = await fetch(`${apiUrl}/auth/result/${state}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (response.status === 202) {
+      // Still pending, keep polling
+      continue;
+    }
+
+    if (response.status === 404) {
+      throw new Error('OAuth session expired or not found');
+    }
+
+    const data = (await response.json()) as PollResult;
+
+    if ('status' in data && data.status === 'pending') {
+      continue;
+    }
+
+    if ('success' in data && data.success === true) {
+      return data as AuthSuccessResult;
+    }
+
+    if ('success' in data && data.success === false) {
+      throw new Error(data.error);
+    }
+  }
+
+  throw new Error('OAuth flow timed out');
+}
+
+// =============================================================================
+// Provider
+// =============================================================================
+
 /**
  * Auth provider component
  */
@@ -118,17 +221,29 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
   }, []);
 
   const connectAccount = useCallback(async (provider: 'google' | 'microsoft') => {
-    // In a real app, this would trigger OAuth flow
-    // For now, we simulate a successful connection
-    const mockAccount: ConnectedAccount = {
-      id: `${provider}-${Date.now()}`,
+    // 1. Call backend to initiate OAuth and get the authorization URL
+    const { authorizationUrl, state } = await initiateOAuth(provider);
+
+    // 2. Open the authorization URL in the system browser
+    const supported = await Linking.canOpenURL(authorizationUrl);
+    if (!supported) {
+      throw new Error(`Cannot open OAuth URL for ${provider}`);
+    }
+    await Linking.openURL(authorizationUrl);
+
+    // 3. Poll the backend for the OAuth result
+    const result = await pollForResult(state);
+
+    // 4. Create the connected account from the OAuth result
+    const newAccount: ConnectedAccount = {
+      id: result.userId,
       provider,
-      email: provider === 'google' ? 'user@gmail.com' : 'user@outlook.com',
-      name: 'User Name',
+      email: result.email ?? (provider === 'google' ? 'connected@gmail.com' : 'connected@outlook.com'),
+      name: result.displayName ?? 'Connected User',
       connectedAt: new Date().toISOString(),
     };
 
-    const newAccounts = [...accounts, mockAccount];
+    const newAccounts = [...accounts, newAccount];
     setAccounts(newAccounts);
     await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
   }, [accounts]);

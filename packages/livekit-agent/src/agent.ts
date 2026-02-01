@@ -5,22 +5,30 @@
  * and handles participant lifecycle for voice briefings.
  *
  * Architecture:
- * - Uses LiveKit Agents SDK for room management
- * - Handles participant joined/left events
- * - Manages audio track subscriptions
- * - Coordinates with STT/TTS plugins (configured separately)
+ * - Uses LiveKit Agents SDK 1.0.x for room management
+ * - Deepgram Nova-2 for speech-to-text (STT)
+ * - ElevenLabs Turbo v2.5 for text-to-speech (TTS)
+ * - Custom ReasoningLLM wrapping GPT-4o with tool calling
+ * - Silero VAD for voice activity detection
  */
 
-import { defineAgent, JobContext, WorkerOptions, cli } from '@livekit/agents';
-import { TrackKind } from '@livekit/rtc-node';
+import { defineAgent, voice, cli, WorkerOptions } from '@livekit/agents';
+import * as deepgram from '@livekit/agents-plugin-deepgram';
+import * as elevenlabs from '@livekit/agents-plugin-elevenlabs';
+import * as silero from '@livekit/agents-plugin-silero';
 import { createLogger } from '@nexus-aec/logger';
 
 import { loadAgentConfig, validateEnvironment, type AgentConfig } from './config.js';
+import { runBriefingPipeline } from './briefing-pipeline.js';
+import { bootstrapFromMetadata, teardownEmailServices } from './email-bootstrap.js';
 import { startHealthServer } from './health.js';
+import { ReasoningLLM } from './llm/reasoning-llm.js';
 import { removeSession, setSession } from './session-store.js';
+import { buildSystemPrompt, DEFAULT_SYSTEM_PROMPT_CONTEXT } from './prompts/system-prompt.js';
 
+import type { BriefingData } from './briefing-pipeline.js';
 import type { AgentSession } from './session-store.js';
-import type { JobProcess } from '@livekit/agents';
+import type { JobContext, JobProcess } from '@livekit/agents';
 
 const logger = createLogger({ baseContext: { component: 'voice-agent' } });
 
@@ -28,18 +36,7 @@ const logger = createLogger({ baseContext: { component: 'voice-agent' } });
 // Types
 // =============================================================================
 
-/**
- * Participant info for logging
- */
-interface ParticipantInfo {
-  identity: string;
-  name?: string;
-  metadata?: string;
-}
-
-// =============================================================================
-// Agent State
-// =============================================================================
+// (No extra types needed - using LiveKit 1.0.x event types)
 
 // =============================================================================
 // Agent Implementation
@@ -50,6 +47,21 @@ interface ParticipantInfo {
  */
 export function createVoiceAgent(config: AgentConfig) {
   return defineAgent({
+    prewarm: async (proc: JobProcess) => {
+      logger.info('Prewarming agent process', { pid: process.pid });
+
+      // Pre-load Silero VAD model for faster cold starts
+      proc.userData['vad'] = await silero.VAD.load();
+
+      // Pre-load configuration
+      try {
+        loadAgentConfig();
+        logger.info('Configuration loaded successfully');
+      } catch (error) {
+        logger.error('Failed to load configuration during prewarm', error instanceof Error ? error : null);
+      }
+    },
+
     entry: async (ctx: JobContext) => {
       const roomName = ctx.room.name ?? `room-${Date.now()}`;
       const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -59,7 +71,7 @@ export function createVoiceAgent(config: AgentConfig) {
         sessionId,
       });
 
-      // Create session
+      // Create session tracking
       const session: AgentSession = {
         sessionId,
         roomName,
@@ -79,28 +91,54 @@ export function createVoiceAgent(config: AgentConfig) {
         participantCount: ctx.room.remoteParticipants.size,
       });
 
-      // Set up participant event handlers
-      setupParticipantHandlers(ctx, session);
+      // Wait for a user to join
+      const participant = await ctx.waitForParticipant();
+      session.userIdentity = participant.identity;
 
-      // Wait for a user participant to join
-      const userParticipant = await waitForUserParticipant(ctx);
+      logger.info('User joined, starting voice assistant', {
+        roomName,
+        sessionId,
+        userIdentity: participant.identity,
+        userName: participant.name,
+      });
 
-      if (userParticipant) {
-        session.userIdentity = userParticipant.identity;
+      // Bootstrap email services from participant metadata
+      // The backend API places OAuth tokens in metadata when issuing join tokens
+      const emailResult = bootstrapFromMetadata(participant.metadata);
+      let briefingData: BriefingData | null = null;
 
-        logger.info('User joined, starting briefing session', {
-          roomName,
+      if (emailResult?.success && emailResult.inboxService) {
+        logger.info('Email services available', {
+          providers: emailResult.connectedProviders,
           sessionId,
-          userIdentity: userParticipant.identity,
-          userName: userParticipant.name,
         });
 
-        // Start the voice assistant
-        await startVoiceAssistant(ctx, session, config);
+        // Run the briefing pipeline to score and cluster emails
+        try {
+          briefingData = await runBriefingPipeline(emailResult.inboxService);
+          logger.info('Briefing pipeline completed', {
+            topicCount: briefingData.topics.length,
+            totalEmails: briefingData.totalEmails,
+            totalFlagged: briefingData.totalFlagged,
+            durationMs: briefingData.pipelineDurationMs,
+            sessionId,
+          });
+        } catch (error) {
+          logger.error('Briefing pipeline failed, falling back to defaults', error instanceof Error ? error : null);
+        }
+      } else {
+        logger.warn('Email services unavailable — email tools will not work', {
+          sessionId,
+          errors: emailResult?.errors,
+        });
       }
 
-      // Clean up when room closes
-      ctx.room.on('disconnected', () => {
+      // Start the voice assistant pipeline with real or fallback briefing data
+      await startVoiceAssistant(ctx, session, config, briefingData);
+
+      // Clean up when the context shuts down
+      ctx.addShutdownCallback(async () => {
+        teardownEmailServices();
         handleDisconnect(session);
       });
     },
@@ -108,172 +146,139 @@ export function createVoiceAgent(config: AgentConfig) {
 }
 
 /**
- * Set up participant event handlers
- */
-function setupParticipantHandlers(ctx: JobContext, session: AgentSession): void {
-  const room = ctx.room;
-
-  // Handle participant connected
-  room.on('participantConnected', (participant) => {
-    const info = extractParticipantInfo(participant);
-    logger.info('Participant connected', {
-      roomName: session.roomName,
-      sessionId: session.sessionId,
-      ...info,
-    });
-  });
-
-  // Handle participant disconnected
-  room.on('participantDisconnected', (participant) => {
-    const info = extractParticipantInfo(participant);
-    logger.info('Participant disconnected', {
-      roomName: session.roomName,
-      sessionId: session.sessionId,
-      ...info,
-    });
-
-    // If the user disconnected, end the session
-    if (participant.identity === session.userIdentity) {
-      logger.info('User left, ending session', {
-        roomName: session.roomName,
-        sessionId: session.sessionId,
-      });
-      session.isActive = false;
-    }
-  });
-
-  // Handle track subscribed (audio from user)
-  room.on('trackSubscribed', (track, publication, participant) => {
-    const trackKind = track.kind as TrackKind;
-    if (trackKind === TrackKind.KIND_AUDIO) {
-      logger.info('Subscribed to audio track', {
-        roomName: session.roomName,
-        sessionId: session.sessionId,
-        participantIdentity: participant.identity,
-        trackSid: publication.sid,
-      });
-    }
-  });
-
-  // Handle track unsubscribed
-  room.on('trackUnsubscribed', (track, publication, participant) => {
-    const trackKind = track.kind as TrackKind;
-    if (trackKind === TrackKind.KIND_AUDIO) {
-      logger.info('Unsubscribed from audio track', {
-        roomName: session.roomName,
-        sessionId: session.sessionId,
-        participantIdentity: participant.identity,
-        trackSid: publication.sid,
-      });
-    }
-  });
-}
-
-/**
- * Wait for a non-agent participant to join the room
- */
-async function waitForUserParticipant(
-  ctx: JobContext,
-  timeoutMs: number = 60000
-): Promise<ParticipantInfo | null> {
-  const room = ctx.room;
-
-  // Check if there's already a user participant
-  for (const [, participant] of room.remoteParticipants) {
-    if (!isAgentParticipant(participant.identity)) {
-      return extractParticipantInfo(participant);
-    }
-  }
-
-  // Wait for a user to join
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      logger.warn('Timeout waiting for user participant', {
-        roomName: room.name,
-        timeoutMs,
-      });
-      resolve(null);
-    }, timeoutMs);
-
-    room.on('participantConnected', (participant) => {
-      if (!isAgentParticipant(participant.identity)) {
-        clearTimeout(timeout);
-        resolve(extractParticipantInfo(participant));
-      }
-    });
-  });
-}
-
-/**
- * Check if a participant identity belongs to an agent
- */
-function isAgentParticipant(identity: string): boolean {
-  return identity.startsWith('agent-') || identity === 'agent';
-}
-
-/**
- * Extract participant info for logging (no PII in logs)
- */
-function extractParticipantInfo(participant: {
-  identity: string;
-  name?: string;
-  metadata?: string;
-}): ParticipantInfo {
-  const info: ParticipantInfo = {
-    identity: participant.identity,
-  };
-  if (participant.name !== undefined) {
-    info.name = participant.name;
-  }
-  if (participant.metadata !== undefined) {
-    info.metadata = participant.metadata;
-  }
-  return info;
-}
-
-/**
- * Start the voice assistant for a session
- * This will be expanded in later tasks to include the full reasoning loop
+ * Start the voice assistant with the full STT → LLM → TTS pipeline.
+ *
+ * Pipeline:
+ *   User speaks → Deepgram STT → ReasoningLLM (GPT-4o + tools) → ElevenLabs TTS → User hears
  */
 async function startVoiceAssistant(
-  _ctx: JobContext,
+  ctx: JobContext,
   session: AgentSession,
-  config: AgentConfig
+  config: AgentConfig,
+  briefingData?: BriefingData | null,
 ): Promise<void> {
-  logger.info('Starting voice assistant', {
+  // Use real briefing data when available, fall back to defaults
+  const topicItems = briefingData?.topicItems.length
+    ? briefingData.topicItems
+    : [5, 3, 2];
+  const topicLabels = briefingData?.topicLabels ?? ['Inbox', 'VIP', 'Flagged'];
+
+  logger.info('Starting voice assistant pipeline', {
     roomName: session.roomName,
     sessionId: session.sessionId,
-    userIdentity: session.userIdentity,
+    sttModel: config.deepgram.model,
+    llmModel: config.openai.model,
+    ttsVoice: config.elevenlabs.voiceId,
+    briefingTopics: topicLabels,
+    briefingItemCounts: topicItems,
   });
 
-  // The full voice assistant implementation will be added in tasks 4.8-4.24
-  // For now, we just log that the assistant is ready
-
-  // Create a placeholder for the assistant pipeline
-  // This will be replaced with the actual STT → GPT-4o → TTS pipeline
-  
-  logger.info('Voice assistant ready', {
-    roomName: session.roomName,
-    sessionId: session.sessionId,
-    openaiModel: config.openai.model,
-    deepgramModel: config.deepgram.model,
-    elevenlabsVoice: config.elevenlabs.voiceId,
+  // 1. Create Deepgram STT (Speech-to-Text)
+  const sttInstance = new deepgram.STT({
+    model: config.deepgram.model as 'nova-2-general',
+    language: config.deepgram.language,
+    interimResults: config.deepgram.interimResults,
+    punctuate: config.deepgram.punctuate,
+    smartFormat: config.deepgram.smartFormat,
+    keywords: config.deepgram.customVocabulary.map((word) => [word, 1.5] as [string, number]),
   });
 
-  // Keep the agent running while the session is active
-  while (session.isActive) {
-    await sleep(1000);
-  }
+  // 2. Create ElevenLabs TTS (Text-to-Speech)
+  const ttsInstance = new elevenlabs.TTS({
+    voiceId: config.elevenlabs.voiceId,
+    model: config.elevenlabs.modelId,
+  });
 
-  logger.info('Voice assistant session ended', {
+  // 3. Create ReasoningLLM with real topic data from the briefing pipeline
+  const reasoningLLM = new ReasoningLLM(config.openai, topicItems, {
+    userName: session.userIdentity,
+  });
+
+  // 4. Get VAD from prewarm, or load if not available
+  const vad = (ctx.proc.userData['vad'] as silero.VAD) ?? await silero.VAD.load();
+
+  // 5. Build the system prompt
+  const systemPrompt = buildSystemPrompt({
+    ...DEFAULT_SYSTEM_PROMPT_CONTEXT,
+    userName: session.userIdentity,
+  });
+
+  // 6. Create the voice Agent with instructions
+  const agent = new voice.Agent({
+    instructions: systemPrompt,
+    llm: reasoningLLM,
+    stt: sttInstance,
+    tts: ttsInstance,
+    vad,
+    allowInterruptions: true,
+  });
+
+  // 7. Create the AgentSession
+  const agentSession = new voice.AgentSession({
+    stt: sttInstance,
+    tts: ttsInstance,
+    llm: reasoningLLM,
+    vad,
+    turnDetection: 'vad',
+    voiceOptions: {
+      allowInterruptions: true,
+      minInterruptionDuration: 0.5,
+      minEndpointingDelay: 0.3,
+      maxEndpointingDelay: 0.6,
+      maxToolSteps: 5,
+      preemptiveGeneration: true,
+    },
+  });
+
+  // 8. Wire barge-in and state tracking via 1.0.x event system
+  agentSession.on(voice.AgentSessionEventTypes.UserStateChanged, (ev) => {
+    if (ev.newState === 'speaking') {
+      session.isSpeaking = false;
+      reasoningLLM.handleBargeIn();
+      logger.debug('User started speaking (barge-in)', {
+        sessionId: session.sessionId,
+      });
+    }
+  });
+
+  agentSession.on(voice.AgentSessionEventTypes.AgentStateChanged, (ev) => {
+    if (ev.newState === 'speaking') {
+      session.isSpeaking = true;
+    } else if (ev.oldState === 'speaking') {
+      session.isSpeaking = false;
+    }
+  });
+
+  // 9. Start the voice pipeline
+  await agentSession.start({
+    agent,
+    room: ctx.room,
+  });
+
+  logger.info('Voice assistant pipeline started', {
     roomName: session.roomName,
     sessionId: session.sessionId,
-    durationMs: Date.now() - session.startedAt.getTime(),
+  });
+
+  // 10. Generate an initial greeting with real briefing context
+  const greetingContext = briefingData && briefingData.totalEmails > 0
+    ? `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. `
+      + `You have ${briefingData.totalEmails} new emails across ${briefingData.topics.length} topics. `
+      + `${briefingData.totalFlagged} are flagged as important. `
+      + `Topics to cover: ${topicLabels.join(', ')}.`
+    : 'Greet the user and start the morning briefing. Introduce yourself as their NexusAEC executive assistant.';
+
+  agentSession.generateReply({
+    instructions: greetingContext,
   });
 }
 
+// =============================================================================
+// Utility Functions
+// =============================================================================
+
 /**
- * Handle room disconnect
+ * Handle room disconnect / shutdown
  */
 function handleDisconnect(session: AgentSession): void {
   logger.info('Agent disconnected from room', {
@@ -284,13 +289,6 @@ function handleDisconnect(session: AgentSession): void {
 
   session.isActive = false;
   removeSession(session.roomName);
-}
-
-/**
- * Sleep utility
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // =============================================================================
@@ -308,10 +306,10 @@ export function getAgent() {
 
 /**
  * Start the agent worker using the LiveKit CLI
- * 
- * Usage: 
+ *
+ * Usage:
  * $ npx livekit-agents start dist/agent.js
- * 
+ *
  * Or use the npm script:
  * $ pnpm --filter @nexus-aec/livekit-agent start:dev
  */
@@ -347,10 +345,13 @@ export async function startAgent(): Promise<void> {
  * Prewarm callback for faster cold starts
  * This is called when the agent process is started but before jobs are assigned
  */
-export function prewarm(_proc: JobProcess): void {
+export async function prewarm(proc: JobProcess): Promise<void> {
   logger.info('Prewarming agent process', {
     pid: process.pid,
   });
+
+  // Pre-load Silero VAD model
+  proc.userData['vad'] = await silero.VAD.load();
 
   // Pre-load configuration
   try {
@@ -368,7 +369,7 @@ export function prewarm(_proc: JobProcess): void {
 /**
  * Default export: Function to get the agent definition
  * The LiveKit CLI can call this to get the agent
- * 
+ *
  * Note: This is a function to avoid running loadAgentConfig at import time,
  * which would throw if environment variables are not set.
  */

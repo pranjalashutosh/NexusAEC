@@ -5,6 +5,90 @@
  * These tests focus on the testable utility functions and session management.
  */
 
+// Mock @livekit/agents module with all required namespaces
+const mockLLMBase = class {
+  constructor() {}
+  label() { return 'mock'; }
+  get model() { return 'mock'; }
+  chat() { return {}; }
+  prewarm() {}
+  aclose() { return Promise.resolve(); }
+  on() { return this; }
+  emit() { return false; }
+};
+
+const mockLLMStream = class {
+  constructor() {}
+};
+
+jest.mock('@livekit/agents', () => ({
+  defineAgent: jest.fn().mockImplementation((config) => ({
+    entry: config.entry,
+    prewarm: config.prewarm,
+    _mocked: true,
+  })),
+  WorkerOptions: jest.fn().mockImplementation((config) => ({
+    agent: config.agent,
+    _mocked: true,
+  })),
+  cli: {
+    runApp: jest.fn(),
+  },
+  voice: {
+    Agent: jest.fn().mockImplementation(() => ({})),
+    AgentSession: jest.fn().mockImplementation(() => ({
+      on: jest.fn().mockReturnThis(),
+      start: jest.fn().mockResolvedValue(undefined),
+      generateReply: jest.fn(),
+    })),
+    AgentSessionEventTypes: {
+      UserInputTranscribed: 'user_input_transcribed',
+      AgentStateChanged: 'agent_state_changed',
+      UserStateChanged: 'user_state_changed',
+      ConversationItemAdded: 'conversation_item_added',
+      FunctionToolsExecuted: 'function_tools_executed',
+      MetricsCollected: 'metrics_collected',
+      SpeechCreated: 'speech_created',
+      Error: 'error',
+      Close: 'close',
+    },
+  },
+  llm: {
+    LLM: mockLLMBase,
+    LLMStream: mockLLMStream,
+    ChatContext: jest.fn(),
+  },
+  stt: {
+    STT: class { constructor() {} },
+    SpeechStream: class { constructor() {} },
+  },
+  tts: {
+    TTS: class { constructor() {} },
+    SynthesizeStream: class { constructor() {} },
+    ChunkedStream: class { constructor() {} },
+  },
+  DEFAULT_API_CONNECT_OPTIONS: {
+    maxRetry: 3,
+    retryIntervalMs: 2000,
+    timeoutMs: 10000,
+  },
+}));
+
+// Mock plugin packages
+jest.mock('@livekit/agents-plugin-deepgram', () => ({
+  STT: jest.fn().mockImplementation(() => ({ _mocked: true })),
+}));
+
+jest.mock('@livekit/agents-plugin-elevenlabs', () => ({
+  TTS: jest.fn().mockImplementation(() => ({ _mocked: true })),
+}));
+
+jest.mock('@livekit/agents-plugin-silero', () => ({
+  VAD: {
+    load: jest.fn().mockResolvedValue({ _mocked: true }),
+  },
+}));
+
 import {
   getSession,
   getAllSessions,
@@ -13,8 +97,8 @@ import {
   getAgent,
   startAgent,
   prewarm,
-} from '../src/agent';
-import { loadAgentConfig } from '../src/config';
+  loadAgentConfig,
+} from '../src/index';
 
 describe('livekit-agent/agent', () => {
   // Store original env
@@ -105,12 +189,14 @@ describe('livekit-agent/agent', () => {
   });
 
   describe('prewarm', () => {
-    it('prewarm loads configuration without error', () => {
-      // Create a mock JobProcess
-      const mockProc = {} as Parameters<typeof prewarm>[0];
-      
-      // Should not throw
-      expect(() => prewarm(mockProc)).not.toThrow();
+    it('prewarm loads configuration without error', async () => {
+      // Create a mock JobProcess with userData
+      const mockProc = {
+        userData: {} as Record<string, unknown>,
+      } as Parameters<typeof prewarm>[0];
+
+      // Should not throw (prewarm is async)
+      await expect(prewarm(mockProc)).resolves.not.toThrow();
     });
   });
 });
