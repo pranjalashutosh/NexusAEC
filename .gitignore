@@ -55,6 +55,7 @@ apps/desktop/release/
 *.pem
 *.key
 serviceAccountKey.json
+.nexus-data/
 
 # Temporary files
 tmp/

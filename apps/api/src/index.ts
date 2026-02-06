@@ -1,3 +1,21 @@
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+import { config } from 'dotenv';
+
+// Load .env — check cwd first (monorepo root), then walk up from package dir
+const envCandidates = [
+  resolve(process.cwd(), '.env'),
+  resolve(__dirname, '..', '.env'),
+  resolve(__dirname, '..', '..', '.env'),
+  resolve(__dirname, '..', '..', '..', '.env'),
+];
+for (const envPath of envCandidates) {
+  if (existsSync(envPath)) {
+    config({ path: envPath });
+    break;
+  }
+}
+
 import { createLogger } from '@nexus-aec/logger';
 
 import { createApp } from './app';

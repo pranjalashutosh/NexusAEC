@@ -23,6 +23,7 @@ export interface TokenResponse {
   roomName: string;
   participantIdentity: string;
   expiresAt: number;
+  serverUrl?: string;
 }
 
 /**
@@ -54,7 +55,7 @@ function getApiBaseUrl(): string {
  */
 async function fetchToken(request: TokenRequest): Promise<TokenResponse> {
   const apiUrl = getApiBaseUrl();
-  const endpoint = `${apiUrl}/api/livekit/token`;
+  const endpoint = `${apiUrl}/livekit/token`;
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -64,8 +65,8 @@ async function fetchToken(request: TokenRequest): Promise<TokenResponse> {
       // 'Authorization': `Bearer ${authToken}`,
     },
     body: JSON.stringify({
+      userId: request.participantName ?? 'user',
       roomName: request.roomName,
-      participantName: request.participantName ?? 'user',
       metadata: request.metadata,
     }),
   });

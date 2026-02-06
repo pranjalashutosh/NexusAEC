@@ -174,7 +174,9 @@ async function startVoiceAssistant(
   });
 
   // 1. Create Deepgram STT (Speech-to-Text)
+  logger.info('[pipeline] Creating Deepgram STT...');
   const sttInstance = new deepgram.STT({
+    apiKey: config.deepgram.apiKey,
     model: config.deepgram.model as 'nova-2-general',
     language: config.deepgram.language,
     interimResults: config.deepgram.interimResults,
@@ -182,20 +184,38 @@ async function startVoiceAssistant(
     smartFormat: config.deepgram.smartFormat,
     keywords: config.deepgram.customVocabulary.map((word) => [word, 1.5] as [string, number]),
   });
+  logger.info('[pipeline] Deepgram STT created');
 
   // 2. Create ElevenLabs TTS (Text-to-Speech)
+  logger.info('[pipeline] Creating ElevenLabs TTS...');
   const ttsInstance = new elevenlabs.TTS({
+    apiKey: config.elevenlabs.apiKey,
+    voiceId: config.elevenlabs.voiceId,
+    model: config.elevenlabs.modelId,
+    encoding: config.elevenlabs.outputFormat,
+    voiceSettings: {
+      stability: config.elevenlabs.voiceSettings.stability,
+      similarity_boost: config.elevenlabs.voiceSettings.similarityBoost,
+      style: config.elevenlabs.voiceSettings.style,
+    },
+  });
+  logger.info('[pipeline] ElevenLabs TTS created', {
+    encoding: config.elevenlabs.outputFormat,
     voiceId: config.elevenlabs.voiceId,
     model: config.elevenlabs.modelId,
   });
 
   // 3. Create ReasoningLLM with real topic data from the briefing pipeline
+  logger.info('[pipeline] Creating ReasoningLLM...');
   const reasoningLLM = new ReasoningLLM(config.openai, topicItems, {
     userName: session.userIdentity,
   });
+  logger.info('[pipeline] ReasoningLLM created');
 
   // 4. Get VAD from prewarm, or load if not available
+  logger.info('[pipeline] Loading VAD model...');
   const vad = (ctx.proc.userData['vad'] as silero.VAD) ?? await silero.VAD.load();
+  logger.info('[pipeline] VAD model loaded');
 
   // 5. Build the system prompt
   const systemPrompt = buildSystemPrompt({
@@ -203,17 +223,12 @@ async function startVoiceAssistant(
     userName: session.userIdentity,
   });
 
-  // 6. Create the voice Agent with instructions
+  // 6. Create the voice Agent with instructions only
   const agent = new voice.Agent({
     instructions: systemPrompt,
-    llm: reasoningLLM,
-    stt: sttInstance,
-    tts: ttsInstance,
-    vad,
-    allowInterruptions: true,
   });
 
-  // 7. Create the AgentSession
+  // 7. Create the AgentSession with the pipeline components
   const agentSession = new voice.AgentSession({
     stt: sttInstance,
     tts: ttsInstance,
@@ -234,7 +249,7 @@ async function startVoiceAssistant(
   agentSession.on(voice.AgentSessionEventTypes.UserStateChanged, (ev) => {
     if (ev.newState === 'speaking') {
       session.isSpeaking = false;
-      reasoningLLM.handleBargeIn();
+      void reasoningLLM.handleBargeIn();
       logger.debug('User started speaking (barge-in)', {
         sessionId: session.sessionId,
       });
@@ -249,10 +264,30 @@ async function startVoiceAssistant(
     }
   });
 
+  // 8b. Add error and close handlers for debugging
+  agentSession.on(voice.AgentSessionEventTypes.Error, (ev) => {
+    logger.error('AgentSession error', null, {
+      sessionId: session.sessionId,
+      error: String(ev),
+    });
+  });
+
+  agentSession.on(voice.AgentSessionEventTypes.Close, () => {
+    logger.info('AgentSession closed', {
+      sessionId: session.sessionId,
+    });
+  });
+
   // 9. Start the voice pipeline
+  logger.info('Calling agentSession.start()...');
   await agentSession.start({
     agent,
     room: ctx.room,
+    outputOptions: {
+      audioSampleRate: 22050,
+      audioNumChannels: 1,
+      audioEnabled: true,
+    },
   });
 
   logger.info('Voice assistant pipeline started', {
@@ -268,8 +303,9 @@ async function startVoiceAssistant(
       + `Topics to cover: ${topicLabels.join(', ')}.`
     : 'Greet the user and start the morning briefing. Introduce yourself as their NexusAEC executive assistant.';
 
+  logger.info('Generating initial greeting...');
   agentSession.generateReply({
-    instructions: greetingContext,
+    userInput: greetingContext,
   });
 }
 
@@ -337,6 +373,15 @@ export async function startAgent(): Promise<void> {
     agent: __filename,
   });
 
+  // Inject 'dev' command into argv if no command was provided
+  // cli.runApp() parses process.argv for commands like 'start', 'dev', 'connect'
+  const hasCommand = process.argv.slice(2).some((arg) =>
+    ['start', 'dev', 'connect', 'download-files'].includes(arg),
+  );
+  if (!hasCommand) {
+    process.argv.push('dev');
+  }
+
   // Run the agent using the CLI
   cli.runApp(workerOptions);
 }
@@ -367,10 +412,9 @@ export async function prewarm(proc: JobProcess): Promise<void> {
 // =============================================================================
 
 /**
- * Default export: Function to get the agent definition
- * The LiveKit CLI can call this to get the agent
- *
- * Note: This is a function to avoid running loadAgentConfig at import time,
- * which would throw if environment variables are not set.
+ * Default export: The agent definition for the LiveKit Agents SDK.
+ * The SDK loads this file in a child process and expects the default export
+ * to be the result of defineAgent().
  */
-export default getAgent;
+const agentConfig = loadAgentConfig();
+export default createVoiceAgent(agentConfig);

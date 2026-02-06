@@ -4,8 +4,9 @@
  * Main dashboard with quick access to briefing
  */
 
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -13,9 +14,10 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { ConnectionQualityIndicator } from '../../components/ConnectionQualityIndicator';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth, type AccountTokenStatus } from '../../hooks/useAuth';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTheme } from '../../hooks/useTheme';
 
@@ -23,10 +25,73 @@ import type { RootStackScreenProps } from '../../types/navigation';
 
 type Props = RootStackScreenProps<'Home'>;
 
+interface EmailStats {
+  newCount: number;
+  vipCount: number;
+  urgentCount: number;
+}
+
+function getApiBaseUrl(): string {
+  const envApiUrl =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+      ?.env?.API_BASE_URL;
+  return envApiUrl ?? 'http://localhost:3000';
+}
+
 export function HomeScreen({ navigation }: Props): React.JSX.Element {
   const { colors } = useTheme();
-  const { accounts, preferences } = useAuth();
+  const { accounts, accountStatuses, preferences, reconnectAccount } = useAuth();
+  const [reconnecting, setReconnecting] = useState<string | null>(null);
   const { quality } = useNetworkStatus();
+  const [emailStats, setEmailStats] = useState<EmailStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  const userId = accounts[0]?.id;
+  const hasValidAccount = userId && accountStatuses[userId] === 'valid';
+
+  const fetchEmailStats = useCallback(async () => {
+    if (!userId || !hasValidAccount) return;
+
+    setStatsLoading(true);
+    try {
+      const vips = preferences.vips.length > 0
+        ? `&vips=${encodeURIComponent(preferences.vips.join(','))}`
+        : '';
+      const apiUrl = getApiBaseUrl();
+      const response = await fetch(
+        `${apiUrl}/email/stats?userId=${encodeURIComponent(userId)}${vips}`,
+      );
+
+      if (response.ok) {
+        const data = (await response.json()) as { success: boolean } & EmailStats;
+        if (data.success) {
+          setEmailStats({
+            newCount: data.newCount,
+            vipCount: data.vipCount,
+            urgentCount: data.urgentCount,
+          });
+        }
+      } else {
+        console.warn('Email stats fetch failed:', response.status);
+      }
+    } catch (error) {
+      console.warn('Email stats fetch error:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [userId, hasValidAccount, preferences.vips]);
+
+  // Fetch stats when account becomes valid (e.g. after reconnect)
+  useEffect(() => {
+    void fetchEmailStats();
+  }, [fetchEmailStats]);
+
+  // Re-fetch stats when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      void fetchEmailStats();
+    }, [fetchEmailStats]),
+  );
 
   const handleStartBriefing = () => {
     navigation.navigate('BriefingRoom', {});
@@ -79,20 +144,28 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
             </View>
           </View>
           <View style={styles.briefingStats}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>12</Text>
-              <Text style={styles.statLabel}>New</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>3</Text>
-              <Text style={styles.statLabel}>VIP</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>2</Text>
-              <Text style={styles.statLabel}>Urgent</Text>
-            </View>
+            {statsLoading ? (
+              <View style={styles.statsLoadingContainer}>
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              </View>
+            ) : (
+              <>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{emailStats?.newCount ?? 0}</Text>
+                  <Text style={styles.statLabel}>New</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{emailStats?.vipCount ?? 0}</Text>
+                  <Text style={styles.statLabel}>VIP</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{emailStats?.urgentCount ?? 0}</Text>
+                  <Text style={styles.statLabel}>Urgent</Text>
+                </View>
+              </>
+            )}
           </View>
         </TouchableOpacity>
 
@@ -131,21 +204,46 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Accounts</Text>
           <View style={[styles.accountsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {accounts.map((account) => (
-              <View key={account.id} style={styles.accountItem}>
-                <Text style={styles.accountIcon}>
-                  {account.provider === 'google' ? '📧' : '📨'}
-                </Text>
-                <View style={styles.accountInfo}>
-                  <Text style={[styles.accountEmail, { color: colors.text }]}>
-                    {account.email}
+            {accounts.map((account) => {
+              const status: AccountTokenStatus = accountStatuses[account.id] ?? 'checking';
+              const isExpired = status === 'expired';
+              const statusLabel = status === 'checking' ? 'Checking...'
+                : status === 'valid' ? 'Synced'
+                : 'Reconnect needed';
+              const statusColor = isExpired ? colors.error : colors.success;
+
+              return (
+                <TouchableOpacity
+                  key={account.id}
+                  style={styles.accountItem}
+                  disabled={!isExpired || reconnecting === account.id}
+                  onPress={async () => {
+                    if (!isExpired) return;
+                    setReconnecting(account.id);
+                    try {
+                      await reconnectAccount(account);
+                    } catch (err) {
+                      console.error('Reconnect failed:', err);
+                    } finally {
+                      setReconnecting(null);
+                    }
+                  }}
+                  activeOpacity={isExpired ? 0.7 : 1}
+                >
+                  <Text style={styles.accountIcon}>
+                    {account.provider === 'google' ? '📧' : '📨'}
                   </Text>
-                  <Text style={[styles.accountStatus, { color: colors.success }]}>
-                    Synced
-                  </Text>
-                </View>
-              </View>
-            ))}
+                  <View style={styles.accountInfo}>
+                    <Text style={[styles.accountEmail, { color: colors.text }]}>
+                      {account.email}
+                    </Text>
+                    <Text style={[styles.accountStatus, { color: statusColor }]}>
+                      {reconnecting === account.id ? 'Reconnecting...' : statusLabel}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
             <TouchableOpacity
               style={[styles.addAccountButton, { borderColor: colors.border }]}
               onPress={() => navigation.navigate('AddAccount')}
@@ -268,6 +366,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 12,
     padding: 16,
+  },
+  statsLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
   statItem: {
     flex: 1,

@@ -1,4 +1,5 @@
 import { registerAuthRoutes } from './auth';
+import { registerEmailStatsRoutes } from './email-stats';
 import { registerHealthRoutes } from './health';
 import { registerLiveKitTokenRoutes } from './livekit-token';
 import { registerSyncRoutes } from './sync';
@@ -15,6 +16,9 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   // LiveKit token generation
   registerLiveKitTokenRoutes(app);
+
+  // Email stats for home screen
+  registerEmailStatsRoutes(app);
 
   // Sync routes (drafts, preferences)
   registerSyncRoutes(app);

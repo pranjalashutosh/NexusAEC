@@ -9,7 +9,7 @@ import {
   GoogleOAuthProvider,
   MicrosoftOAuthProvider,
   TokenManager,
-  InMemoryTokenStorage,
+  FileTokenStorage,
 } from '@nexus-aec/email-providers';
 import { createLogger } from '@nexus-aec/logger';
 
@@ -175,9 +175,9 @@ let googleProvider: GoogleOAuthProvider | null = null;
  */
 function getTokenManager(): TokenManager {
   if (!tokenManager) {
-    // Use in-memory storage for development; production would use secure storage
+    // File-based storage so tokens survive server restarts
     tokenManager = new TokenManager({
-      storage: new InMemoryTokenStorage(),
+      storage: new FileTokenStorage(),
       autoRefresh: true,
       onTokenRefresh: (userId, source) => {
         logger.info('Tokens refreshed', { userId, source });
@@ -302,7 +302,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
 
     const provider = getGoogleProvider();
     const { url, state } = await provider.getAuthorizationUrl({
-      prompt: 'select_account',
+      prompt: 'consent',
       accessType: 'offline',
     });
 
@@ -325,6 +325,45 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       return handleOAuthCallback(request, reply, 'GMAIL');
     }
+  );
+
+  // ---------------------------------------------------------------------------
+  // Token Status Check (for mobile clients to verify backend has valid tokens)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Check if backend has tokens for a user
+   * GET /auth/token-status?userId=xxx&source=GMAIL
+   *
+   * Returns whether the backend has stored tokens for the given user/source.
+   * Mobile clients use this on startup to detect stale local state.
+   */
+  app.get<{ Querystring: { userId: string; source?: string } }>(
+    '/auth/token-status',
+    async (request, reply) => {
+      const { userId, source } = request.query;
+
+      if (!userId) {
+        return reply.status(400).send({
+          success: false,
+          error: 'userId query parameter is required',
+        });
+      }
+
+      const manager = getTokenManager();
+      const sourcesToCheck: EmailSource[] = source
+        ? [source.toUpperCase() as EmailSource]
+        : ['OUTLOOK', 'GMAIL'];
+
+      const statuses: Record<string, { hasTokens: boolean }> = {};
+
+      for (const src of sourcesToCheck) {
+        const hasTokens = await manager.hasTokens(userId, src);
+        statuses[src.toLowerCase()] = { hasTokens };
+      }
+
+      return reply.send({ success: true, statuses });
+    },
   );
 
   // ---------------------------------------------------------------------------

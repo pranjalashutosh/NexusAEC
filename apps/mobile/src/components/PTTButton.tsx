@@ -1,8 +1,11 @@
 /**
  * Push-to-Talk Button Component
+ *
+ * Press and hold to activate the microphone (push-to-talk mode).
+ * Release to mute. Also works as a toggle when tapped quickly.
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, StyleSheet, Pressable, Animated } from 'react-native';
 
 import { useLiveKit } from '../hooks/useLiveKit';
@@ -14,28 +17,55 @@ interface PTTButtonProps {
 
 export function PTTButton({ size = 80 }: PTTButtonProps): React.JSX.Element {
   const { colors } = useTheme();
-  const { sendMessage, isMicEnabled } = useLiveKit();
+  const { toggleMic, isMicEnabled, roomState } = useLiveKit();
   const [isPressed, setIsPressed] = useState(false);
   const [scale] = useState(new Animated.Value(1));
+  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPressRef = useRef(false);
+
+  const isConnected = roomState === 'connected';
 
   const handlePressIn = () => {
     setIsPressed(true);
+    isLongPressRef.current = false;
+
     Animated.spring(scale, {
       toValue: 0.95,
       useNativeDriver: true,
     }).start();
+
+    // After 300ms, treat as long-press (push-to-talk mode)
+    pressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      // Enable mic if currently disabled (push-to-talk)
+      if (!isMicEnabled) {
+        toggleMic();
+      }
+    }, 300);
   };
 
   const handlePressOut = () => {
     setIsPressed(false);
+
     Animated.spring(scale, {
       toValue: 1,
       useNativeDriver: true,
     }).start();
-    
-    // In a real app, this would enable the mic track
-    // For now, just send a message
-    sendMessage('PTT activated');
+
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+
+    if (isLongPressRef.current) {
+      // Long press release — mute mic (end push-to-talk)
+      if (isMicEnabled) {
+        toggleMic();
+      }
+    } else {
+      // Quick tap — toggle mic
+      toggleMic();
+    }
   };
 
   const buttonSize = {
@@ -55,14 +85,14 @@ export function PTTButton({ size = 80 }: PTTButtonProps): React.JSX.Element {
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        disabled={!isMicEnabled}
+        disabled={!isConnected}
         style={[
           styles.button,
           buttonSize,
           {
             backgroundColor: isPressed ? colors.primary : colors.card,
-            borderColor: colors.primary,
-            opacity: isMicEnabled ? 1 : 0.5,
+            borderColor: isMicEnabled ? colors.primary : colors.border,
+            opacity: isConnected ? 1 : 0.5,
           },
         ]}
       >
@@ -71,7 +101,11 @@ export function PTTButton({ size = 80 }: PTTButtonProps): React.JSX.Element {
             styles.innerCircle,
             innerSize,
             {
-              backgroundColor: isPressed ? '#FFFFFF' : colors.primary,
+              backgroundColor: isPressed
+                ? '#FFFFFF'
+                : isMicEnabled
+                ? colors.primary
+                : colors.muted,
             },
           ]}
         />

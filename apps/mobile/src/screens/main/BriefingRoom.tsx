@@ -4,7 +4,7 @@
  * Main voice briefing interface with LiveKit integration
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -16,10 +16,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConnectionQualityIndicator } from '../../components/ConnectionQualityIndicator';
 import { PTTButton } from '../../components/PTTButton';
+import { useAuth } from '../../hooks/useAuth';
 import { useLiveKit } from '../../hooks/useLiveKit';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTheme } from '../../hooks/useTheme';
 import { generateRoomName } from '../../services/livekit-token';
+
+function getApiBaseUrl(): string {
+  const envApiUrl =
+    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+      ?.env?.API_BASE_URL;
+  return envApiUrl ?? 'http://localhost:3000';
+}
+
+interface BriefingStats {
+  newCount: number;
+  vipCount: number;
+  urgentCount: number;
+}
 
 import type { RootStackScreenProps } from '../../types/navigation';
 
@@ -27,9 +41,12 @@ type Props = RootStackScreenProps<'BriefingRoom'>;
 
 export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Element {
   const { colors } = useTheme();
+  const { accounts } = useAuth();
   const {
     roomState,
+    participants,
     isAgentSpeaking,
+    isUserSpeaking,
     isMicEnabled,
     connect,
     disconnect,
@@ -37,12 +54,51 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
   } = useLiveKit();
   const { quality, isOffline } = useNetworkStatus();
   const [error, setError] = useState<string | null>(null);
+  const [briefingStats, setBriefingStats] = useState<BriefingStats | null>(null);
+  const [agentConnected, setAgentConnected] = useState(false);
 
   // Connect to room on mount
+  const userId = accounts[0]?.id;
+
+  // Fetch live email stats for the topic card
+  const fetchBriefingStats = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const apiUrl = getApiBaseUrl();
+      const response = await fetch(
+        `${apiUrl}/email/stats?userId=${encodeURIComponent(userId)}`,
+      );
+      if (response.ok) {
+        const data = (await response.json()) as { success: boolean } & BriefingStats;
+        if (data.success) {
+          setBriefingStats({
+            newCount: data.newCount,
+            vipCount: data.vipCount,
+            urgentCount: data.urgentCount,
+          });
+        }
+      }
+    } catch {
+      // Stats are informational — don't block briefing on failure
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    void fetchBriefingStats();
+  }, [fetchBriefingStats]);
+
+  // Track whether the voice agent has joined the room
+  useEffect(() => {
+    const hasAgent = participants.some(
+      (p) => !p.isLocal && (p.identity.startsWith('agent') || p.name?.toLowerCase().includes('agent')),
+    );
+    setAgentConnected(hasAgent);
+  }, [participants]);
+
   useEffect(() => {
     const roomName = route.params?.roomName ?? generateRoomName();
-    
-    void connect(roomName).catch((err) => {
+
+    void connect(roomName, userId).catch((err) => {
       setError(err instanceof Error ? err.message : 'Failed to connect');
     });
 
@@ -60,7 +116,7 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
   const handleRetry = () => {
     setError(null);
     const roomName = route.params?.roomName ?? generateRoomName();
-    void connect(roomName).catch((err) => {
+    void connect(roomName, userId).catch((err) => {
       setError(err instanceof Error ? err.message : 'Failed to connect');
     });
   };
@@ -175,17 +231,34 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
           </View>
           <Text style={[styles.agentName, { color: colors.text }]}>Nexus</Text>
           <Text style={[styles.agentStatus, { color: colors.textSecondary }]}>
-            {isAgentSpeaking ? 'Speaking...' : 'Listening'}
+            {isAgentSpeaking
+              ? 'Speaking...'
+              : isUserSpeaking
+              ? 'Listening...'
+              : agentConnected
+              ? 'Ready'
+              : 'Waiting for agent...'}
           </Text>
         </View>
 
-        {/* Current Topic Indicator */}
+        {/* Email Briefing Overview */}
         <View style={[styles.topicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.topicLabel, { color: colors.muted }]}>Current Topic</Text>
-          <Text style={[styles.topicName, { color: colors.text }]}>VIP Emails</Text>
-          <Text style={[styles.topicProgress, { color: colors.textSecondary }]}>
-            3 of 12 items
-          </Text>
+          {briefingStats ? (
+            <>
+              <Text style={[styles.topicLabel, { color: colors.muted }]}>Email Briefing</Text>
+              <Text style={[styles.topicName, { color: colors.text }]}>
+                {briefingStats.newCount} unread
+              </Text>
+              <Text style={[styles.topicProgress, { color: colors.textSecondary }]}>
+                {briefingStats.vipCount} VIP · {briefingStats.urgentCount} urgent
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.topicLabel, { color: colors.muted }]}>Email Briefing</Text>
+              <ActivityIndicator size="small" color={colors.textSecondary} />
+            </>
+          )}
         </View>
       </View>
 

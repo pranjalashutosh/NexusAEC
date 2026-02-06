@@ -34,14 +34,16 @@ export type ElevenLabsModel =
 /**
  * Audio output formats supported by ElevenLabs
  */
-export type AudioFormat = 
-  | 'mp3_44100_128'    // MP3, 44.1kHz, 128kbps
+export type AudioFormat =
+  | 'mp3_22050_32'     // MP3, 22.05kHz, 32kbps
+  | 'mp3_44100_32'     // MP3, 44.1kHz, 32kbps
   | 'mp3_44100_64'     // MP3, 44.1kHz, 64kbps
+  | 'mp3_44100_96'     // MP3, 44.1kHz, 96kbps
+  | 'mp3_44100_128'    // MP3, 44.1kHz, 128kbps
+  | 'mp3_44100_192'    // MP3, 44.1kHz, 192kbps
   | 'pcm_16000'        // PCM, 16kHz (phone quality)
-  | 'pcm_22050'        // PCM, 22.05kHz
-  | 'pcm_24000'        // PCM, 24kHz (recommended for voice)
-  | 'pcm_44100'        // PCM, 44.1kHz (high quality)
-  | 'ulaw_8000';       // μ-law, 8kHz (telephony)
+  | 'pcm_22050'        // PCM, 22.05kHz (recommended for free tier)
+  | 'pcm_44100';       // PCM, 44.1kHz (Pro tier only)
 
 /**
  * Voice settings for ElevenLabs

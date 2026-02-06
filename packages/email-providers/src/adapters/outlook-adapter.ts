@@ -1121,5 +1121,28 @@ export class OutlookAdapter implements EmailProvider {
     if (error instanceof Error) {return error.message;}
     return String(error);
   }
+
+  // ===========================================================================
+  // Incremental Sync — Date-based Change Detection
+  // ===========================================================================
+
+  /**
+   * Check if any new emails have been received since the given timestamp.
+   *
+   * Uses the existing fetchEmails() with an `after` date filter and pageSize 1
+   * to efficiently detect new mail without fetching full content.
+   */
+  async hasNewEmailsSince(since: string): Promise<boolean> {
+    try {
+      const result = await this.fetchEmails(
+        { after: new Date(since) },
+        { pageSize: 1 },
+      );
+      return result.items.length > 0;
+    } catch {
+      // On error, assume changes exist to trigger a full refetch
+      return true;
+    }
+  }
 }
 

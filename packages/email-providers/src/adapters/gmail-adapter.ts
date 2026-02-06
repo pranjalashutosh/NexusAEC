@@ -1240,5 +1240,72 @@ export class GmailAdapter implements EmailProvider {
     if (error instanceof Error) {return error.message;}
     return String(error);
   }
+
+  // ===========================================================================
+  // Incremental Sync — History API
+  // ===========================================================================
+
+  /**
+   * Get the current historyId from the user's Gmail profile.
+   * Used as a sync starting point after a full email fetch.
+   */
+  async getProfileHistoryId(): Promise<string> {
+    const profile = await this.gmailRequest<{
+      emailAddress: string;
+      messagesTotal: number;
+      threadsTotal: number;
+      historyId: string;
+    }>('/users/me/profile');
+
+    return profile.historyId;
+  }
+
+  /**
+   * Check if the user's inbox has changed since a given historyId.
+   *
+   * Uses Gmail History API to detect additions/deletions without
+   * fetching full message content. Returns whether changes occurred
+   * and the current historyId for next check.
+   *
+   * On 404 (historyId too old / expired), returns hasChanges: true
+   * so the caller falls back to a full refetch.
+   */
+  async fetchHistory(startHistoryId: string): Promise<{
+    hasChanges: boolean;
+    currentHistoryId: string;
+  }> {
+    try {
+      const params = new URLSearchParams({
+        startHistoryId,
+        historyTypes: 'messageAdded,messageDeleted',
+        maxResults: '1', // We only need to know IF changes exist
+      });
+
+      const response = await this.gmailRequest<{
+        history?: Array<{
+          id: string;
+          messagesAdded?: Array<{ message: { id: string } }>;
+          messagesDeleted?: Array<{ message: { id: string } }>;
+        }>;
+        historyId: string;
+      }>(`/users/me/history?${params.toString()}`);
+
+      const hasChanges = (response.history ?? []).length > 0;
+
+      return {
+        hasChanges,
+        currentHistoryId: response.historyId,
+      };
+    } catch (error) {
+      // Gmail returns 404 when historyId is too old or invalid
+      if (
+        error instanceof Error &&
+        (error.message.includes('404') || error.message.includes('notFound'))
+      ) {
+        return { hasChanges: true, currentHistoryId: startHistoryId };
+      }
+      throw error;
+    }
+  }
 }
 

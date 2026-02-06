@@ -5,6 +5,9 @@
  * Uses secure storage for token persistence.
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
 import type { GoogleOAuthProvider } from './google';
 import type { MicrosoftOAuthProvider } from './microsoft';
 import type { OAuthTokens, EmailSource } from '../interfaces/types';
@@ -528,6 +531,77 @@ export class InMemoryTokenStorage implements ITokenStorage {
   /** Clear all data (for testing) */
   clear(): void {
     this.data.clear();
+  }
+}
+
+// =============================================================================
+// File-Based Storage (persists across restarts)
+// =============================================================================
+
+/**
+ * File-based token storage that persists tokens to a JSON file on disk.
+ * Tokens survive server restarts unlike InMemoryTokenStorage.
+ */
+export class FileTokenStorage implements ITokenStorage {
+  private data: Map<string, string>;
+  private readonly filePath: string;
+  private loaded = false;
+
+  constructor(filePath?: string) {
+    this.filePath = filePath ?? path.join(process.cwd(), '.nexus-data', 'tokens.json');
+    this.data = new Map();
+  }
+
+  private load(): void {
+    if (this.loaded) return;
+    this.loaded = true;
+
+    try {
+      if (fs.existsSync(this.filePath)) {
+        const raw = fs.readFileSync(this.filePath, 'utf-8');
+        const parsed = JSON.parse(raw) as Record<string, string>;
+        for (const [key, value] of Object.entries(parsed)) {
+          this.data.set(key, value);
+        }
+      }
+    } catch {
+      // If file is corrupt, start fresh
+      this.data = new Map();
+    }
+  }
+
+  private persist(): void {
+    const dir = path.dirname(this.filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const obj: Record<string, string> = {};
+    for (const [key, value] of this.data.entries()) {
+      obj[key] = value;
+    }
+    fs.writeFileSync(this.filePath, JSON.stringify(obj, null, 2), 'utf-8');
+  }
+
+  async get(key: string): Promise<string | null> {
+    this.load();
+    return this.data.get(key) ?? null;
+  }
+
+  async set(key: string, value: string): Promise<void> {
+    this.load();
+    this.data.set(key, value);
+    this.persist();
+  }
+
+  async delete(key: string): Promise<void> {
+    this.load();
+    this.data.delete(key);
+    this.persist();
+  }
+
+  async has(key: string): Promise<boolean> {
+    this.load();
+    return this.data.has(key);
   }
 }
 

@@ -22,6 +22,11 @@ import {
   DataPacket_Kind,
   type RemoteParticipant,
 } from 'livekit-client';
+import {
+  AudioSession,
+  AndroidAudioTypePresets,
+  useIOSAudioManagement,
+} from '@livekit/react-native';
 
 import { getLiveKitToken } from '../services/livekit-token';
 
@@ -64,7 +69,7 @@ interface LiveKitContextValue {
   /** Microphone enabled */
   isMicEnabled: boolean;
   /** Connect to a room */
-  connect: (roomName: string) => Promise<void>;
+  connect: (roomName: string, userId?: string) => Promise<void>;
   /** Disconnect from room */
   disconnect: () => Promise<void>;
   /** Toggle microphone */
@@ -112,7 +117,14 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
   const [isUserSpeaking, setIsUserSpeaking] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
 
-  const roomRef = useRef<Room | null>(null);
+  // Persistent Room instance — created once so useIOSAudioManagement can
+  // observe track changes across the full lifecycle.
+  const [room] = useState(() => new Room());
+  const roomRef = useRef<Room | null>(room);
+
+  // Automatically configure iOS AVAudioSession as audio tracks change
+  // (e.g. switches to playAndRecord when remote audio arrives)
+  useIOSAudioManagement(room, true);
 
   /**
    * Build participant list from the Room object
@@ -177,43 +189,60 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
     });
   }, [syncParticipants]);
 
-  const connect = useCallback(async (name: string) => {
+  const connect = useCallback(async (name: string, userId?: string) => {
     try {
       setRoomState('connecting');
       setRoomName(name);
 
+      // Configure and start the native AudioSession for playback + recording
+      await AudioSession.configureAudio({
+        android: {
+          preferredOutputList: ['speaker'],
+          audioTypeOptions: AndroidAudioTypePresets.communication,
+        },
+        ios: {
+          defaultOutput: 'speaker',
+        },
+      });
+      await AudioSession.startAudioSession();
+
       // Fetch a real token from the backend API
-      const tokenResponse = await getLiveKitToken({ roomName: name });
+      const tokenResponse = await getLiveKitToken({
+        roomName: name,
+        participantName: userId,
+      });
       setToken(tokenResponse.token);
 
-      // Create a new Room and connect
-      const room = new Room();
-      roomRef.current = room;
-
+      // Attach listeners and connect the existing Room instance
       attachRoomListeners(room);
 
-      const serverUrl = getServerUrl();
+      const serverUrl = tokenResponse.serverUrl ?? getServerUrl();
       await room.connect(serverUrl, tokenResponse.token);
 
       setRoomState('connected');
-
-      // Enable microphone for voice interaction
-      await room.localParticipant.setMicrophoneEnabled(true);
-
       syncParticipants(room);
+
+      // Enable microphone for voice interaction (may fail on simulator)
+      try {
+        await room.localParticipant.setMicrophoneEnabled(true);
+      } catch (micError) {
+        console.warn('Could not enable microphone:', micError);
+        setIsMicEnabled(false);
+      }
     } catch (error) {
       console.error('Failed to connect to LiveKit:', error);
       setRoomState('error');
       throw error;
     }
-  }, [attachRoomListeners, syncParticipants]);
+  }, [room, attachRoomListeners, syncParticipants]);
 
   const disconnect = useCallback(async () => {
-    const room = roomRef.current;
     if (room) {
       await room.disconnect();
-      roomRef.current = null;
     }
+
+    // Stop the native AudioSession when leaving the room
+    await AudioSession.stopAudioSession();
 
     setRoomState('disconnected');
     setRoomName(null);
@@ -221,38 +250,33 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
     setParticipants([]);
     setIsAgentSpeaking(false);
     setIsUserSpeaking(false);
-  }, []);
+  }, [room]);
 
   const toggleMic = useCallback(() => {
-    const room = roomRef.current;
-    if (room) {
+    if (room.state === ConnectionState.Connected) {
       const newEnabled = !isMicEnabled;
       setIsMicEnabled(newEnabled);
       void room.localParticipant.setMicrophoneEnabled(newEnabled);
     }
-  }, [isMicEnabled]);
+  }, [room, isMicEnabled]);
 
   const sendMessage = useCallback((message: string) => {
-    const room = roomRef.current;
-    if (room) {
+    if (room.state === ConnectionState.Connected) {
       const encoder = new TextEncoder();
       void room.localParticipant.publishData(
         encoder.encode(message),
         { reliable: true },
       );
     }
-  }, []);
+  }, [room]);
 
   // Clean up on unmount
   useEffect(() => {
     return () => {
-      const room = roomRef.current;
-      if (room) {
-        void room.disconnect();
-        roomRef.current = null;
-      }
+      void room.disconnect();
+      void AudioSession.stopAudioSession();
     };
-  }, []);
+  }, [room]);
 
   const value = useMemo<LiveKitContextValue>(
     () => ({

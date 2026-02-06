@@ -41,12 +41,19 @@ export interface UserPreferences {
 }
 
 /**
+ * Account token status from backend verification
+ */
+export type AccountTokenStatus = 'checking' | 'valid' | 'expired';
+
+/**
  * Auth state
  */
 export interface AuthState {
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
   accounts: ConnectedAccount[];
+  /** Token validity status per account id */
+  accountStatuses: Record<string, AccountTokenStatus>;
   preferences: UserPreferences;
   isLoading: boolean;
 }
@@ -57,6 +64,7 @@ export interface AuthState {
 interface AuthContextValue extends AuthState {
   connectAccount: (provider: 'google' | 'microsoft') => Promise<void>;
   disconnectAccount: (accountId: string) => Promise<void>;
+  reconnectAccount: (account: ConnectedAccount) => Promise<void>;
   updatePreferences: (prefs: Partial<UserPreferences>) => Promise<void>;
   completeOnboarding: () => Promise<void>;
   logout: () => Promise<void>;
@@ -181,13 +189,50 @@ async function pollForResult(state: string): Promise<AuthSuccessResult> {
 /**
  * Auth provider component
  */
+/**
+ * Verify token status with backend for each account
+ */
+async function verifyTokenStatus(
+  accts: ConnectedAccount[],
+): Promise<Record<string, AccountTokenStatus>> {
+  const statuses: Record<string, AccountTokenStatus> = {};
+  const apiUrl = getApiBaseUrl();
+
+  for (const account of accts) {
+    const source = account.provider === 'google' ? 'GMAIL' : 'OUTLOOK';
+    try {
+      const response = await fetch(
+        `${apiUrl}/auth/token-status?userId=${encodeURIComponent(account.id)}&source=${source}`,
+        { headers: { 'Accept': 'application/json' } },
+      );
+
+      if (response.ok) {
+        const data = (await response.json()) as {
+          success: boolean;
+          statuses: Record<string, { hasTokens: boolean }>;
+        };
+        const key = source.toLowerCase();
+        statuses[account.id] = data.statuses[key]?.hasTokens ? 'valid' : 'expired';
+      } else {
+        statuses[account.id] = 'expired';
+      }
+    } catch {
+      // Network error — assume valid to avoid false negatives when backend is unreachable
+      statuses[account.id] = 'valid';
+    }
+  }
+
+  return statuses;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
+  const [accountStatuses, setAccountStatuses] = useState<Record<string, AccountTokenStatus>>({});
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
-  // Load persisted state on mount
+  // Load persisted state on mount and verify tokens with backend
   useEffect(() => {
     const loadState = async () => {
       try {
@@ -197,9 +242,11 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
           AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING),
         ]);
 
+        let loadedAccounts: ConnectedAccount[] = [];
+
         if (authStateStr) {
-          const parsedAccounts = JSON.parse(authStateStr) as ConnectedAccount[];
-          setAccounts(parsedAccounts);
+          loadedAccounts = JSON.parse(authStateStr) as ConnectedAccount[];
+          setAccounts(loadedAccounts);
         }
 
         if (prefsStr) {
@@ -209,6 +256,18 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
 
         if (onboardingStr === 'true') {
           setHasCompletedOnboarding(true);
+        }
+
+        // Verify tokens with backend
+        if (loadedAccounts.length > 0) {
+          const initialStatuses: Record<string, AccountTokenStatus> = {};
+          for (const acct of loadedAccounts) {
+            initialStatuses[acct.id] = 'checking';
+          }
+          setAccountStatuses(initialStatuses);
+
+          const verified = await verifyTokenStatus(loadedAccounts);
+          setAccountStatuses(verified);
         }
       } catch (error) {
         console.error('Failed to load auth state:', error);
@@ -251,6 +310,40 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
   const disconnectAccount = useCallback(async (accountId: string) => {
     const newAccounts = accounts.filter((a) => a.id !== accountId);
     setAccounts(newAccounts);
+    setAccountStatuses((prev) => {
+      const next = { ...prev };
+      delete next[accountId];
+      return next;
+    });
+    await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
+  }, [accounts]);
+
+  const reconnectAccount = useCallback(async (account: ConnectedAccount) => {
+    // Remove the old account, re-run OAuth, and store the new one
+    const filtered = accounts.filter((a) => a.id !== account.id);
+
+    // Initiate OAuth
+    const { authorizationUrl, state } = await initiateOAuth(account.provider);
+
+    const supported = await Linking.canOpenURL(authorizationUrl);
+    if (!supported) {
+      throw new Error(`Cannot open OAuth URL for ${account.provider}`);
+    }
+    await Linking.openURL(authorizationUrl);
+
+    const result = await pollForResult(state);
+
+    const newAccount: ConnectedAccount = {
+      id: result.userId,
+      provider: account.provider,
+      email: result.email ?? account.email,
+      name: result.displayName ?? account.name,
+      connectedAt: new Date().toISOString(),
+    };
+
+    const newAccounts = [...filtered, newAccount];
+    setAccounts(newAccounts);
+    setAccountStatuses((prev) => ({ ...prev, [newAccount.id]: 'valid' }));
     await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
   }, [accounts]);
 
@@ -281,21 +374,25 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
       isAuthenticated: accounts.length > 0,
       hasCompletedOnboarding,
       accounts,
+      accountStatuses,
       preferences,
       isLoading,
       connectAccount,
       disconnectAccount,
+      reconnectAccount,
       updatePreferences,
       completeOnboarding,
       logout,
     }),
     [
       accounts,
+      accountStatuses,
       hasCompletedOnboarding,
       preferences,
       isLoading,
       connectAccount,
       disconnectAccount,
+      reconnectAccount,
       updatePreferences,
       completeOnboarding,
       logout,

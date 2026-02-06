@@ -32,6 +32,11 @@ const logger = createLogger({ baseContext: { component: 'reasoning-llm' } });
  * 1. Extracts the latest user message from ChatContext
  * 2. Passes it to ReasoningLoop.processUserInput()
  * 3. Pushes the response as ChatChunk objects for TTS to speak
+ *
+ * IMPORTANT: Chunks must be pushed to `this.queue` (not `this.output`).
+ * The SDK's internal monitorMetrics() reads from `queue`, collects metrics,
+ * and forwards to `output` which is consumed by `next()`.
+ * The framework closes `queue` automatically when `run()` completes.
  */
 class ReasoningLLMStream extends llm.LLMStream {
   private reasoningLoop: ReasoningLoop;
@@ -52,27 +57,29 @@ class ReasoningLLMStream extends llm.LLMStream {
   /**
    * Main stream execution.
    * Called by the LiveKit framework when it needs an LLM response.
+   *
+   * Pushes ChatChunk objects to `this.queue`. The framework's monitorMetrics()
+   * bridge forwards them to `this.output` for consumption by the voice pipeline.
+   * Do NOT call this.queue.close() — the framework handles that.
    */
   protected async run(): Promise<void> {
-    // Extract the latest user message from the ChatContext
     const items = this.chatCtx.items;
     const lastUserMessage = this.findLastUserMessage(items);
 
     if (!lastUserMessage) {
-      logger.warn('No user message found in ChatContext');
-      this.output.put({
+      logger.warn('No user message found in ChatContext, producing empty response');
+      this.queue.put({
         id: `chunk-${Date.now()}`,
         delta: {
           role: 'assistant',
           content: "I didn't catch that. Could you repeat?",
         },
       });
-      this.output.close();
       return;
     }
 
-    logger.debug('Processing user input via ReasoningLoop', {
-      userText: lastUserMessage,
+    logger.info('Processing user input via ReasoningLoop', {
+      userText: lastUserMessage.substring(0, 100),
     });
 
     try {
@@ -81,13 +88,18 @@ class ReasoningLLMStream extends llm.LLMStream {
 
       // Push the response text as a ChatChunk
       if (result.responseText) {
-        this.output.put({
+        logger.info('ReasoningLoop produced response', {
+          responseLength: result.responseText.length,
+        });
+        this.queue.put({
           id: `chunk-${Date.now()}`,
           delta: {
             role: 'assistant',
             content: result.responseText,
           },
         });
+      } else {
+        logger.warn('ReasoningLoop produced empty response');
       }
 
       // Log actions taken
@@ -103,7 +115,7 @@ class ReasoningLLMStream extends llm.LLMStream {
       }
     } catch (error) {
       logger.error('ReasoningLoop processing error', error instanceof Error ? error : null);
-      this.output.put({
+      this.queue.put({
         id: `chunk-error-${Date.now()}`,
         delta: {
           role: 'assistant',
@@ -111,8 +123,6 @@ class ReasoningLLMStream extends llm.LLMStream {
         },
       });
     }
-
-    this.output.close();
   }
 
   /**
