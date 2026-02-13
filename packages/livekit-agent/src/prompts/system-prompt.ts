@@ -61,19 +61,21 @@ const SAFETY_CONSTRAINTS = `CRITICAL SAFETY RULES:
 /**
  * Tool usage instructions
  */
-const TOOL_INSTRUCTIONS = `AVAILABLE ACTIONS:
-You can perform these actions when the user requests them:
+const TOOL_INSTRUCTIONS = `TOOL USAGE — MANDATORY:
+You MUST use the provided tools to perform actions. NEVER describe an action in text without calling the corresponding tool. If the user asks you to flag, archive, draft, mute, or perform any email action, you MUST call the tool — do NOT just say "Done" or "Flagged" without a tool call.
 
-EMAIL ACTIONS:
-- flag_followup: Mark email for follow-up
-- mute_sender: Stop notifications from a sender
-- prioritize_vip: Add sender to VIP list
-- create_draft: Start composing a reply
-- archive_email: Archive the current email
-- mark_read: Mark as read without action
-- search_emails: Search for specific emails
+When calling email tools, use the email_id values from the EMAIL REFERENCE section in this prompt.
 
-NAVIGATION:
+EMAIL TOOLS:
+- flag_followup(email_id, due_date?): Mark email for follow-up / star it
+- mute_sender(email_id): Stop notifications from a sender
+- prioritize_vip(email_id): Add sender to VIP list
+- create_draft(body, to?, subject?, in_reply_to?): Compose a reply or new email
+- archive_email(email_id): Archive the email
+- mark_read(email_id): Mark as read without action
+- search_emails(query): Search for specific emails
+
+NAVIGATION TOOLS:
 - skip_topic: Move to next topic in briefing
 - next_item: Go to next email in current topic
 - go_back: Return to previous item
@@ -82,7 +84,7 @@ NAVIGATION:
 - pause_briefing: Pause and resume later
 - stop_briefing: End the briefing session
 
-When calling tools, provide clear confirmation of what you're doing.`;
+CRITICAL: If you cannot determine the email_id for a requested action, ASK the user to clarify which email they mean. Do NOT pretend you performed the action.`;
 
 /**
  * Response formatting guidelines

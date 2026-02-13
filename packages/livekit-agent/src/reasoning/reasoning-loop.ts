@@ -124,6 +124,27 @@ export type TTSCallback = (text: string, isFinal: boolean) => void;
  */
 export type StateUpdateCallback = (state: ReasoningState) => void;
 
+/**
+ * Lightweight email reference for GPT-4o context.
+ * Extracted from BriefingData so the ReasoningLoop can include email IDs,
+ * subjects, and senders in the system prompt.
+ */
+export interface BriefingEmailRef {
+  emailId: string;
+  subject: string;
+  from: string;
+  threadId?: string;
+  isFlagged: boolean;
+}
+
+/**
+ * A briefing topic with email references for the ReasoningLoop.
+ */
+export interface BriefingTopicRef {
+  label: string;
+  emails: BriefingEmailRef[];
+}
+
 // =============================================================================
 // OpenAI Client
 // =============================================================================
@@ -158,11 +179,13 @@ async function callChatCompletion(
   tools: Array<{ type: 'function'; function: Record<string, unknown> }>,
   config: OpenAIConfig
 ): Promise<ChatCompletionResponse> {
-  logger.debug('Calling OpenAI chat completion', {
+  logger.info('Calling OpenAI chat completion', {
     messageCount: messages.length,
     toolCount: tools.length,
     model: config.model,
+    lastUserMessage: messages.filter(m => m.role === 'user').slice(-1)[0]?.content?.substring(0, 100),
   });
+  const llmStartTime = Date.now();
 
   // Initialize OpenAI client
   const openai = new OpenAI({ apiKey: config.apiKey });
@@ -222,8 +245,19 @@ async function callChatCompletion(
   try {
     const response = await openai.chat.completions.create(requestParams);
 
+    const llmDurationMs = Date.now() - llmStartTime;
     const choice = response.choices[0];
     const toolCalls = choice?.message?.tool_calls;
+
+    logger.info('OpenAI response received', {
+      durationMs: llmDurationMs,
+      finishReason: choice?.finish_reason,
+      hasContent: !!choice?.message?.content,
+      contentLength: choice?.message?.content?.length ?? 0,
+      contentPreview: choice?.message?.content?.substring(0, 200),
+      toolCallCount: toolCalls?.length ?? 0,
+      toolNames: toolCalls?.filter((tc) => tc.type === 'function').map((tc) => tc.type === 'function' ? tc.function.name : tc.type),
+    });
 
     // Build the response, handling tool_calls explicitly
     const responseMessage: ChatCompletionResponse['choices'][0]['message'] = {
@@ -269,6 +303,7 @@ export class ReasoningLoop {
   private config: OpenAIConfig;
   private systemPromptContext: SystemPromptContext;
   private state: ReasoningState;
+  private topicRefs: BriefingTopicRef[];
   private ttsCallback?: TTSCallback;
   private stateUpdateCallback?: StateUpdateCallback;
   private isProcessing: boolean = false;
@@ -277,26 +312,40 @@ export class ReasoningLoop {
   constructor(
     topicItems: number[] = [5, 3, 2],
     systemPromptContext?: Partial<SystemPromptContext>,
-    config?: OpenAIConfig
+    config?: OpenAIConfig,
+    topicRefs?: BriefingTopicRef[],
   ) {
     this.config = config ?? loadOpenAIConfig();
+    this.topicRefs = topicRefs ?? [];
     this.systemPromptContext = {
       ...DEFAULT_SYSTEM_PROMPT_CONTEXT,
       ...systemPromptContext,
     };
 
+    // Build the system prompt, including email references if available
+    const systemPrompt = this.topicRefs.length > 0
+      ? buildSystemPrompt(this.systemPromptContext) + '\n\n' + this.buildEmailReferenceBlock()
+      : buildSystemPrompt(this.systemPromptContext);
+
+    // Set initial emailContext to the first email in the first topic
+    const firstEmail = this.topicRefs[0]?.emails[0];
+    const initialEmailContext: EmailActionContext | undefined = firstEmail
+      ? buildEmailContext(firstEmail)
+      : undefined;
+
     // Initialize state
     this.state = {
       messages: [{
         role: 'system',
-        content: buildSystemPrompt(this.systemPromptContext),
+        content: systemPrompt,
       }],
       briefingState: createBriefingState(topicItems),
+      ...(initialEmailContext ? { emailContext: initialEmailContext } : {}),
       briefingContext: {
         totalItems: topicItems.reduce((sum, count) => sum + count, 0),
         currentPosition: 0,
-        currentTopic: 'Inbox',
-        remainingTopics: ['VIP', 'Flagged', 'Updates'],
+        currentTopic: this.topicRefs[0]?.label ?? 'Inbox',
+        remainingTopics: this.topicRefs.slice(1).map(t => t.label),
         estimatedMinutesRemaining: Math.ceil(topicItems.reduce((sum, count) => sum + count, 0) * 0.5),
       },
       isSpeaking: false,
@@ -306,7 +355,29 @@ export class ReasoningLoop {
     logger.info('Reasoning loop initialized', {
       totalItems: this.state.briefingContext.totalItems,
       topicCount: topicItems.length,
+      hasEmailRefs: this.topicRefs.length > 0,
+      initialEmailId: initialEmailContext?.emailId,
     });
+  }
+
+  /**
+   * Build an EMAIL REFERENCE block for the system prompt.
+   * Lists every briefing topic with its emails (ID, subject, sender)
+   * so GPT-4o can use them in tool calls.
+   */
+  private buildEmailReferenceBlock(): string {
+    const lines: string[] = ['EMAIL REFERENCE (use these email_id values when calling tools):'];
+
+    for (let t = 0; t < this.topicRefs.length; t++) {
+      const topic = this.topicRefs[t]!;
+      lines.push(`\nTopic ${t + 1}: "${topic.label}"`);
+      for (const email of topic.emails) {
+        const flag = email.isFlagged ? ' [FLAGGED]' : '';
+        lines.push(`  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${email.subject}${flag}`);
+      }
+    }
+
+    return lines.join('\n');
   }
 
   /**
@@ -358,10 +429,23 @@ export class ReasoningLoop {
     }
 
     this.isProcessing = true;
+    const processStartTime = Date.now();
 
     try {
       // Add user message to conversation
       this.state.messages.push({ role: 'user', content: text });
+
+      logger.info('Processing user input', {
+        text,
+        messageCount: this.state.messages.length,
+        briefingState: {
+          topicIndex: this.state.briefingState.currentTopicIndex,
+          itemIndex: this.state.briefingState.currentItemIndex,
+          isPaused: this.state.briefingState.isPaused,
+        },
+        hasPendingConfirmation: !!this.state.pendingConfirmation,
+        hasDisambiguation: !!this.state.disambiguationOptions,
+      });
 
       // Handle pending confirmation
       if (this.state.pendingConfirmation) {
@@ -375,6 +459,15 @@ export class ReasoningLoop {
 
       // Call GPT-4o for reasoning
       const result = await this.callLLM();
+
+      logger.info('processUserInput completed', {
+        durationMs: Date.now() - processStartTime,
+        responseLength: result.responseText.length,
+        responsePreview: result.responseText.substring(0, 200),
+        actionsTaken: result.actionsTaken.map(a => a.tool),
+        shouldEnd: result.shouldEnd,
+        chunkCount: result.responseChunks.length,
+      });
 
       // Notify state update
       if (this.stateUpdateCallback) {
@@ -414,11 +507,38 @@ export class ReasoningLoop {
 
     // Handle tool calls
     if (message.tool_calls && message.tool_calls.length > 0) {
+      logger.info('GPT-4o requested tool calls', {
+        toolCalls: message.tool_calls.map(tc => ({
+          name: tc.function.name,
+          args: tc.function.arguments.substring(0, 100),
+        })),
+      });
+
+      // Push the assistant message WITH tool_calls to conversation history.
+      // OpenAI requires every 'tool' message to follow an 'assistant' message
+      // that contains the corresponding tool_calls.
+      this.state.messages.push({
+        role: 'assistant',
+        content: message.content ?? '',
+        tool_calls: message.tool_calls.map(tc => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: {
+            name: tc.function.name,
+            arguments: tc.function.arguments,
+          },
+        })),
+      });
+
       return await this.handleToolCalls(message.tool_calls);
     }
 
     // Handle text response
     const responseText = message.content ?? '';
+    logger.info('GPT-4o returned text response (no tools)', {
+      responseLength: responseText.length,
+      responseText: responseText.substring(0, 300),
+    });
     return this.createTextResult(responseText);
   }
 
@@ -436,14 +556,32 @@ export class ReasoningLoop {
       const toolName = toolCall.function.name;
       const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
 
-      logger.info('Executing tool', { toolName, args });
+      logger.info('Executing tool', { toolName, args, toolCallId: toolCall.id });
 
       // Check if it's an email tool
       if (EMAIL_TOOLS.some((t) => t.function.name === toolName)) {
+        // If GPT-4o provided an email_id, update emailContext by looking up the reference
+        const argEmailId = args['email_id'] as string | undefined;
+        if (argEmailId) {
+          const ref = this.findEmailRef(argEmailId);
+          if (ref) {
+            this.state.emailContext = buildEmailContext(ref);
+            logger.info('Updated emailContext from tool args', { emailId: ref.emailId, subject: ref.subject });
+          } else {
+            // GPT-4o provided an ID we don't have a ref for — still set it
+            this.state.emailContext = {
+              emailId: argEmailId,
+              ...(this.state.emailContext?.from ? { from: this.state.emailContext.from } : {}),
+              ...(this.state.emailContext?.subject ? { subject: this.state.emailContext.subject } : {}),
+            };
+          }
+        }
+
+        const emailCtx = this.state.emailContext ?? { emailId: argEmailId ?? 'current' };
         const result = await executeEmailTool(
           toolName,
           args,
-          this.state.emailContext ?? { emailId: 'current' }
+          emailCtx,
         );
 
         actionsTaken.push({ tool: toolName, result });
@@ -453,7 +591,7 @@ export class ReasoningLoop {
           this.state.pendingConfirmation = {
             action: toolName,
             args,
-            context: this.state.emailContext ?? { emailId: 'current' },
+            context: emailCtx,
           };
           responseText = result.message;
         } else {
@@ -511,14 +649,19 @@ export class ReasoningLoop {
     }
 
     if (command.possibleIntent === 'confirmation') {
-      // User confirmed - execute the action
-      const result = await executeEmailTool(pending.action, pending.args, pending.context);
+      // User confirmed — the action was ALREADY executed when the tool was first called.
+      // Do NOT re-execute. Just acknowledge the confirmation.
+      const confirmResult: ToolResult = {
+        success: true,
+        message: 'Done.',
+        riskLevel: 'high',
+      };
+      const confirmMessage = generateConfirmation(pending.action, 'high');
       delete this.state.pendingConfirmation;
 
-        const confirmMessage = generateConfirmation(pending.action, result.riskLevel);
-        return this.createTextResult(
-          confirmMessage,
-        [{ tool: pending.action, result }]
+      return this.createTextResult(
+        confirmMessage,
+        [{ tool: pending.action, result: confirmResult }]
       );
     } else {
       // User cancelled
@@ -642,6 +785,17 @@ export class ReasoningLoop {
     const processedText = preprocessTextForTTS(text);
     const chunks = splitTextForStreaming(processedText);
 
+    logger.info('createTextResult', {
+      originalLength: text.length,
+      originalPreview: text.substring(0, 200),
+      processedLength: processedText.length,
+      chunkCount: chunks.length,
+      chunks: chunks.map((c, i) => `[${i}] ${c.substring(0, 60)}`),
+      hasTtsCallback: !!this.ttsCallback,
+      actionsTaken: actionsTaken.map(a => a.tool),
+      shouldEnd,
+    });
+
     // Store for repeat functionality
     if (text) {
       this.state.lastSpokenText = text;
@@ -661,6 +815,9 @@ export class ReasoningLoop {
           this.ttsCallback(chunk, i === chunks.length - 1);
         }
       }
+      logger.info('TTS callback invoked for all chunks', { totalChunks: chunks.length });
+    } else if (!this.ttsCallback) {
+      logger.warn('No TTS callback registered — chunks will only be returned in result');
     }
 
     return {
@@ -670,6 +827,17 @@ export class ReasoningLoop {
       shouldEnd,
       state: this.state,
     };
+  }
+
+  /**
+   * Look up an email reference by ID across all briefing topics.
+   */
+  private findEmailRef(emailId: string): BriefingEmailRef | undefined {
+    for (const topic of this.topicRefs) {
+      const found = topic.emails.find(e => e.emailId === emailId);
+      if (found) return found;
+    }
+    return undefined;
   }
 }
 
@@ -683,9 +851,26 @@ export class ReasoningLoop {
 export function createReasoningLoop(
   topicItems?: number[],
   systemPromptContext?: Partial<SystemPromptContext>,
-  config?: OpenAIConfig
+  config?: OpenAIConfig,
+  topicRefs?: BriefingTopicRef[],
 ): ReasoningLoop {
-  return new ReasoningLoop(topicItems, systemPromptContext, config);
+  return new ReasoningLoop(topicItems, systemPromptContext, config, topicRefs);
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Build an EmailActionContext from a BriefingEmailRef, omitting undefined
+ * optional fields to satisfy exactOptionalPropertyTypes.
+ */
+function buildEmailContext(ref: BriefingEmailRef): EmailActionContext {
+  const ctx: EmailActionContext = { emailId: ref.emailId };
+  if (ref.from) ctx.from = ref.from;
+  if (ref.subject) ctx.subject = ref.subject;
+  if (ref.threadId) ctx.threadId = ref.threadId;
+  return ctx;
 }
 
 // =============================================================================

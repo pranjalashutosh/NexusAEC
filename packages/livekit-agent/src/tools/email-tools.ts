@@ -357,13 +357,21 @@ export const createDraftTool: ToolDefinition = {
   type: 'function',
   function: {
     name: 'create_draft',
-    description: 'Create a draft email reply. This will prepare a response but NOT send it.',
+    description: 'Create a draft email. For replies, provide in_reply_to with the email ID. For new emails, provide to with the recipient email address and subject.',
     parameters: {
       type: 'object',
       properties: {
         in_reply_to: {
           type: 'string',
-          description: 'Email ID this is replying to',
+          description: 'Email ID this is replying to (for replies only)',
+        },
+        to: {
+          type: 'string',
+          description: 'Recipient email address (for new emails). Use this when composing a new email rather than replying.',
+        },
+        subject: {
+          type: 'string',
+          description: 'Email subject line (for new emails)',
         },
         body: {
           type: 'string',
@@ -375,7 +383,7 @@ export const createDraftTool: ToolDefinition = {
           enum: ['formal', 'friendly', 'brief', 'detailed'],
         },
       },
-      required: ['in_reply_to', 'body'],
+      required: ['body'],
     },
   },
 };
@@ -628,20 +636,50 @@ export async function executeCreateDraft(
   args: Record<string, unknown>,
   context: EmailActionContext
 ): Promise<ToolResult> {
-  const inReplyTo = (args['in_reply_to'] as string) ?? context.emailId;
+  const inReplyTo = args['in_reply_to'] as string | undefined;
+  const toAddress = args['to'] as string | undefined;
+  const subject = args['subject'] as string | undefined;
   const body = args['body'] as string;
   const tone = (args['tone'] as string) ?? 'friendly';
+  const isNewEmail = !inReplyTo && toAddress;
 
-  logger.info('Executing create_draft', { inReplyTo, tone, context });
+  logger.info('Executing create_draft', { inReplyTo, toAddress, subject, tone, isNewEmail, context });
 
   try {
     const inbox = getInboxService();
-    const originalEmail = await inbox.fetchEmail(inReplyTo);
 
-    if (_draftService && originalEmail) {
-      const draft = await _draftService.createReply(originalEmail, {
+    // --- Reply path: in_reply_to is provided ---
+    if (inReplyTo) {
+      const originalEmail = await inbox.fetchEmail(inReplyTo);
+
+      if (_draftService && originalEmail) {
+        const draft = await _draftService.createReply(originalEmail, {
+          bodyText: body,
+        });
+        return {
+          success: true,
+          message: `I've drafted a ${tone} reply. Would you like me to read it back before saving?`,
+          data: { draftId: draft.id, draftBody: body, inReplyTo },
+          requiresConfirmation: true,
+          riskLevel: 'high',
+        };
+      }
+
+      // Fallback: create reply draft via UnifiedInboxService
+      const replyTo = originalEmail?.from?.email ?? context.from;
+      const replySubject = originalEmail?.subject
+        ? `Re: ${originalEmail.subject}`
+        : context.subject ? `Re: ${context.subject}` : 'Re:';
+
+      const draft = await inbox.createDraft({
+        subject: replySubject,
+        to: replyTo ? [{ email: replyTo }] : [],
         bodyText: body,
+        inReplyToMessageId: inReplyTo,
+        isPendingReview: true,
+        reviewRationale: 'Created via voice command',
       });
+
       return {
         success: true,
         message: `I've drafted a ${tone} reply. Would you like me to read it back before saving?`,
@@ -651,20 +689,29 @@ export async function executeCreateDraft(
       };
     }
 
-    // Fallback: create draft via UnifiedInboxService
+    // --- New email path: 'to' address is provided ---
+    const recipientEmail = toAddress ?? context.from;
+    if (!recipientEmail) {
+      return {
+        success: false,
+        message: 'I need a recipient email address. Who should I send this to?',
+        riskLevel: 'low',
+      };
+    }
+
     const draft = await inbox.createDraft({
-      subject: context.subject ? `Re: ${context.subject}` : 'Re:',
-      to: context.from ? [{ email: context.from }] : [],
+      subject: subject ?? '(No subject)',
+      to: [{ email: recipientEmail }],
       bodyText: body,
-      inReplyToMessageId: inReplyTo,
       isPendingReview: true,
       reviewRationale: 'Created via voice command',
     });
 
+    const actionLabel = isNewEmail ? 'new email' : 'reply';
     return {
       success: true,
-      message: `I've drafted a ${tone} reply. Would you like me to read it back before saving?`,
-      data: { draftId: draft.id, draftBody: body, inReplyTo },
+      message: `I've drafted a ${tone} ${actionLabel} to ${recipientEmail}. Would you like me to read it back before saving?`,
+      data: { draftId: draft.id, draftBody: body, to: recipientEmail, subject },
       requiresConfirmation: true,
       riskLevel: 'high',
     };

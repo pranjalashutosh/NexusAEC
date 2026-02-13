@@ -27,6 +27,7 @@ import { removeSession, setSession } from './session-store.js';
 import { buildSystemPrompt, DEFAULT_SYSTEM_PROMPT_CONTEXT } from './prompts/system-prompt.js';
 
 import type { BriefingData } from './briefing-pipeline.js';
+import type { BriefingTopicRef } from './reasoning/reasoning-loop.js';
 import type { AgentSession } from './session-store.js';
 import type { JobContext, JobProcess } from '@livekit/agents';
 
@@ -163,6 +164,18 @@ async function startVoiceAssistant(
     : [5, 3, 2];
   const topicLabels = briefingData?.topicLabels ?? ['Inbox', 'VIP', 'Flagged'];
 
+  // Build lightweight topic references with email IDs for GPT-4o context
+  const topicRefs: BriefingTopicRef[] = briefingData?.topics.map((topic) => ({
+    label: topic.label,
+    emails: topic.emails.map((se) => ({
+      emailId: se.email.id,
+      subject: se.email.subject,
+      from: se.email.from?.email ?? se.email.from?.name ?? 'unknown',
+      threadId: se.email.threadId,
+      isFlagged: se.score.isFlagged,
+    })),
+  })) ?? [];
+
   logger.info('Starting voice assistant pipeline', {
     roomName: session.roomName,
     sessionId: session.sessionId,
@@ -171,6 +184,8 @@ async function startVoiceAssistant(
     ttsVoice: config.elevenlabs.voiceId,
     briefingTopics: topicLabels,
     briefingItemCounts: topicItems,
+    topicRefsCount: topicRefs.length,
+    totalEmailRefs: topicRefs.reduce((sum, t) => sum + t.emails.length, 0),
   });
 
   // 1. Create Deepgram STT (Speech-to-Text)
@@ -205,11 +220,11 @@ async function startVoiceAssistant(
     model: config.elevenlabs.modelId,
   });
 
-  // 3. Create ReasoningLLM with real topic data from the briefing pipeline
+  // 3. Create ReasoningLLM with real topic data and email references from the briefing pipeline
   logger.info('[pipeline] Creating ReasoningLLM...');
   const reasoningLLM = new ReasoningLLM(config.openai, topicItems, {
     userName: session.userIdentity,
-  });
+  }, topicRefs);
   logger.info('[pipeline] ReasoningLLM created');
 
   // 4. Get VAD from prewarm, or load if not available
@@ -241,22 +256,29 @@ async function startVoiceAssistant(
       minEndpointingDelay: 0.3,
       maxEndpointingDelay: 0.6,
       maxToolSteps: 5,
-      preemptiveGeneration: true,
+      preemptiveGeneration: false,
     },
   });
 
   // 8. Wire barge-in and state tracking via 1.0.x event system
   agentSession.on(voice.AgentSessionEventTypes.UserStateChanged, (ev) => {
+    logger.info('User state changed', {
+      sessionId: session.sessionId,
+      oldState: ev.oldState,
+      newState: ev.newState,
+    });
     if (ev.newState === 'speaking') {
       session.isSpeaking = false;
       void reasoningLLM.handleBargeIn();
-      logger.debug('User started speaking (barge-in)', {
-        sessionId: session.sessionId,
-      });
     }
   });
 
   agentSession.on(voice.AgentSessionEventTypes.AgentStateChanged, (ev) => {
+    logger.info('Agent state changed', {
+      sessionId: session.sessionId,
+      oldState: ev.oldState,
+      newState: ev.newState,
+    });
     if (ev.newState === 'speaking') {
       session.isSpeaking = true;
     } else if (ev.oldState === 'speaking') {
@@ -264,7 +286,7 @@ async function startVoiceAssistant(
     }
   });
 
-  // 8b. Add error and close handlers for debugging
+  // 8b. Add error, close, and speech creation handlers for debugging
   agentSession.on(voice.AgentSessionEventTypes.Error, (ev) => {
     logger.error('AgentSession error', null, {
       sessionId: session.sessionId,
@@ -275,6 +297,15 @@ async function startVoiceAssistant(
   agentSession.on(voice.AgentSessionEventTypes.Close, () => {
     logger.info('AgentSession closed', {
       sessionId: session.sessionId,
+    });
+  });
+
+  agentSession.on(voice.AgentSessionEventTypes.SpeechCreated, (ev) => {
+    logger.info('Speech created', {
+      sessionId: session.sessionId,
+      source: ev.source,
+      userInitiated: ev.userInitiated,
+      speechId: ev.speechHandle?.id,
     });
   });
 
