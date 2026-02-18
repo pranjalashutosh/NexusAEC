@@ -16,8 +16,10 @@ import { createLogger } from '@nexus-aec/logger';
 
 import { ReasoningLoop, createReasoningLoop } from '../reasoning/reasoning-loop.js';
 
+import type { BriefingSessionTracker } from '../briefing/briefing-session-tracker.js';
 import type { BriefingTopicRef } from '../reasoning/reasoning-loop.js';
 import type { OpenAIConfig } from '../config.js';
+import type { SystemPromptContext } from '../prompts/system-prompt.js';
 import type { EmailActionContext } from '../tools/email-tools.js';
 
 const logger = createLogger({ baseContext: { component: 'reasoning-llm' } });
@@ -256,8 +258,9 @@ export class ReasoningLLM extends llm.LLM {
   constructor(
     openaiConfig: OpenAIConfig,
     topicItems: number[] = [5, 3, 2],
-    systemPromptContext?: Record<string, string>,
+    systemPromptContext?: Partial<SystemPromptContext>,
     topicRefs?: BriefingTopicRef[],
+    tracker?: BriefingSessionTracker,
   ) {
     super();
     this.openaiConfig = openaiConfig;
@@ -266,12 +269,14 @@ export class ReasoningLLM extends llm.LLM {
       systemPromptContext,
       openaiConfig,
       topicRefs,
+      tracker,
     );
 
     logger.info('ReasoningLLM initialized', {
       model: openaiConfig.model,
       topicItems,
       hasTopicRefs: (topicRefs?.length ?? 0) > 0,
+      hasTracker: !!tracker,
     });
   }
 

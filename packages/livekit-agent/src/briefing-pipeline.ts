@@ -90,6 +90,8 @@ export interface BriefingPipelineOptions {
   vipEmails?: string[];
   /** Custom keywords for red-flag detection */
   customKeywords?: string[];
+  /** Email IDs to exclude (already briefed/actioned in previous sessions) */
+  excludeEmailIds?: Set<string>;
 }
 
 // =============================================================================
@@ -109,19 +111,29 @@ export async function runBriefingPipeline(
 ): Promise<BriefingData> {
   const startTime = Date.now();
   const maxEmails = options.maxEmails ?? 50;
-  const maxTopics = options.maxTopics ?? 8;
+  const maxTopics = options.maxTopics ?? 50;
 
   logger.info('Starting briefing pipeline', { maxEmails, maxTopics });
 
   // -------------------------------------------------------------------------
-  // 1. Fetch unread emails
+  // 1. Fetch unread emails and filter out already-briefed ones
   // -------------------------------------------------------------------------
-  const { items: emails } = await inboxService.fetchUnread(
+  const { items: rawEmails } = await inboxService.fetchUnread(
     {},
     { pageSize: maxEmails },
   );
 
-  logger.info('Fetched emails for briefing', { count: emails.length });
+  // Exclude emails that were already briefed/actioned in previous sessions
+  const excludeIds = options.excludeEmailIds ?? new Set<string>();
+  const emails = excludeIds.size > 0
+    ? rawEmails.filter((e) => !excludeIds.has(e.id))
+    : rawEmails;
+
+  logger.info('Fetched emails for briefing', {
+    fetched: rawEmails.length,
+    excluded: rawEmails.length - emails.length,
+    remaining: emails.length,
+  });
 
   if (emails.length === 0) {
     return createEmptyBriefing(Date.now() - startTime);
@@ -163,7 +175,7 @@ export async function runBriefingPipeline(
   // -------------------------------------------------------------------------
   // 3. Cluster emails into topics
   // -------------------------------------------------------------------------
-  const clusterer = new TopicClusterer({ minClusterSize: 1 });
+  const clusterer = new TopicClusterer({ minClusterSize: 2 });
   const sharedEmails = emails as unknown as SharedEmail[];
   const clusterResult: TopicClusteringResult = clusterer.clusterEmails(sharedEmails);
 
@@ -236,6 +248,16 @@ export async function runBriefingPipeline(
 
   // Limit to maxTopics
   topics = topics.slice(0, maxTopics);
+
+  // Verify no emails were lost during topic building
+  const totalInTopics = topics.reduce((sum, t) => sum + t.emails.length, 0);
+  if (totalInTopics < emails.length) {
+    logger.warn('Emails lost during topic building', {
+      fetched: emails.length,
+      inTopics: totalInTopics,
+      lost: emails.length - totalInTopics,
+    });
+  }
 
   const topicItems = topics.map((t) => t.emails.length);
   const topicLabels = topics.map((t) => t.label);

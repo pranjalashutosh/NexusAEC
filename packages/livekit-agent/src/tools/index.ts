@@ -67,3 +67,17 @@ export {
   type BriefingState,
   type NavigationExecutor,
 } from './navigation-tools.js';
+
+// Knowledge tools
+export {
+  KNOWLEDGE_TOOLS,
+  getKnowledgeTool,
+  executeKnowledgeTool,
+  executeSaveToMemory,
+  executeRecallKnowledge,
+  KNOWLEDGE_TOOL_EXECUTORS,
+  saveToMemoryTool,
+  recallKnowledgeTool,
+  setKnowledgeStore,
+  clearKnowledgeStore,
+} from './knowledge-tools.js';

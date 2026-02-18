@@ -1,6 +1,7 @@
 import { registerAuthRoutes } from './auth';
 import { registerEmailStatsRoutes } from './email-stats';
 import { registerHealthRoutes } from './health';
+import { registerKnowledgeUploadRoutes } from './knowledge-upload';
 import { registerLiveKitTokenRoutes } from './livekit-token';
 import { registerSyncRoutes } from './sync';
 import { registerWebhookRoutes } from './webhooks';
@@ -25,5 +26,8 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   // Webhook endpoints (LiveKit events)
   registerWebhookRoutes(app);
+
+  // Knowledge file upload (ingestion into vector store)
+  registerKnowledgeUploadRoutes(app);
 }
 

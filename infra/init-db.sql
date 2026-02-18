@@ -111,6 +111,51 @@ CREATE INDEX IF NOT EXISTS drafts_user_idx ON drafts (user_id);
 CREATE INDEX IF NOT EXISTS drafts_pending_idx ON drafts (is_pending_review) WHERE is_pending_review = true;
 
 -- =============================================================================
+-- Vector Similarity Search Function (used by SupabaseVectorStore.search())
+-- =============================================================================
+CREATE OR REPLACE FUNCTION match_documents(
+    query_embedding TEXT,
+    match_threshold FLOAT DEFAULT 0.0,
+    match_count INT DEFAULT 10
+)
+RETURNS TABLE (
+    id UUID,
+    content TEXT,
+    source_type VARCHAR(50),
+    metadata JSONB,
+    similarity FLOAT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        d.id,
+        d.content,
+        d.source_type,
+        d.metadata,
+        1 - (d.embedding <=> query_embedding::vector) AS similarity
+    FROM documents d
+    WHERE 1 - (d.embedding <=> query_embedding::vector) > match_threshold
+    ORDER BY d.embedding <=> query_embedding::vector
+    LIMIT match_count;
+END;
+$$;
+
+-- =============================================================================
+-- User Knowledge Table (persistent memory for the voice agent)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS user_knowledge (
+    user_id TEXT PRIMARY KEY,
+    entries JSONB NOT NULL DEFAULT '[]'::jsonb,
+    version INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_knowledge_updated
+    ON user_knowledge (updated_at DESC);
+
+-- =============================================================================
 -- Helper Functions
 -- =============================================================================
 
@@ -134,6 +179,9 @@ CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferen
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_drafts_updated_at BEFORE UPDATE ON drafts
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_knowledge_updated_at BEFORE UPDATE ON user_knowledge
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =============================================================================

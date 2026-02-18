@@ -38,17 +38,7 @@ interface CachedToken {
 const TOKEN_CACHE_KEY = '@nexus-aec/livekit-token-cache';
 const TOKEN_EXPIRY_BUFFER_MS = 60 * 1000; // 1 minute buffer before expiry
 
-/**
- * Get API base URL from environment
- */
-function getApiBaseUrl(): string {
-  // In production, this would come from environment config
-  // For development, use local API or staging
-  const envApiUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.API_BASE_URL;
-  return envApiUrl ?? 'http://localhost:3000';
-}
+import { getApiBaseUrl } from '../config/api';
 
 /**
  * Fetch a new token from the backend

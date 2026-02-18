@@ -32,6 +32,7 @@ import {
 } from '@livekit/react-native';
 
 import { getLiveKitToken } from '../services/livekit-token';
+import { getLiveKitUrl } from '../config/api';
 
 /**
  * LiveKit room state
@@ -83,12 +84,7 @@ interface LiveKitContextValue {
 
 const LiveKitContext = createContext<LiveKitContextValue | undefined>(undefined);
 
-function getServerUrl(): string {
-  const envUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.LIVEKIT_URL;
-  return envUrl ?? 'wss://localhost:7880';
-}
+// Server URL is now provided by config/api.ts via getLiveKitUrl()
 
 /**
  * Map livekit-client ConnectionState to our RoomState
@@ -126,12 +122,16 @@ function configureAppleAudio(
   console.log('[LiveKit] configureAppleAudio called:', { trackState, preferSpeakerOutput });
 
   if (trackState === 'remoteOnly') {
+    // MUST use 'playAndRecord' here — NOT 'playback'.
+    // iOS only allows 'defaultToSpeaker' with 'playAndRecord'.
+    // Using 'playback' + 'defaultToSpeaker' causes SessionCore.mm error
+    // and kills all audio output on physical devices.
     return {
-      audioCategory: 'playback',
+      audioCategory: 'playAndRecord',
       audioCategoryOptions: preferSpeakerOutput
-        ? ['mixWithOthers', 'defaultToSpeaker']
-        : ['mixWithOthers'],
-      audioMode: 'spokenAudio',
+        ? ['allowBluetooth', 'defaultToSpeaker', 'mixWithOthers']
+        : ['allowBluetooth', 'mixWithOthers'],
+      audioMode: preferSpeakerOutput ? 'videoChat' : 'voiceChat',
     };
   } else if (trackState === 'localAndRemote' || trackState === 'localOnly') {
     return {
@@ -358,7 +358,7 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
       setToken(tokenResponse.token);
 
       // Connect the existing Room instance (listeners already attached)
-      const serverUrl = tokenResponse.serverUrl ?? getServerUrl();
+      const serverUrl = tokenResponse.serverUrl ?? getLiveKitUrl();
       console.log('[LiveKit] Connecting to server:', serverUrl);
       await room.connect(serverUrl, tokenResponse.token);
 

@@ -22,7 +22,10 @@
 - (NSURL *)bundleURL
 {
 #if DEBUG
-  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
+  // For physical device: use pre-bundled JS (Metro can't be reached from device)
+  return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
+  // For simulator: uncomment below and comment out the line above
+  // return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
 #else
   return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
 #endif

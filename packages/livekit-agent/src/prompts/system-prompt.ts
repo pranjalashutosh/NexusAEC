@@ -28,6 +28,8 @@ export interface SystemPromptContext {
   verbosityLevel: 'concise' | 'standard' | 'detailed';
   /** Current briefing mode */
   briefingMode: 'driving' | 'walking' | 'desk';
+  /** User's persistent knowledge entries (loaded from memory) */
+  knowledgeEntries?: string[];
 }
 
 // =============================================================================
@@ -118,6 +120,46 @@ When user intent is unclear:
 
 Example: "I heard 'flag it' - did you mean the email from John about the budget, or the project update from Sarah?"`;
 
+/**
+ * Briefing flow instructions (cursor-aware)
+ */
+const BRIEFING_INSTRUCTIONS = `BRIEFING FLOW:
+You will receive a CURRENT BRIEFING POSITION context before each response.
+It tells you exactly which email to present. Follow these rules:
+
+1. Present the email shown in CURRENT BRIEFING POSITION — summarize its subject and sender
+2. After presenting, ask the user what to do: "Should I flag it, archive it, or move on?"
+3. When the user says "next" or "move on", call next_item — the system will advance the cursor
+4. When the user says "skip this topic", call skip_topic
+5. NEVER present an email that is not in the current position — the system manages the order
+6. After an action (archive, flag, etc.), the system auto-advances — present the next email
+7. When all emails are done, summarize: "That's your briefing. X emails briefed, Y archived, Z flagged."
+
+IMPORTANT: The CURRENT BRIEFING POSITION updates every turn. Always read it before responding.
+Do NOT re-present emails you have already briefed. The system tracks this for you.`;
+
+/**
+ * Knowledge/memory tool instructions
+ */
+const KNOWLEDGE_INSTRUCTIONS = `MEMORY TOOLS:
+- save_to_memory(content, category): Save information for future sessions
+  - "rule": Standing instructions ("always prioritize X", "when Y happens, do Z")
+  - "preference": Communication style preferences ("be concise", "include details")
+  - "feedback": Corrections to your behavior ("don't repeat subjects")
+  - "context": Important background info about the user's work
+- recall_knowledge(query): Search uploaded documents for domain information
+
+WHEN TO SAVE:
+- User explicitly says "remember this" or "always do X" → save as rule
+- User corrects you → save as feedback
+- User states a preference → save as preference
+
+WHEN NOT TO SAVE:
+- Do NOT save email content, subjects, senders, or body text (privacy rule)
+- Do NOT save things already in your memory
+- Do NOT save casual remarks or one-time instructions
+- Do NOT call save_to_memory more than twice per conversation`;
+
 // =============================================================================
 // System Prompt Builder
 // =============================================================================
@@ -137,6 +179,10 @@ export function buildSystemPrompt(context: SystemPromptContext): string {
   const verbosityNote = getVerbosityNote(context.verbosityLevel);
   const modeNote = getModeNote(context.briefingMode);
 
+  const knowledgeContext = context.knowledgeEntries?.length
+    ? `\nUSER MEMORY (information this user has asked you to remember):\n${context.knowledgeEntries.map(e => `- ${e}`).join('\n')}`
+    : '';
+
   return `${PERSONA}
 
 ${greeting}
@@ -144,6 +190,10 @@ ${greeting}
 ${SAFETY_CONSTRAINTS}
 
 ${TOOL_INSTRUCTIONS}
+
+${BRIEFING_INSTRUCTIONS}
+
+${KNOWLEDGE_INSTRUCTIONS}
 
 ${RESPONSE_FORMAT}
 
@@ -154,6 +204,7 @@ ${DISAMBIGUATION_RULES}
 CURRENT CONTEXT:
 ${vipContext}
 ${mutedContext}
+${knowledgeContext}
 ${verbosityNote}
 ${modeNote}
 
@@ -232,6 +283,8 @@ export {
   PERSONA,
   SAFETY_CONSTRAINTS,
   TOOL_INSTRUCTIONS,
+  BRIEFING_INSTRUCTIONS,
+  KNOWLEDGE_INSTRUCTIONS,
   RESPONSE_FORMAT,
   CONFIRMATION_RULES,
   DISAMBIGUATION_RULES,

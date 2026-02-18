@@ -9,13 +9,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 
 import { useAuth, type AccountTokenStatus } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
-
-function getApiBaseUrl(): string {
-  const envApiUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.API_BASE_URL;
-  return envApiUrl ?? 'http://localhost:3000';
-}
+import { getApiBaseUrl } from '../../config/api';
 
 interface AccountSyncInfo {
   accountId: string;

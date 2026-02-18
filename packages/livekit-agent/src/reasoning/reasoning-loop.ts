@@ -16,10 +16,12 @@ import { createLogger } from '@nexus-aec/logger';
 import OpenAI from 'openai';
 
 import { loadOpenAIConfig } from '../config.js';
+import { BriefingSessionTracker } from '../briefing/briefing-session-tracker.js';
 import { generateConfirmation, generateDisambiguationPrompt } from '../prompts/briefing-prompts.js';
 import { buildSystemPrompt, DEFAULT_SYSTEM_PROMPT_CONTEXT } from '../prompts/system-prompt.js';
 import { detectCommand, processTranscript } from '../stt/index.js';
 import { EMAIL_TOOLS, executeEmailTool } from '../tools/email-tools.js';
+import { KNOWLEDGE_TOOLS, executeKnowledgeTool } from '../tools/knowledge-tools.js';
 import {
   createBriefingState,
   executeNavigationTool,
@@ -304,34 +306,52 @@ export class ReasoningLoop {
   private systemPromptContext: SystemPromptContext;
   private state: ReasoningState;
   private topicRefs: BriefingTopicRef[];
+  private tracker: BriefingSessionTracker | null;
   private ttsCallback?: TTSCallback;
   private stateUpdateCallback?: StateUpdateCallback;
   private isProcessing: boolean = false;
   private bargeInDetected: boolean = false;
+  private inboxService: unknown = null;
+  private sessionHistoryId: string | null = null;
 
   constructor(
     topicItems: number[] = [5, 3, 2],
     systemPromptContext?: Partial<SystemPromptContext>,
     config?: OpenAIConfig,
     topicRefs?: BriefingTopicRef[],
+    tracker?: BriefingSessionTracker,
   ) {
     this.config = config ?? loadOpenAIConfig();
     this.topicRefs = topicRefs ?? [];
+    this.tracker = tracker ?? null;
     this.systemPromptContext = {
       ...DEFAULT_SYSTEM_PROMPT_CONTEXT,
       ...systemPromptContext,
     };
 
-    // Build the system prompt, including email references if available
-    const systemPrompt = this.topicRefs.length > 0
-      ? buildSystemPrompt(this.systemPromptContext) + '\n\n' + this.buildEmailReferenceBlock()
-      : buildSystemPrompt(this.systemPromptContext);
+    // Build the system prompt
+    // If we have a tracker, use its compact reference (only active emails).
+    // Otherwise fall back to the static email reference block.
+    let systemPrompt = buildSystemPrompt(this.systemPromptContext);
+    if (this.tracker) {
+      systemPrompt += '\n\n' + this.tracker.buildCompactEmailReference();
+    } else if (this.topicRefs.length > 0) {
+      systemPrompt += '\n\n' + this.buildEmailReferenceBlock();
+    }
 
-    // Set initial emailContext to the first email in the first topic
-    const firstEmail = this.topicRefs[0]?.emails[0];
-    const initialEmailContext: EmailActionContext | undefined = firstEmail
-      ? buildEmailContext(firstEmail)
-      : undefined;
+    // Set initial emailContext — use tracker if available, else first email in refs
+    let initialEmailContext: EmailActionContext | undefined;
+    if (this.tracker) {
+      const currentEmail = this.tracker.getCurrentEmail();
+      if (currentEmail) {
+        initialEmailContext = buildEmailContext(currentEmail);
+      }
+    } else {
+      const firstEmail = this.topicRefs[0]?.emails[0];
+      if (firstEmail) {
+        initialEmailContext = buildEmailContext(firstEmail);
+      }
+    }
 
     // Initialize state
     this.state = {
@@ -356,6 +376,7 @@ export class ReasoningLoop {
       totalItems: this.state.briefingContext.totalItems,
       topicCount: topicItems.length,
       hasEmailRefs: this.topicRefs.length > 0,
+      hasTracker: !!this.tracker,
       initialEmailId: initialEmailContext?.emailId,
     });
   }
@@ -484,8 +505,16 @@ export class ReasoningLoop {
    * Call LLM and process response
    */
   private async callLLM(): Promise<ReasoningResult> {
+    // Inject dynamic briefing cursor context so GPT-4o knows which email to present
+    if (this.tracker) {
+      this.state.messages.push({
+        role: 'system',
+        content: this.tracker.buildCursorContext(),
+      });
+    }
+
     // Combine all tools
-    const allTools = [...EMAIL_TOOLS, ...NAVIGATION_TOOLS].map((t) => ({
+    const allTools = [...EMAIL_TOOLS, ...NAVIGATION_TOOLS, ...KNOWLEDGE_TOOLS].map((t) => ({
       type: 'function' as const,
       function: t.function as unknown as Record<string, unknown>,
     }));
@@ -604,6 +633,27 @@ export class ReasoningLoop {
           content: JSON.stringify(result),
           tool_call_id: toolCall.id,
         });
+
+        // Track email action in BriefingSessionTracker
+        if (result.success && !result.requiresConfirmation && this.tracker) {
+          const actionedEmailId = (args['email_id'] as string) ?? emailCtx.emailId;
+
+          if (toolName === 'archive_email' || toolName === 'mark_read') {
+            this.tracker.markActioned(actionedEmailId, toolName);
+
+            // If the actioned email was the current one, advance cursor
+            const currentEmail = this.tracker.getCurrentEmail();
+            if (!currentEmail || currentEmail.emailId === actionedEmailId) {
+              const nextEmail = this.tracker.advance();
+              if (nextEmail) {
+                this.state.emailContext = buildEmailContext(nextEmail);
+              }
+            }
+          } else if (toolName === 'flag_followup') {
+            // Flagging records the action but keeps the email in the briefing
+            this.tracker.markActioned(actionedEmailId, 'flagged');
+          }
+        }
       }
       // Check if it's a navigation tool
       else if (NAVIGATION_TOOLS.some((t) => t.function.name === toolName)) {
@@ -614,6 +664,23 @@ export class ReasoningLoop {
         // Update briefing state
         if (result.success) {
           this.state.briefingState = updateBriefingState(this.state.briefingState, result);
+
+          // Advance tracker cursor to match navigation and update emailContext
+          if (this.tracker) {
+            let nextEmail: BriefingEmailRef | null = null;
+
+            if (result.action === 'skip_topic') {
+              nextEmail = this.tracker.skipTopic();
+            } else if (result.action === 'next_item') {
+              nextEmail = this.tracker.advance();
+            } else if (result.action === 'go_back') {
+              nextEmail = this.tracker.goBack();
+            }
+
+            if (nextEmail) {
+              this.state.emailContext = buildEmailContext(nextEmail);
+            }
+          }
         }
 
         // Handle special navigation actions
@@ -623,6 +690,25 @@ export class ReasoningLoop {
           responseText = this.state.lastSpokenText;
         }
 
+        // Enrich message with progress if tracker is available
+        const progress = this.tracker?.getProgress();
+        const progressSuffix = progress
+          ? ` [${progress.emailsBriefed + progress.emailsActioned}/${progress.totalEmails} handled]`
+          : '';
+        responseText += result.message + progressSuffix + ' ';
+
+        // Add tool result to messages
+        this.state.messages.push({
+          role: 'tool',
+          content: JSON.stringify(result),
+          tool_call_id: toolCall.id,
+        });
+      }
+      // Check if it's a knowledge tool
+      else if (KNOWLEDGE_TOOLS.some((t) => t.function.name === toolName)) {
+        const result = await executeKnowledgeTool(toolName, args);
+
+        actionsTaken.push({ tool: toolName, result });
         responseText += result.message + ' ';
 
         // Add tool result to messages
@@ -829,6 +915,68 @@ export class ReasoningLoop {
     };
   }
 
+  // ===========================================================================
+  // Real-Time Inbox Awareness
+  // ===========================================================================
+
+  /**
+   * Set the inbox service and historyId for mid-session new-email detection.
+   * Called once at session start from agent.ts.
+   */
+  setInboxAwareness(inboxService: unknown, historyId: string): void {
+    this.inboxService = inboxService;
+    this.sessionHistoryId = historyId;
+    logger.info('Inbox awareness configured', { historyId });
+  }
+
+  /**
+   * Check Gmail History API for new emails since session started.
+   * Returns whether new emails were detected. If so, injects an alert
+   * into the conversation for GPT-4o to surface on the next turn.
+   */
+  async checkForNewEmails(): Promise<{ hasNew: boolean }> {
+    if (!this.inboxService || !this.sessionHistoryId) return { hasNew: false };
+
+    try {
+      // Duck-type check for Gmail provider with fetchHistory
+      const service = this.inboxService as { getProvider?: (source: string) => unknown };
+      if (!service.getProvider) return { hasNew: false };
+
+      const gmailProvider = service.getProvider('GMAIL') as {
+        fetchHistory?: (historyId: string) => Promise<{ hasChanges: boolean; currentHistoryId: string }>;
+      } | undefined;
+
+      if (!gmailProvider?.fetchHistory) return { hasNew: false };
+
+      const { hasChanges, currentHistoryId } = await gmailProvider.fetchHistory(this.sessionHistoryId);
+
+      if (hasChanges) {
+        this.sessionHistoryId = currentHistoryId;
+
+        // Inject alert into conversation so GPT-4o mentions it
+        this.state.messages.push({
+          role: 'system',
+          content: 'ALERT: New emails have arrived since this briefing started. '
+            + 'After finishing the current email, let the user know: '
+            + '"New emails have come in. Want me to check them after we finish this topic?"',
+        });
+
+        logger.info('New emails detected mid-session', {
+          previousHistoryId: this.sessionHistoryId,
+          newHistoryId: currentHistoryId,
+        });
+
+        return { hasNew: true };
+      }
+    } catch (error) {
+      logger.warn('Failed to check for new emails', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    return { hasNew: false };
+  }
+
   /**
    * Look up an email reference by ID across all briefing topics.
    */
@@ -853,8 +1001,9 @@ export function createReasoningLoop(
   systemPromptContext?: Partial<SystemPromptContext>,
   config?: OpenAIConfig,
   topicRefs?: BriefingTopicRef[],
+  tracker?: BriefingSessionTracker,
 ): ReasoningLoop {
-  return new ReasoningLoop(topicItems, systemPromptContext, config, topicRefs);
+  return new ReasoningLoop(topicItems, systemPromptContext, config, topicRefs, tracker);
 }
 
 // =============================================================================

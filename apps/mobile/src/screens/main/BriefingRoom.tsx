@@ -20,14 +20,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLiveKit } from '../../hooks/useLiveKit';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTheme } from '../../hooks/useTheme';
+import { getApiBaseUrl } from '../../config/api';
 import { generateRoomName } from '../../services/livekit-token';
-
-function getApiBaseUrl(): string {
-  const envApiUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.API_BASE_URL;
-  return envApiUrl ?? 'http://localhost:3000';
-}
 
 interface BriefingStats {
   newCount: number;

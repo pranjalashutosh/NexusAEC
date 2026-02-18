@@ -19,17 +19,23 @@ import * as silero from '@livekit/agents-plugin-silero';
 import { createLogger } from '@nexus-aec/logger';
 
 import { loadAgentConfig, validateEnvironment, type AgentConfig } from './config.js';
+import { BriefedEmailStore } from './briefing/briefed-email-store.js';
+import { BriefingSessionTracker } from './briefing/briefing-session-tracker.js';
 import { runBriefingPipeline } from './briefing-pipeline.js';
 import { bootstrapFromMetadata, teardownEmailServices } from './email-bootstrap.js';
 import { startHealthServer } from './health.js';
+import { UserKnowledgeStore } from './knowledge/user-knowledge-store.js';
+import { summarizeKnowledge } from './knowledge/summarize-knowledge.js';
 import { ReasoningLLM } from './llm/reasoning-llm.js';
 import { removeSession, setSession } from './session-store.js';
+import { setKnowledgeStore, clearKnowledgeStore } from './tools/knowledge-tools.js';
 import { buildSystemPrompt, DEFAULT_SYSTEM_PROMPT_CONTEXT } from './prompts/system-prompt.js';
 
 import type { BriefingData } from './briefing-pipeline.js';
 import type { BriefingTopicRef } from './reasoning/reasoning-loop.js';
 import type { AgentSession } from './session-store.js';
 import type { JobContext, JobProcess } from '@livekit/agents';
+import type { UnifiedInboxService } from '@nexus-aec/email-providers';
 
 const logger = createLogger({ baseContext: { component: 'voice-agent' } });
 
@@ -103,10 +109,25 @@ export function createVoiceAgent(config: AgentConfig) {
         userName: participant.name,
       });
 
+      // Initialize BriefedEmailStore early — needed to filter pipeline input
+      let briefedEmailStore: BriefedEmailStore | null = null;
+      try {
+        briefedEmailStore = new BriefedEmailStore({
+          redisUrl: process.env['REDIS_URL'] ?? 'redis://localhost:6379',
+        });
+        logger.info('BriefedEmailStore initialized', { sessionId });
+      } catch (error) {
+        logger.warn('Failed to init BriefedEmailStore, continuing without', {
+          error: error instanceof Error ? error.message : String(error),
+          sessionId,
+        });
+      }
+
       // Bootstrap email services from participant metadata
       // The backend API places OAuth tokens in metadata when issuing join tokens
       const emailResult = bootstrapFromMetadata(participant.metadata);
       let briefingData: BriefingData | null = null;
+      let sessionHistoryId: string | null = null;
 
       if (emailResult?.success && emailResult.inboxService) {
         logger.info('Email services available', {
@@ -114,9 +135,29 @@ export function createVoiceAgent(config: AgentConfig) {
           sessionId,
         });
 
+        // Load previously briefed email IDs to exclude from this session
+        let excludeEmailIds: Set<string> | undefined;
+        if (briefedEmailStore) {
+          try {
+            excludeEmailIds = await briefedEmailStore.getBriefedIds(participant.identity);
+            logger.info('Loaded briefed email history', {
+              briefedCount: excludeEmailIds.size,
+              userId: participant.identity,
+              sessionId,
+            });
+          } catch (error) {
+            logger.warn('Failed to load briefed IDs, proceeding without filter', {
+              error: error instanceof Error ? error.message : String(error),
+              sessionId,
+            });
+          }
+        }
+
         // Run the briefing pipeline to score and cluster emails
         try {
-          briefingData = await runBriefingPipeline(emailResult.inboxService);
+          briefingData = await runBriefingPipeline(emailResult.inboxService, {
+            excludeEmailIds,
+          });
           logger.info('Briefing pipeline completed', {
             topicCount: briefingData.topics.length,
             totalEmails: briefingData.totalEmails,
@@ -127,6 +168,24 @@ export function createVoiceAgent(config: AgentConfig) {
         } catch (error) {
           logger.error('Briefing pipeline failed, falling back to defaults', error instanceof Error ? error : null);
         }
+
+        // Capture Gmail historyId for mid-session new-email detection
+        try {
+          const gmailProvider = emailResult.inboxService.getProvider('GMAIL');
+          if (gmailProvider && 'getProfileHistoryId' in gmailProvider) {
+            const getHistoryId = gmailProvider as { getProfileHistoryId(): Promise<string> };
+            sessionHistoryId = await getHistoryId.getProfileHistoryId();
+            logger.info('Captured session historyId for real-time awareness', {
+              historyId: sessionHistoryId,
+              sessionId,
+            });
+          }
+        } catch (error) {
+          logger.warn('Failed to capture historyId, real-time awareness disabled', {
+            error: error instanceof Error ? error.message : String(error),
+            sessionId,
+          });
+        }
       } else {
         logger.warn('Email services unavailable — email tools will not work', {
           sessionId,
@@ -134,12 +193,76 @@ export function createVoiceAgent(config: AgentConfig) {
         });
       }
 
+      // Load user's persistent knowledge document
+      let knowledgeEntries: string[] = [];
+      let knowledgeStore: UserKnowledgeStore | null = null;
+
+      try {
+        const storeOpts: ConstructorParameters<typeof UserKnowledgeStore>[0] = {
+          redisUrl: process.env['REDIS_URL'] ?? 'redis://localhost:6379',
+        };
+        const sbUrl = process.env['SUPABASE_URL'];
+        const sbKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+        if (sbUrl) storeOpts.supabaseUrl = sbUrl;
+        if (sbKey) storeOpts.supabaseKey = sbKey;
+
+        knowledgeStore = new UserKnowledgeStore(storeOpts);
+
+        const userId = participant.identity;
+        let knowledgeDoc = await knowledgeStore.get(userId);
+
+        // Summarize if over limit (runs before user hears anything — no latency impact)
+        if (knowledgeStore.isOverLimit(knowledgeDoc)) {
+          logger.info('Knowledge over limit, summarizing', {
+            entryCount: knowledgeDoc.entries.length,
+            userId,
+            sessionId,
+          });
+          await summarizeKnowledge(knowledgeStore, knowledgeDoc, config.openai.apiKey);
+          knowledgeDoc = await knowledgeStore.get(userId);
+        }
+
+        knowledgeEntries = knowledgeDoc.entries.map(
+          (e) => `[${e.category}] ${e.content}`,
+        );
+
+        // Register the store so knowledge tools can use it
+        setKnowledgeStore(knowledgeStore, userId);
+
+        logger.info('User knowledge loaded', {
+          entryCount: knowledgeEntries.length,
+          userId,
+          sessionId,
+        });
+      } catch (error) {
+        logger.warn('Failed to load user knowledge, continuing without', {
+          error: error instanceof Error ? error.message : String(error),
+          sessionId,
+        });
+      }
+
       // Start the voice assistant pipeline with real or fallback briefing data
-      await startVoiceAssistant(ctx, session, config, briefingData);
+      const inboxService = emailResult?.inboxService ?? null;
+      const sessionTracker = await startVoiceAssistant(ctx, session, config, briefingData, knowledgeEntries, briefedEmailStore, sessionHistoryId, inboxService);
 
       // Clean up when the context shuts down
       ctx.addShutdownCallback(async () => {
+        // Flush briefing state to Redis as a safety net
+        if (sessionTracker) {
+          await sessionTracker.flushToStore().catch((err) => {
+            logger.warn('Failed to flush briefing state on shutdown', {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          });
+        }
         teardownEmailServices();
+        clearKnowledgeStore();
+        if (knowledgeStore) {
+          await knowledgeStore.disconnect();
+        }
+        if (briefedEmailStore) {
+          await briefedEmailStore.disconnect();
+        }
         handleDisconnect(session);
       });
     },
@@ -157,7 +280,11 @@ async function startVoiceAssistant(
   session: AgentSession,
   config: AgentConfig,
   briefingData?: BriefingData | null,
-): Promise<void> {
+  knowledgeEntries?: string[],
+  briefedEmailStore?: BriefedEmailStore | null,
+  sessionHistoryId?: string | null,
+  inboxService?: UnifiedInboxService | null,
+): Promise<BriefingSessionTracker | undefined> {
   // Use real briefing data when available, fall back to defaults
   const topicItems = briefingData?.topicItems.length
     ? briefingData.topicItems
@@ -220,30 +347,52 @@ async function startVoiceAssistant(
     model: config.elevenlabs.modelId,
   });
 
-  // 3. Create ReasoningLLM with real topic data and email references from the briefing pipeline
+  // 3. Create BriefingSessionTracker from topic refs (if we have briefing data)
+  let tracker: BriefingSessionTracker | undefined;
+  if (topicRefs.length > 0) {
+    tracker = new BriefingSessionTracker(
+      topicRefs,
+      briefedEmailStore ?? undefined,
+      session.userIdentity || undefined,
+    );
+    logger.info('[pipeline] BriefingSessionTracker created', {
+      topicCount: topicRefs.length,
+      totalEmails: topicRefs.reduce((sum, t) => sum + t.emails.length, 0),
+      hasStore: !!briefedEmailStore,
+    });
+  }
+
+  // 4. Create ReasoningLLM with real topic data, email references, tracker, and knowledge entries
   logger.info('[pipeline] Creating ReasoningLLM...');
   const reasoningLLM = new ReasoningLLM(config.openai, topicItems, {
     userName: session.userIdentity,
-  }, topicRefs);
+    ...(knowledgeEntries && knowledgeEntries.length > 0 ? { knowledgeEntries } : {}),
+  }, topicRefs, tracker);
   logger.info('[pipeline] ReasoningLLM created');
 
-  // 4. Get VAD from prewarm, or load if not available
+  // 4b. Configure real-time inbox awareness (Gmail History API)
+  if (sessionHistoryId && inboxService) {
+    reasoningLLM.getReasoningLoop().setInboxAwareness(inboxService, sessionHistoryId);
+  }
+
+  // 5. Get VAD from prewarm, or load if not available
   logger.info('[pipeline] Loading VAD model...');
   const vad = (ctx.proc.userData['vad'] as silero.VAD) ?? await silero.VAD.load();
   logger.info('[pipeline] VAD model loaded');
 
-  // 5. Build the system prompt
+  // 6. Build the system prompt (with user's persistent knowledge if available)
   const systemPrompt = buildSystemPrompt({
     ...DEFAULT_SYSTEM_PROMPT_CONTEXT,
     userName: session.userIdentity,
+    ...(knowledgeEntries && knowledgeEntries.length > 0 ? { knowledgeEntries } : {}),
   });
 
-  // 6. Create the voice Agent with instructions only
+  // 7. Create the voice Agent with instructions only
   const agent = new voice.Agent({
     instructions: systemPrompt,
   });
 
-  // 7. Create the AgentSession with the pipeline components
+  // 8. Create the AgentSession with the pipeline components
   const agentSession = new voice.AgentSession({
     stt: sttInstance,
     tts: ttsInstance,
@@ -260,7 +409,7 @@ async function startVoiceAssistant(
     },
   });
 
-  // 8. Wire barge-in and state tracking via 1.0.x event system
+  // 9. Wire barge-in and state tracking via 1.0.x event system
   agentSession.on(voice.AgentSessionEventTypes.UserStateChanged, (ev) => {
     logger.info('User state changed', {
       sessionId: session.sessionId,
@@ -286,7 +435,7 @@ async function startVoiceAssistant(
     }
   });
 
-  // 8b. Add error, close, and speech creation handlers for debugging
+  // 9b. Add error, close, and speech creation handlers for debugging
   agentSession.on(voice.AgentSessionEventTypes.Error, (ev) => {
     logger.error('AgentSession error', null, {
       sessionId: session.sessionId,
@@ -309,7 +458,7 @@ async function startVoiceAssistant(
     });
   });
 
-  // 9. Start the voice pipeline
+  // 10. Start the voice pipeline
   logger.info('Calling agentSession.start()...');
   await agentSession.start({
     agent,
@@ -326,18 +475,51 @@ async function startVoiceAssistant(
     sessionId: session.sessionId,
   });
 
-  // 10. Generate an initial greeting with real briefing context
-  const greetingContext = briefingData && briefingData.totalEmails > 0
-    ? `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. `
+  // 11. Generate an initial greeting with real briefing context
+  let greetingContext: string;
+  if (tracker && briefingData && briefingData.totalEmails > 0) {
+    const progress = tracker.getProgress();
+    greetingContext = `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. `
+      + `You have ${progress.totalEmails} new emails across ${progress.totalTopics} topics. `
+      + `${briefingData.totalFlagged} are flagged as important. `
+      + `Start with the first email shown in your CURRENT BRIEFING POSITION.`;
+  } else if (briefingData && briefingData.totalEmails > 0) {
+    greetingContext = `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. `
       + `You have ${briefingData.totalEmails} new emails across ${briefingData.topics.length} topics. `
       + `${briefingData.totalFlagged} are flagged as important. `
-      + `Topics to cover: ${topicLabels.join(', ')}.`
-    : 'Greet the user and start the morning briefing. Introduce yourself as their NexusAEC executive assistant.';
+      + `Topics to cover: ${topicLabels.join(', ')}.`;
+  } else {
+    greetingContext = 'Greet the user and start the morning briefing. Introduce yourself as their NexusAEC executive assistant.';
+  }
 
   logger.info('Generating initial greeting...');
   agentSession.generateReply({
     userInput: greetingContext,
   });
+
+  // 12. Start periodic new-email check (every 60 seconds) if inbox awareness is available
+  if (sessionHistoryId && inboxService) {
+    const NEW_EMAIL_CHECK_INTERVAL_MS = 60_000;
+    const checkInterval = setInterval(() => {
+      reasoningLLM.getReasoningLoop().checkForNewEmails().catch((err) => {
+        logger.warn('Periodic new-email check failed', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+    }, NEW_EMAIL_CHECK_INTERVAL_MS);
+
+    // Clean up interval when session closes
+    agentSession.on(voice.AgentSessionEventTypes.Close, () => {
+      clearInterval(checkInterval);
+      logger.info('Stopped periodic new-email check');
+    });
+
+    logger.info('Periodic new-email check started', {
+      intervalMs: NEW_EMAIL_CHECK_INTERVAL_MS,
+    });
+  }
+
+  return tracker;
 }
 
 // =============================================================================

@@ -21,6 +21,8 @@ import { useAuth, type AccountTokenStatus } from '../../hooks/useAuth';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTheme } from '../../hooks/useTheme';
 
+import { getApiBaseUrl } from '../../config/api';
+
 import type { RootStackScreenProps } from '../../types/navigation';
 
 type Props = RootStackScreenProps<'Home'>;
@@ -29,13 +31,6 @@ interface EmailStats {
   newCount: number;
   vipCount: number;
   urgentCount: number;
-}
-
-function getApiBaseUrl(): string {
-  const envApiUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.API_BASE_URL;
-  return envApiUrl ?? 'http://localhost:3000';
 }
 
 export function HomeScreen({ navigation }: Props): React.JSX.Element {

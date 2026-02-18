@@ -91,12 +91,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 // API Helpers
 // =============================================================================
 
-function getApiBaseUrl(): string {
-  const envApiUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.API_BASE_URL;
-  return envApiUrl ?? 'http://localhost:3000';
-}
+import { getApiBaseUrl } from '../config/api';
 
 interface InitiateAuthResponse {
   authorizationUrl: string;
