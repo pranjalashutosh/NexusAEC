@@ -276,11 +276,9 @@ describe('MicrosoftOAuthProvider', () => {
 
 describe('MicrosoftOAuthError', () => {
   it('should create error with all properties', () => {
-    const error = new MicrosoftOAuthError(
-      'Token exchange failed',
-      'TOKEN_EXCHANGE_FAILED',
-      { error: 'invalid_grant' }
-    );
+    const error = new MicrosoftOAuthError('Token exchange failed', 'TOKEN_EXCHANGE_FAILED', {
+      error: 'invalid_grant',
+    });
 
     expect(error.message).toBe('Token exchange failed');
     expect(error.code).toBe('TOKEN_EXCHANGE_FAILED');
@@ -342,4 +340,3 @@ describe('DEFAULT_MICROSOFT_SCOPES', () => {
     expect(DEFAULT_MICROSOFT_SCOPES).toContain('email');
   });
 });
-

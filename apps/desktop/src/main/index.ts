@@ -24,7 +24,8 @@ function createWindow(): void {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    webPreferences: { //This tells Electron to run the app in a sandboxed environment, Renderer doesnot get Node.js, Renderer JS runs in isolated environment.Only the preload script can access the main process and act like an bridge.
+    webPreferences: {
+      //This tells Electron to run the app in a sandboxed environment, Renderer doesnot get Node.js, Renderer JS runs in isolated environment.Only the preload script can access the main process and act like an bridge.
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
@@ -40,12 +41,12 @@ function createWindow(): void {
    * In development UI is served by a dev server. we want Hot reload, Fast iterations, Source maps, DevTools alaways open
    * In Production UI is static files
    * Everything is packages into an executables
-   * No dev server 
+   * No dev server
    * No hot reload
    * DvTools diabled
    * So isDev is not about logic it's about where the UI comes from.
    * **/
-  
+
   if (isDev) {
     void mainWindow.loadURL('http://localhost:5173'); //this tells chromium inside this window to behave like a browser and navigate to this url.
     mainWindow.webContents.openDevTools();
@@ -54,17 +55,20 @@ function createWindow(): void {
   }
 
   // Show window when ready
-  mainWindow.once('ready-to-show', () => { // this is a professional polish detail to ensure the window is fully initialized and ready to be shown. If you show the window immediately: USers see white flash half rendered UI and layout jumps
+  mainWindow.once('ready-to-show', () => {
+    // this is a professional polish detail to ensure the window is fully initialized and ready to be shown. If you show the window immediately: USers see white flash half rendered UI and layout jumps
     mainWindow?.show(); // therefore we have show:false to create the window but do not show it yet. Only show the window when chromium has rendered the first frame.
   }); // using .once the event Listner runs only once and then removes itself.
 
   // Handle external links
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => { // any attempts to opena new window are intercepted and handled by this function.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // any attempts to opena new window are intercepted and handled by this function.
     void shell.openExternal(url);
     return { action: 'deny' }; //Electron window is or created. This keeps the application a single window trusted surface.
   });
 
-  mainWindow.on('closed', () => { // .on() event listenr runs every time the event happens.  USed for lifecycle management of the window.
+  mainWindow.on('closed', () => {
+    // .on() event listenr runs every time the event happens.  USed for lifecycle management of the window.
     mainWindow = null; // this allows garbage coolection and prevents accidental access to a closed window.
   });
 }
@@ -100,9 +104,12 @@ function registerIpcHandlers(): void {
     return getAuditTrail(options);
   });
 
-  ipcMain.handle('audit:export', async (_, format: 'csv' | 'json', options?: Record<string, unknown>) => {
-    return exportAuditTrail(format, options);
-  });
+  ipcMain.handle(
+    'audit:export',
+    async (_, format: 'csv' | 'json', options?: Record<string, unknown>) => {
+      return exportAuditTrail(format, options);
+    }
+  );
 
   // Preferences
   ipcMain.handle('preferences:get', async () => {

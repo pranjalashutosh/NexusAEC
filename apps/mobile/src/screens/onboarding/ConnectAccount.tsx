@@ -5,13 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -34,11 +28,13 @@ export function ConnectAccountScreen({ navigation }: Props): React.JSX.Element {
       setConnecting(provider);
       setError(null);
       await connectAccount(provider);
-      
+
       // Navigate to next screen after successful connection
       navigation.navigate('VIPSelection');
     } catch (err) {
-      setError(`Failed to connect ${provider === 'google' ? 'Gmail' : 'Outlook'}. Please try again.`);
+      setError(
+        `Failed to connect ${provider === 'google' ? 'Gmail' : 'Outlook'}. Please try again.`
+      );
     } finally {
       setConnecting(null);
     }
@@ -56,9 +52,7 @@ export function ConnectAccountScreen({ navigation }: Props): React.JSX.Element {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Connect Your Email
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Connect Your Email</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Link your email accounts to get personalized briefings
           </Text>
@@ -134,9 +128,7 @@ export function ConnectAccountScreen({ navigation }: Props): React.JSX.Element {
 
         {/* Info Text */}
         <View style={styles.infoSection}>
-          <Text style={[styles.infoTitle, { color: colors.text }]}>
-            What we access:
-          </Text>
+          <Text style={[styles.infoTitle, { color: colors.text }]}>What we access:</Text>
           <Text style={[styles.infoItem, { color: colors.textSecondary }]}>
             • Read your emails (read-only)
           </Text>
@@ -161,9 +153,7 @@ export function ConnectAccountScreen({ navigation }: Props): React.JSX.Element {
           )}
 
           <TouchableOpacity onPress={handleSkip} activeOpacity={0.8}>
-            <Text style={[styles.skipText, { color: colors.muted }]}>
-              Skip for now
-            </Text>
+            <Text style={[styles.skipText, { color: colors.muted }]}>Skip for now</Text>
           </TouchableOpacity>
         </View>
       </View>

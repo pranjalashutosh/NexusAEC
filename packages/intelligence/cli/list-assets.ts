@@ -52,7 +52,9 @@ function formatAsset(asset: Asset, index: number): string {
     lines.push(`   Status: ${asset.status}`);
   }
 
-  lines.push(`   Description: ${asset.description.substring(0, 100)}${asset.description.length > 100 ? '...' : ''}`);
+  lines.push(
+    `   Description: ${asset.description.substring(0, 100)}${asset.description.length > 100 ? '...' : ''}`
+  );
 
   return lines.join('\n');
 }
@@ -61,16 +63,17 @@ function formatAsset(asset: Asset, index: number): string {
  * Format safety document for display
  */
 function formatSafetyDocument(doc: SafetyDocument, index: number): string {
-  const lines = [
-    `\n${index + 1}. ${doc.title} [${doc.id}]`,
-    `   Type: ${doc.type}`,
-  ];
+  const lines = [`\n${index + 1}. ${doc.title} [${doc.id}]`, `   Type: ${doc.type}`];
 
   if (doc.relatedAssets && doc.relatedAssets.length > 0) {
-    lines.push(`   Related Assets: ${doc.relatedAssets.slice(0, 5).join(', ')}${doc.relatedAssets.length > 5 ? '...' : ''}`);
+    lines.push(
+      `   Related Assets: ${doc.relatedAssets.slice(0, 5).join(', ')}${doc.relatedAssets.length > 5 ? '...' : ''}`
+    );
   }
 
-  lines.push(`   Content: ${doc.content.substring(0, 100)}${doc.content.length > 100 ? '...' : ''}`);
+  lines.push(
+    `   Content: ${doc.content.substring(0, 100)}${doc.content.length > 100 ? '...' : ''}`
+  );
 
   return lines.join('\n');
 }
@@ -217,7 +220,9 @@ async function main() {
           sourceType: 'SAFETY_MANUAL',
         });
 
-        manuals = manualResults.map((result) => result.document.metadata as unknown as SafetyDocument);
+        manuals = manualResults.map(
+          (result) => result.document.metadata as unknown as SafetyDocument
+        );
       }
 
       console.log(`\nFound ${assets.length} assets and ${manuals.length} safety manuals`);

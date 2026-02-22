@@ -12,10 +12,12 @@ import {
 import type { OAuthTokens, EmailSource } from '../interfaces/types';
 
 // Mock OAuth provider
-const createMockProvider = (overrides: Partial<{
-  isTokenExpired: (tokens: OAuthTokens, buffer: number) => boolean;
-  refreshTokens: (refreshToken: string) => Promise<OAuthTokens>;
-}> = {}) => ({
+const createMockProvider = (
+  overrides: Partial<{
+    isTokenExpired: (tokens: OAuthTokens, buffer: number) => boolean;
+    refreshTokens: (refreshToken: string) => Promise<OAuthTokens>;
+  }> = {}
+) => ({
   source: 'OUTLOOK' as EmailSource,
   isTokenExpired: overrides.isTokenExpired ?? (() => false),
   refreshTokens: overrides.refreshTokens ?? (async () => createMockTokens()),
@@ -121,9 +123,7 @@ describe('TokenManager', () => {
     });
 
     it('should not throw when removing non-existent tokens', async () => {
-      await expect(
-        manager.removeTokens('nonexistent', 'OUTLOOK')
-      ).resolves.not.toThrow();
+      await expect(manager.removeTokens('nonexistent', 'OUTLOOK')).resolves.not.toThrow();
     });
   });
 
@@ -172,9 +172,9 @@ describe('TokenManager', () => {
 
   describe('getValidAccessToken', () => {
     it('should throw when no tokens exist', async () => {
-      await expect(
-        manager.getValidAccessToken('nonexistent', 'OUTLOOK')
-      ).rejects.toThrow(TokenManagerError);
+      await expect(manager.getValidAccessToken('nonexistent', 'OUTLOOK')).rejects.toThrow(
+        TokenManagerError
+      );
     });
 
     it('should return access token when valid', async () => {
@@ -253,18 +253,18 @@ describe('TokenManager', () => {
 
   describe('refreshTokens', () => {
     it('should throw when no tokens exist', async () => {
-      await expect(
-        manager.refreshTokens('nonexistent', 'OUTLOOK')
-      ).rejects.toThrow(TokenManagerError);
+      await expect(manager.refreshTokens('nonexistent', 'OUTLOOK')).rejects.toThrow(
+        TokenManagerError
+      );
     });
 
     it('should throw when no provider is registered', async () => {
       const tokens = createMockTokens();
       await manager.storeTokens('user1', 'OUTLOOK', tokens);
 
-      await expect(
-        manager.refreshTokens('user1', 'OUTLOOK')
-      ).rejects.toThrow('No OAuth provider registered');
+      await expect(manager.refreshTokens('user1', 'OUTLOOK')).rejects.toThrow(
+        'No OAuth provider registered'
+      );
     });
 
     it('should refresh and update stored tokens', async () => {
@@ -405,4 +405,3 @@ describe('isTokenManagerError', () => {
     expect(isTokenManagerError(undefined)).toBe(false);
   });
 });
-

@@ -134,7 +134,12 @@ export function isSecureStorageAvailable(): boolean {
   const platform = detectPlatform();
 
   // For Node.js environments, we always have the encrypted memory storage
-  if (platform === 'node' || platform === 'macos' || platform === 'windows' || platform === 'linux') {
+  if (
+    platform === 'node' ||
+    platform === 'macos' ||
+    platform === 'windows' ||
+    platform === 'linux'
+  ) {
     return true;
   }
 
@@ -382,7 +387,7 @@ export class EncryptedWebStorage implements ISecureStorage {
     const encrypted = await encrypt(value, this.encryptionKey);
     const existing = localStorage.getItem(fullKey);
     const createdAt = existing
-      ? (JSON.parse(existing) as { createdAt?: string }).createdAt ?? new Date().toISOString()
+      ? ((JSON.parse(existing) as { createdAt?: string }).createdAt ?? new Date().toISOString())
       : new Date().toISOString();
 
     const item = {
@@ -547,13 +552,11 @@ export async function createSecureStorageWithPassword(
       return EncryptedMemoryStorage.createWithPassword(password, options);
 
     case 'ios':
-    case 'android':
-      // Native storage doesn't need password - it uses platform keychain
-      // But for fallback, we'll derive a key
-      {
-        const { key } = await deriveKey(password);
-        return new NativeSecureStorage({ ...options, encryptionKey: key });
-      }
+    case 'android': {
+      // But for fallback, we'll derive a key // Native storage doesn't need password - it uses platform keychain
+      const { key } = await deriveKey(password);
+      return new NativeSecureStorage({ ...options, encryptionKey: key });
+    }
 
     default:
       return EncryptedMemoryStorage.createWithPassword(password, options);

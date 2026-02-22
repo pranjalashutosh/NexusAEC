@@ -556,7 +556,9 @@ describe('PreferencesStore', () => {
       await syncStore.initialize();
 
       // Should not throw
-      await expect(syncStore.addVip({ identifier: 'vip@example.com', name: 'VIP' })).resolves.not.toThrow();
+      await expect(
+        syncStore.addVip({ identifier: 'vip@example.com', name: 'VIP' })
+      ).resolves.not.toThrow();
     });
   });
 

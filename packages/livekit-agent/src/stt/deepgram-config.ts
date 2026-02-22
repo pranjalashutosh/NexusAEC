@@ -2,7 +2,7 @@
  * @nexus-aec/livekit-agent - Deepgram STT Configuration
  *
  * Configures Deepgram Nova-2 for speech-to-text in the voice agent.
- * 
+ *
  * Features:
  * - Nova-2 model for high accuracy
  * - Custom vocabulary for domain terms (NCE Asset IDs, project names)
@@ -104,19 +104,36 @@ export type TranscriptCallback = (event: TranscriptEvent) => void;
  */
 export const DEFAULT_CUSTOM_VOCABULARY: string[] = [
   // NCE Asset ID patterns
-  'P-104', 'P-205', 'P-301', 'P-402',
-  'V-101', 'V-202', 'V-303',
+  'P-104',
+  'P-205',
+  'P-301',
+  'P-402',
+  'V-101',
+  'V-202',
+  'V-303',
   'NCE',
-  
+
   // Common project/location terms
-  'Riverside', 'North Plant', 'South Plant',
-  'maintenance', 'inspection', 'outage',
-  
+  'Riverside',
+  'North Plant',
+  'South Plant',
+  'maintenance',
+  'inspection',
+  'outage',
+
   // Email action terms
-  'flag', 'priority', 'urgent', 'follow-up',
-  'mute', 'skip', 'next', 'repeat',
-  'draft', 'reply', 'forward',
-  
+  'flag',
+  'priority',
+  'urgent',
+  'follow-up',
+  'mute',
+  'skip',
+  'next',
+  'repeat',
+  'draft',
+  'reply',
+  'forward',
+
   // VIP names (would be loaded dynamically in production)
   // These are placeholders
 ];
@@ -132,10 +149,7 @@ export function createSTTOptions(config?: DeepgramConfig): STTOptions {
   const deepgramConfig = config ?? loadDeepgramConfig();
 
   // Merge default vocabulary with configured vocabulary
-  const keywords = [
-    ...DEFAULT_CUSTOM_VOCABULARY,
-    ...deepgramConfig.customVocabulary,
-  ];
+  const keywords = [...DEFAULT_CUSTOM_VOCABULARY, ...deepgramConfig.customVocabulary];
 
   // Remove duplicates
   const uniqueKeywords = [...new Set(keywords)];
@@ -198,7 +212,7 @@ export const SUPPORTED_LANGUAGES: Record<DeepgramLanguage, string> = {
   'en-GB': 'English (United Kingdom)',
   'en-IN': 'English (India)',
   'en-AU': 'English (Australia)',
-  'en': 'English (General)',
+  en: 'English (General)',
 };
 
 /**
@@ -351,6 +365,4 @@ export function detectCommand(text: string): {
 // Exports
 // =============================================================================
 
-export {
-  DEFAULT_CUSTOM_VOCABULARY as defaultVocabulary,
-};
+export { DEFAULT_CUSTOM_VOCABULARY as defaultVocabulary };

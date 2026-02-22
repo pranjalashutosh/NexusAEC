@@ -119,18 +119,17 @@ export class SmartDraftService {
   private readonly config: Required<SmartDraftConfig>;
 
   constructor(
-    providers:
-      | Partial<Record<EmailSource, EmailProvider>>
-      | Map<EmailSource, EmailProvider>,
+    providers: Partial<Record<EmailSource, EmailProvider>> | Map<EmailSource, EmailProvider>,
     config: Partial<SmartDraftConfig> = {}
   ) {
-    this.providers = providers instanceof Map
-      ? providers
-      : new Map(
-          (Object.entries(providers) as Array<[EmailSource, EmailProvider | undefined]>).filter(
-            (entry): entry is [EmailSource, EmailProvider] => Boolean(entry[1])
-          )
-        );
+    this.providers =
+      providers instanceof Map
+        ? providers
+        : new Map(
+            (Object.entries(providers) as Array<[EmailSource, EmailProvider | undefined]>).filter(
+              (entry): entry is [EmailSource, EmailProvider] => Boolean(entry[1])
+            )
+          );
 
     this.config = {
       defaultSource: config.defaultSource ?? 'OUTLOOK',
@@ -305,7 +304,9 @@ export class SmartDraftService {
    */
   async deleteDraft(draftId: string): Promise<void> {
     const provider = this.getProviderForId(draftId);
-    if (!provider) {return;}
+    if (!provider) {
+      return;
+    }
 
     await provider.deleteDraft(draftId);
   }
@@ -344,9 +345,7 @@ export class SmartDraftService {
     );
 
     // Sort by creation date (oldest first - review queue order)
-    allDrafts.sort((a, b) =>
-      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
+    allDrafts.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
     return allDrafts;
   }
@@ -444,7 +443,9 @@ export class SmartDraftService {
    */
   private getProviderForId(id: string): EmailProvider | undefined {
     const parsed = parseStandardId(id);
-    if (!parsed) {return undefined;}
+    if (!parsed) {
+      return undefined;
+    }
     return this.providers.get(parsed.source);
   }
 
@@ -499,10 +500,7 @@ export class SmartDraftError extends Error {
 /**
  * Smart draft error codes
  */
-export type SmartDraftErrorCode =
-  | 'PROVIDER_UNAVAILABLE'
-  | 'DRAFT_NOT_FOUND'
-  | 'INVALID_INPUT';
+export type SmartDraftErrorCode = 'PROVIDER_UNAVAILABLE' | 'DRAFT_NOT_FOUND' | 'INVALID_INPUT';
 
 /**
  * Type guard for SmartDraftError
@@ -510,4 +508,3 @@ export type SmartDraftErrorCode =
 export function isSmartDraftError(error: unknown): error is SmartDraftError {
   return error instanceof SmartDraftError;
 }
-

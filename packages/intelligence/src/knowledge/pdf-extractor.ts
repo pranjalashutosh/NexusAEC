@@ -20,13 +20,18 @@ async function getPdfParse(): Promise<PdfParseFn> {
     // Use require() instead of dynamic import() to keep Jest/ts-jest compatible
     // in Node runtimes where vm-based module loading can break dynamic import.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pdfParseModule = require('pdf-parse') as unknown as {
-      default?: PdfParseFn;
-    } | PdfParseFn;
+    const pdfParseModule = require('pdf-parse') as unknown as
+      | {
+          default?: PdfParseFn;
+        }
+      | PdfParseFn;
 
     if (typeof pdfParseModule === 'function') {
       pdfParse = pdfParseModule;
-    } else if (pdfParseModule && typeof (pdfParseModule as { default?: unknown }).default === 'function') {
+    } else if (
+      pdfParseModule &&
+      typeof (pdfParseModule as { default?: unknown }).default === 'function'
+    ) {
       pdfParse = (pdfParseModule as { default: PdfParseFn }).default;
     } else {
       throw new Error('Failed to load pdf-parse module');
@@ -487,10 +492,7 @@ function removePageNumbersFromText(text: string): string {
  * ]);
  * ```
  */
-export function splitIntoSections(
-  text: string,
-  sectionHeaders: RegExp[]
-): Map<string, string> {
+export function splitIntoSections(text: string, sectionHeaders: RegExp[]): Map<string, string> {
   const sections = new Map<string, string>();
   const lines = text.split('\n');
 

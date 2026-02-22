@@ -4,7 +4,16 @@
     "title": "Pump Station Safety Manual - Chapter 3: Emergency Shutdown Procedures",
     "content": "EMERGENCY SHUTDOWN PROCEDURES FOR PUMP STATIONS\n\nPurpose: This procedure establishes the steps required to safely shut down pump stations during emergency situations including equipment failure, flooding, fire, or power loss.\n\nScope: Applies to all pump stations including P-104, P-105, P-201, and P-301.\n\nIMEDIATE ACTIONS:\n\n1. ALARM ACKNOWLEDGMENT\n- Acknowledge all SCADA alarms immediately\n- Notify Central Control Room of emergency condition\n- Activate emergency lighting if required\n\n2. ASSESS THE SITUATION\n- Identify the nature of emergency (mechanical failure, electrical fault, flooding, fire)\n- Determine if immediate evacuation is required\n- Check for personnel injuries or hazards\n\n3. EMERGENCY STOP PROCEDURE\n- Press red EMERGENCY STOP button on control panel\n- Pumps will stop immediately (no controlled ramp-down)\n- All motor starters will open\n- Generator auto-start will activate if configured\n\n4. ELECTRICAL ISOLATION\n- Open main disconnect switch at panel C-701\n- Verify all motors have stopped rotation\n- Check motor temperatures - allow 30 minutes cooling before restart\n- Post \"DO NOT OPERATE\" tags on all disconnects\n\n5. MECHANICAL ISOLATION\n- Close suction valve V-401 if pump failure occurred\n- Open bypass valves if available to maintain service\n- Check for vibration, unusual noise, or leaks\n- Document pump hour meter readings\n\nWARNING: Never attempt to restart pumps until root cause is identified and corrected. Pumps running dry or with mechanical failure can cause catastrophic damage within seconds.\n\n6. NOTIFICATION REQUIREMENTS\n- Notify Water Operations Supervisor: John Martinez (555-0104)\n- For after-hours: Call emergency on-call rotation\n- Notify Maintenance if mechanical failure suspected\n- Document all actions in shift log\n\n7. SYSTEM MONITORING\n- Monitor system pressure via SCADA\n- Check storage tank levels (T-401, T-402)\n- Activate backup pump P-105 if P-104 failed\n- Ensure distribution system maintains minimum 35 PSI\n\nDO NOT RESTART until authorized by Operations Supervisor and root cause is resolved.\n\nRelated Documents: SOP-PUMP-001, LOTO-PUMP-003\nRevision: 3.2\nEffective Date: 2024-01-15",
     "type": "SAFETY_MANUAL",
-    "relatedAssets": ["P-104", "P-105", "P-201", "P-301", "V-401", "C-701", "T-401", "T-402"],
+    "relatedAssets": [
+      "P-104",
+      "P-105",
+      "P-201",
+      "P-301",
+      "V-401",
+      "C-701",
+      "T-401",
+      "T-402"
+    ],
     "metadata": {
       "version": "3.2",
       "effectiveDate": "2024-01-15",
@@ -34,7 +43,18 @@
     "title": "Lockout/Tagout Procedure - Electrical Equipment",
     "content": "LOCKOUT/TAGOUT (LOTO) PROCEDURE FOR ELECTRICAL EQUIPMENT\n\nPurpose: Prevent unexpected startup of equipment during maintenance that could result in employee injury or death.\n\nScope: All electrical equipment including pumps, motors, control panels. Assets: P-104, P-105, P-201, P-301, M-501, M-502, E-301, E-401, E-501, C-701.\n\nREGULATORY REQUIREMENT: OSHA 29 CFR 1910.147 - MANDATORY safety procedure.\n\nGENERAL RULES:\n1. Only AUTHORIZED employees may perform lockout/tagout\n2. Each employee applies their OWN lock - never share\n3. Locks only removed by employee who applied them\n4. Test equipment for zero energy before work\n\nLOCKOUT/TAGOUT PROCEDURE (8 STEPS):\n\nSTEP 1: PREPARE FOR SHUTDOWN\n- Identify all energy sources\n- Notify affected employees and control room\n- Gather locks, tags, voltage tester\n\nSTEP 2: EQUIPMENT SHUTDOWN\n- Shut down using normal stop procedures\n- Allow complete stop\n\nSTEP 3: ISOLATE ENERGY SOURCES\n- Open main disconnect switch\n- Rack out motor starters\n- Open control power circuits\n\nSTEP 4: APPLY LOCKOUT DEVICES\n- Place lockout hasp on disconnect\n- Each worker applies personal lock\n- Attach \"DANGER - DO NOT OPERATE\" tag\n- Tags alone NOT sufficient - locks required\n\nSTEP 5: CONTROL STORED ENERGY\n- Wait 5 minutes for capacitor discharge\n- Drain pressure from systems\n- Block rotating parts\n\nSTEP 6: VERIFY ZERO ENERGY (CRITICAL)\n- Use calibrated voltage tester\n- Test all phases to ground and phase-to-phase\n- Test control circuits\n- Attempt to start equipment (must NOT respond)\n- If ANY voltage detected, DO NOT PROCEED\n\nSTEP 7: PERFORM WORK\n- Work may proceed safely\n- Keep locks in place entire duration\n\nSTEP 8: REMOVE LOCKOUT\n- Verify work complete, tools removed\n- Notify control room\n- Each employee removes ONLY their own lock\n- Restore disconnects, test operation\n\nPENALTIES FOR VIOLATIONS:\n- First offense: Written warning\n- Second offense: 3-day suspension\n- Third offense: Termination\n- Removing another's lock: Immediate termination\n\nRevision: 5.0\nEffective: 2024-03-01",
     "type": "PROCEDURE",
-    "relatedAssets": ["P-104", "P-105", "P-201", "P-301", "M-501", "M-502", "E-301", "E-401", "E-501", "C-701"],
+    "relatedAssets": [
+      "P-104",
+      "P-105",
+      "P-201",
+      "P-301",
+      "M-501",
+      "M-502",
+      "E-301",
+      "E-401",
+      "E-501",
+      "C-701"
+    ],
     "metadata": {
       "version": "5.0",
       "effectiveDate": "2024-03-01",

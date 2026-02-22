@@ -54,8 +54,12 @@ async function main() {
 
   if (!clientId || !clientSecret) {
     log('❌ Missing required environment variables:', 'red');
-    if (!clientId) {log('   - GOOGLE_CLIENT_ID', 'red');}
-    if (!clientSecret) {log('   - GOOGLE_CLIENT_SECRET', 'red');}
+    if (!clientId) {
+      log('   - GOOGLE_CLIENT_ID', 'red');
+    }
+    if (!clientSecret) {
+      log('   - GOOGLE_CLIENT_SECRET', 'red');
+    }
     log('\nPlease add these to your .env file and try again.', 'yellow');
     process.exit(1);
   }
@@ -189,12 +193,15 @@ async function main() {
     server.listen(PORT, () => {
       log(`🌐 Local server started on http://localhost:${PORT}`, 'green');
       log('\n' + '='.repeat(70), 'yellow');
-      log('📋 IMPORTANT: Make sure you have added this redirect URI to Google Cloud Console:', 'yellow');
+      log(
+        '📋 IMPORTANT: Make sure you have added this redirect URI to Google Cloud Console:',
+        'yellow'
+      );
       log(`   ${REDIRECT_URI}`, 'bright');
       log('='.repeat(70) + '\n', 'yellow');
 
       log('🔗 Opening authorization URL in your browser...\n', 'cyan');
-      log('If the browser doesn\'t open automatically, copy and paste this URL:\n', 'yellow');
+      log("If the browser doesn't open automatically, copy and paste this URL:\n", 'yellow');
       console.log(authUrl);
       console.log('');
 

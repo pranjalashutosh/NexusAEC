@@ -6,4 +6,3 @@
 
 export * from './outlook-adapter';
 export * from './gmail-adapter';
-

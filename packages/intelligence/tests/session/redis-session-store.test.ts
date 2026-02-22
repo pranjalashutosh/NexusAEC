@@ -440,9 +440,7 @@ describe('RedisSessionStore', () => {
       expect(stats.uniqueUsers).toBe(2);
       expect(stats.oldestSession).toBeInstanceOf(Date);
       expect(stats.newestSession).toBeInstanceOf(Date);
-      expect(stats.newestSession!.getTime()).toBeGreaterThanOrEqual(
-        stats.oldestSession!.getTime()
-      );
+      expect(stats.newestSession!.getTime()).toBeGreaterThanOrEqual(stats.oldestSession!.getTime());
     });
 
     it('should get stats for empty store', async () => {

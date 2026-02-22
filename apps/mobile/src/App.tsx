@@ -11,10 +11,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from './hooks/useAuth'; //connects app to backend auth system
-import { LiveKitProvider } from './hooks/useLiveKit';//connects app to livekit for voice communication
-import { NetworkProvider } from './hooks/useNetworkStatus';//connects app to network status
+import { LiveKitProvider } from './hooks/useLiveKit'; //connects app to livekit for voice communication
+import { NetworkProvider } from './hooks/useNetworkStatus'; //connects app to network status
 import { ThemeProvider, useTheme } from './hooks/useTheme'; //connects app to theme system + hook used inside AppContent
-import { RootNavigator } from './navigation/RootNavigator';//connects app to navigation system
+import { RootNavigator } from './navigation/RootNavigator'; //connects app to navigation system
 
 /**
  * App content with theme-aware status bar

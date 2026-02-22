@@ -497,7 +497,8 @@ P-001,Pump 1,Main pump,pump,Building A`;
       });
 
       it('should handle UTF-8 BOM', () => {
-        const csv = '\uFEFFassetId,name,description,category,location\nP-001,Pump 1,Main pump,PUMP,Building A';
+        const csv =
+          '\uFEFFassetId,name,description,category,location\nP-001,Pump 1,Main pump,PUMP,Building A';
 
         const result = parseAssetCSVString(csv);
 

@@ -8,8 +8,8 @@
 
 import { createLogger } from '@nexus-aec/logger';
 
-import type { UserKnowledgeStore } from '../knowledge/user-knowledge-store.js';
 import type { ToolDefinition, ToolResult } from './email-tools.js';
+import type { UserKnowledgeStore } from '../knowledge/user-knowledge-store.js';
 
 const logger = createLogger({ baseContext: { component: 'knowledge-tools' } });
 
@@ -54,8 +54,7 @@ export const saveToMemoryTool: ToolDefinition = {
       properties: {
         content: {
           type: 'string',
-          description:
-            'The information to remember. Write it as a clear, actionable statement.',
+          description: 'The information to remember. Write it as a clear, actionable statement.',
         },
         category: {
           type: 'string',
@@ -91,10 +90,7 @@ export const recallKnowledgeTool: ToolDefinition = {
 // All Knowledge Tools
 // =============================================================================
 
-export const KNOWLEDGE_TOOLS: ToolDefinition[] = [
-  saveToMemoryTool,
-  recallKnowledgeTool,
-];
+export const KNOWLEDGE_TOOLS: ToolDefinition[] = [saveToMemoryTool, recallKnowledgeTool];
 
 export function getKnowledgeTool(name: string): ToolDefinition | undefined {
   return KNOWLEDGE_TOOLS.find((t) => t.function.name === name);
@@ -110,9 +106,7 @@ type KnowledgeCategory = (typeof VALID_CATEGORIES)[number];
 /**
  * Execute save_to_memory: persist a knowledge entry for this user.
  */
-export async function executeSaveToMemory(
-  args: Record<string, unknown>,
-): Promise<ToolResult> {
+export async function executeSaveToMemory(args: Record<string, unknown>): Promise<ToolResult> {
   if (!_knowledgeStore || !_currentUserId) {
     return {
       success: false,
@@ -163,11 +157,12 @@ export async function executeSaveToMemory(
   } catch (error) {
     logger.error(
       'save_to_memory failed',
-      error instanceof Error ? error : new Error(String(error)),
+      error instanceof Error ? error : new Error(String(error))
     );
     return {
       success: false,
-      message: "I wasn't able to save that right now. I'll try to keep it in mind for this session.",
+      message:
+        "I wasn't able to save that right now. I'll try to keep it in mind for this session.",
       riskLevel: 'low',
     };
   }
@@ -177,9 +172,7 @@ export async function executeSaveToMemory(
  * Execute recall_knowledge: search uploaded documents via RAG.
  * Phase 2 — returns a placeholder until file upload + RAG is wired.
  */
-export async function executeRecallKnowledge(
-  args: Record<string, unknown>,
-): Promise<ToolResult> {
+export async function executeRecallKnowledge(args: Record<string, unknown>): Promise<ToolResult> {
   const query = args['query'] as string | undefined;
 
   if (!query || query.trim().length === 0) {
@@ -196,7 +189,8 @@ export async function executeRecallKnowledge(
 
   return {
     success: false,
-    message: "I don't have any uploaded documents to search yet. You can upload files through the app to build your knowledge base.",
+    message:
+      "I don't have any uploaded documents to search yet. You can upload files through the app to build your knowledge base.",
     riskLevel: 'low',
   };
 }
@@ -218,7 +212,7 @@ export const KNOWLEDGE_TOOL_EXECUTORS: Record<
  */
 export async function executeKnowledgeTool(
   toolName: string,
-  args: Record<string, unknown>,
+  args: Record<string, unknown>
 ): Promise<ToolResult> {
   const executor = KNOWLEDGE_TOOL_EXECUTORS[toolName];
 
@@ -236,7 +230,7 @@ export async function executeKnowledgeTool(
   } catch (error) {
     logger.error(
       'Knowledge tool execution error',
-      error instanceof Error ? error : new Error(String(error)),
+      error instanceof Error ? error : new Error(String(error))
     );
     return {
       success: false,

@@ -12,7 +12,4 @@ export {
   getOptionalUserId,
 } from './auth';
 
-export type {
-  JWTPayload,
-  AuthenticatedUser,
-} from './auth';
+export type { JWTPayload, AuthenticatedUser } from './auth';

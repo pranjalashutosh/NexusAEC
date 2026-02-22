@@ -31,18 +31,9 @@ export type {
 } from './config.js';
 
 // Agent exports
-export {
-  createVoiceAgent,
-  startAgent,
-  prewarm,
-  getAgent,
-} from './agent.js';
+export { createVoiceAgent, startAgent, prewarm, getAgent } from './agent.js';
 
-export {
-  getSession,
-  getAllSessions,
-  getActiveSessionCount,
-} from './session-store.js';
+export { getSession, getAllSessions, getActiveSessionCount } from './session-store.js';
 
 export type { AgentSession } from './session-store.js';
 
@@ -50,11 +41,7 @@ export type { AgentSession } from './session-store.js';
 export { default as defaultAgent } from './agent.js';
 
 // Health check exports
-export {
-  startHealthServer,
-  stopHealthServer,
-  isHealthServerRunning,
-} from './health.js';
+export { startHealthServer, stopHealthServer, isHealthServerRunning } from './health.js';
 
 // STT (Speech-to-Text) exports
 export * from './stt/index.js';
@@ -88,8 +75,4 @@ export {
   parseEmailCredentials,
 } from './email-bootstrap.js';
 
-export type {
-  EmailCredentials,
-  EmailBootstrapResult,
-} from './email-bootstrap.js';
-
+export type { EmailCredentials, EmailBootstrapResult } from './email-bootstrap.js';

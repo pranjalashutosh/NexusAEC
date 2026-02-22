@@ -87,10 +87,7 @@ function base64UrlEncode(str: string): string {
  */
 async function sign(payload: string, secret: string): Promise<string> {
   const crypto = await import('crypto');
-  const signature = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('base64');
+  const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64');
   return signature.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
@@ -107,15 +104,7 @@ async function generateAccessToken(options: {
   metadata?: string;
   ttlSeconds?: number;
 }): Promise<{ token: string; expiresAt: number }> {
-  const {
-    apiKey,
-    apiSecret,
-    identity,
-    name,
-    roomName,
-    metadata,
-    ttlSeconds = 3600,
-  } = options;
+  const { apiKey, apiSecret, identity, name, roomName, metadata, ttlSeconds = 3600 } = options;
 
   const now = Math.floor(Date.now() / 1000);
   const expiresAt = now + ttlSeconds;
@@ -179,9 +168,7 @@ function generateRoomName(userId: string): string {
  * them into the metadata structure expected by the livekit-agent's
  * email-bootstrap module: { email: { userId, outlook?, gmail? } }
  */
-async function buildEmailMetadata(
-  userId: string
-): Promise<Record<string, unknown> | null> {
+async function buildEmailMetadata(userId: string): Promise<Record<string, unknown> | null> {
   try {
     const tokenManager = getTokenManagerInstance();
 
@@ -233,10 +220,7 @@ export function registerLiveKitTokenRoutes(app: FastifyInstance): void {
    */
   app.post<{ Body: GenerateTokenBody }>(
     '/livekit/token',
-    async (
-      request: FastifyRequest<{ Body: GenerateTokenBody }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: GenerateTokenBody }>, reply: FastifyReply) => {
       const config = getLiveKitConfig();
 
       // Validate configuration

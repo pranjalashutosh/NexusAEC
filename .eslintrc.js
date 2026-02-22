@@ -148,4 +148,3 @@ module.exports = {
     '*.config.ts',
   ],
 };
-

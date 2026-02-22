@@ -5,14 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -76,9 +69,7 @@ export function KeywordSelectionScreen({ navigation }: Props): React.JSX.Element
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Keyword Alerts
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Keyword Alerts</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Get notified when these words appear in your emails
           </Text>

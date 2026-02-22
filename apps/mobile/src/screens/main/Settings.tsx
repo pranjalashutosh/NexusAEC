@@ -26,8 +26,13 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
         {/* Preferences Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Preferences</Text>
-          
-          <View style={[styles.settingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+
+          <View
+            style={[
+              styles.settingCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             {/* Dark Mode */}
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
@@ -57,14 +62,19 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
                   style={[
                     styles.verbosityOption,
                     { borderColor: colors.border },
-                    preferences.verbosity === level && { backgroundColor: colors.primary + '20', borderColor: colors.primary },
+                    preferences.verbosity === level && {
+                      backgroundColor: colors.primary + '20',
+                      borderColor: colors.primary,
+                    },
                   ]}
                   onPress={() => handleVerbosityChange(level)}
                 >
-                  <Text style={[
-                    styles.verbosityText,
-                    { color: preferences.verbosity === level ? colors.primary : colors.text },
-                  ]}>
+                  <Text
+                    style={[
+                      styles.verbosityText,
+                      { color: preferences.verbosity === level ? colors.primary : colors.text },
+                    ]}
+                  >
                     {level.charAt(0).toUpperCase() + level.slice(1)}
                   </Text>
                 </TouchableOpacity>
@@ -76,29 +86,61 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
         {/* Personalization Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Personalization</Text>
-          
-          <View style={[styles.settingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <SettingLink label="VIP Contacts" value={`${preferences.vips.length} contacts`} colors={colors} />
+
+          <View
+            style={[
+              styles.settingCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <SettingLink
+              label="VIP Contacts"
+              value={`${preferences.vips.length} contacts`}
+              colors={colors}
+            />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <SettingLink label="Topics" value={`${preferences.topics.length} topics`} colors={colors} />
+            <SettingLink
+              label="Topics"
+              value={`${preferences.topics.length} topics`}
+              colors={colors}
+            />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <SettingLink label="Keywords" value={`${preferences.keywords.length} keywords`} colors={colors} />
+            <SettingLink
+              label="Keywords"
+              value={`${preferences.keywords.length} keywords`}
+              colors={colors}
+            />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <SettingLink label="Muted Senders" value={`${preferences.mutedSenders.length} senders`} colors={colors} />
+            <SettingLink
+              label="Muted Senders"
+              value={`${preferences.mutedSenders.length} senders`}
+              colors={colors}
+            />
           </View>
         </View>
 
         {/* Account Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
-          
-          <View style={[styles.settingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <TouchableOpacity style={styles.settingRow} onPress={() => navigation.navigate('AddAccount')}>
+
+          <View
+            style={[
+              styles.settingCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => navigation.navigate('AddAccount')}
+            >
               <Text style={[styles.settingLabel, { color: colors.text }]}>Add Email Account</Text>
               <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
             </TouchableOpacity>
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity style={styles.settingRow} onPress={() => navigation.navigate('PrivacyDashboard')}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => navigation.navigate('PrivacyDashboard')}
+            >
               <Text style={[styles.settingLabel, { color: colors.text }]}>Privacy & Data</Text>
               <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
             </TouchableOpacity>
@@ -141,7 +183,12 @@ const styles = StyleSheet.create({
   section: { marginBottom: 24 },
   sectionTitle: { fontSize: 14, fontWeight: '600', marginBottom: 12, marginLeft: 4 },
   settingCard: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
-  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
   settingInfo: { flex: 1 },
   settingLabel: { fontSize: 16 },
   settingDescription: { fontSize: 13, marginTop: 2 },
@@ -150,8 +197,20 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 20 },
   divider: { height: 1 },
   verbosityOptions: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 16 },
-  verbosityOption: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
+  verbosityOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
   verbosityText: { fontSize: 14, fontWeight: '500' },
-  logoutButton: { borderWidth: 1, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
+  logoutButton: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
   logoutText: { fontSize: 16, fontWeight: '600' },
 });

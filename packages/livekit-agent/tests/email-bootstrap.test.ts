@@ -244,7 +244,7 @@ describe('email-bootstrap', () => {
         expect.objectContaining({
           continueOnError: true,
           defaultPageSize: 25,
-        }),
+        })
       );
     });
 
@@ -261,7 +261,7 @@ describe('email-bootstrap', () => {
         expect.objectContaining({
           defaultSource: 'OUTLOOK',
           defaultPendingReview: true,
-        }),
+        })
       );
     });
 
@@ -275,7 +275,7 @@ describe('email-bootstrap', () => {
 
       expect(mockSetEmailServices).toHaveBeenCalledWith(
         expect.any(Object), // UnifiedInboxService instance
-        expect.any(Object), // SmartDraftService instance
+        expect.any(Object) // SmartDraftService instance
       );
     });
 
@@ -292,7 +292,7 @@ describe('email-bootstrap', () => {
         expect.objectContaining({
           defaultSource: 'GMAIL',
           fallbackSource: 'OUTLOOK',
-        }),
+        })
       );
     });
 
@@ -339,9 +339,7 @@ describe('email-bootstrap', () => {
       // Gmail should still succeed
       expect(result.success).toBe(true);
       expect(result.connectedProviders).toEqual(['GMAIL']);
-      expect(result.errors).toEqual([
-        { source: 'OUTLOOK', error: 'Invalid token format' },
-      ]);
+      expect(result.errors).toEqual([{ source: 'OUTLOOK', error: 'Invalid token format' }]);
     });
   });
 

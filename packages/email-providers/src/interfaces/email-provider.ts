@@ -380,16 +380,21 @@ export function createStandardId(source: EmailSource, providerId: string): strin
 /**
  * Parse a standardized ID to get source and provider ID
  */
-export function parseStandardId(standardId: string): { source: EmailSource; providerId: string } | null {
+export function parseStandardId(
+  standardId: string
+): { source: EmailSource; providerId: string } | null {
   const parts = standardId.split(':');
-  if (parts.length < 2) {return null;}
+  if (parts.length < 2) {
+    return null;
+  }
 
   const sourceStr = parts[0]?.toUpperCase();
-  if (sourceStr !== 'OUTLOOK' && sourceStr !== 'GMAIL') {return null;}
+  if (sourceStr !== 'OUTLOOK' && sourceStr !== 'GMAIL') {
+    return null;
+  }
 
   return {
     source: sourceStr,
     providerId: parts.slice(1).join(':'), // Handle IDs that contain colons
   };
 }
-

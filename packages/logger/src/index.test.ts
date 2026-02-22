@@ -437,4 +437,3 @@ describe('@nexus-aec/logger', () => {
     });
   });
 });
-

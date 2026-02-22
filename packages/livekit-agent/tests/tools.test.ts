@@ -72,9 +72,35 @@ function createMockInboxService() {
     deleteFolder: jest.fn().mockResolvedValue(undefined),
     fetchFolders: jest.fn().mockResolvedValue({
       folders: [
-        { id: 'outlook:inbox', name: 'Inbox', source: 'OUTLOOK', providerId: 'inbox', totalCount: 10, unreadCount: 5, isSystem: true, systemType: 'inbox' },
-        { id: 'outlook:archive', name: 'Archive', source: 'OUTLOOK', providerId: 'archive', totalCount: 100, unreadCount: 0, isSystem: true, systemType: 'archive' },
-        { id: 'outlook:projects', name: 'Projects', source: 'OUTLOOK', providerId: 'projects', totalCount: 20, unreadCount: 3, isSystem: false },
+        {
+          id: 'outlook:inbox',
+          name: 'Inbox',
+          source: 'OUTLOOK',
+          providerId: 'inbox',
+          totalCount: 10,
+          unreadCount: 5,
+          isSystem: true,
+          systemType: 'inbox',
+        },
+        {
+          id: 'outlook:archive',
+          name: 'Archive',
+          source: 'OUTLOOK',
+          providerId: 'archive',
+          totalCount: 100,
+          unreadCount: 0,
+          isSystem: true,
+          systemType: 'archive',
+        },
+        {
+          id: 'outlook:projects',
+          name: 'Projects',
+          source: 'OUTLOOK',
+          providerId: 'projects',
+          totalCount: 20,
+          unreadCount: 3,
+          isSystem: false,
+        },
       ],
       errors: [],
     }),
@@ -159,10 +185,7 @@ describe('livekit-agent/tools', () => {
 
     describe('executeMuteSender', () => {
       it('mutes non-VIP sender', async () => {
-        const result = await executeMuteSender(
-          { sender_email: 'spam@example.com' },
-          mockContext
-        );
+        const result = await executeMuteSender({ sender_email: 'spam@example.com' }, mockContext);
 
         expect(result.success).toBe(true);
         expect(result.message).toContain('Muted');
@@ -171,10 +194,7 @@ describe('livekit-agent/tools', () => {
 
       it('requires confirmation for VIP', async () => {
         const vipContext = { ...mockContext, isVip: true };
-        const result = await executeMuteSender(
-          { sender_email: 'vip@example.com' },
-          vipContext
-        );
+        const result = await executeMuteSender({ sender_email: 'vip@example.com' }, vipContext);
 
         expect(result.success).toBe(false);
         expect(result.requiresConfirmation).toBe(true);
@@ -183,10 +203,7 @@ describe('livekit-agent/tools', () => {
 
       it('actually adds sender to mute list', async () => {
         const email = 'mute-test@example.com';
-        await executeMuteSender(
-          { sender_email: email, duration: '1_week' },
-          mockContext
-        );
+        await executeMuteSender({ sender_email: email, duration: '1_week' }, mockContext);
         expect(isMuted(email)).toBe(true);
       });
     });
@@ -194,10 +211,7 @@ describe('livekit-agent/tools', () => {
     describe('executePrioritizeVip', () => {
       it('adds sender to VIP list', async () => {
         const email = 'vip-test@example.com';
-        const result = await executePrioritizeVip(
-          { sender_email: email },
-          mockContext
-        );
+        const result = await executePrioritizeVip({ sender_email: email }, mockContext);
 
         expect(result.success).toBe(true);
         expect(result.message).toContain('VIP');
@@ -341,10 +355,7 @@ describe('livekit-agent/tools', () => {
 
       describe('executeCreateFolder', () => {
         it('creates folder', async () => {
-          const result = await executeCreateFolder(
-            { folder_name: 'TestFolder' },
-            mockContext
-          );
+          const result = await executeCreateFolder({ folder_name: 'TestFolder' }, mockContext);
 
           expect(result.success).toBe(true);
           expect(result.message).toContain('TestFolder');
@@ -392,10 +403,7 @@ describe('livekit-agent/tools', () => {
 
       describe('executeSearchEmails', () => {
         it('searches emails', async () => {
-          const result = await executeSearchEmails(
-            { query: 'Q4 Report' },
-            mockContext
-          );
+          const result = await executeSearchEmails({ query: 'Q4 Report' }, mockContext);
 
           expect(result.success).toBe(true);
           expect(result.data?.['count']).toBe(1);
@@ -405,10 +413,7 @@ describe('livekit-agent/tools', () => {
         it('returns no results message', async () => {
           mockInbox.fetchUnread.mockResolvedValueOnce({ items: [], totalCount: 0, errors: [] });
 
-          const result = await executeSearchEmails(
-            { query: 'nonexistent' },
-            mockContext
-          );
+          const result = await executeSearchEmails({ query: 'nonexistent' }, mockContext);
 
           expect(result.message).toContain('No emails found');
         });

@@ -8,10 +8,14 @@
  * so it adds zero latency to the live voice pipeline.
  */
 
-import OpenAI from 'openai';
 import { createLogger } from '@nexus-aec/logger';
+import OpenAI from 'openai';
 
-import type { UserKnowledgeStore, KnowledgeDocument, KnowledgeEntry } from './user-knowledge-store.js';
+import type {
+  UserKnowledgeStore,
+  KnowledgeDocument,
+  KnowledgeEntry,
+} from './user-knowledge-store.js';
 
 const logger = createLogger({ baseContext: { component: 'knowledge-summarize' } });
 
@@ -35,9 +39,11 @@ INPUT ENTRIES:
 export async function summarizeKnowledge(
   store: UserKnowledgeStore,
   doc: KnowledgeDocument,
-  openaiApiKey: string,
+  openaiApiKey: string
 ): Promise<void> {
-  if (doc.entries.length === 0) return;
+  if (doc.entries.length === 0) {
+    return;
+  }
 
   logger.info('Summarizing knowledge document', {
     userId: doc.userId,
@@ -48,7 +54,7 @@ export async function summarizeKnowledge(
   const inputJson = JSON.stringify(
     doc.entries.map((e) => ({ content: e.content, category: e.category })),
     null,
-    2,
+    2
   );
 
   try {
@@ -58,7 +64,10 @@ export async function summarizeKnowledge(
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: SUMMARIZE_PROMPT + inputJson },
-        { role: 'user', content: 'Condense these entries. Return ONLY the JSON array, no other text.' },
+        {
+          role: 'user',
+          content: 'Condense these entries. Return ONLY the JSON array, no other text.',
+        },
       ],
       max_tokens: 1000,
       temperature: 0.2,
@@ -98,7 +107,7 @@ export async function summarizeKnowledge(
   } catch (error) {
     logger.error(
       'Knowledge summarization failed, keeping original',
-      error instanceof Error ? error : new Error(String(error)),
+      error instanceof Error ? error : new Error(String(error))
     );
   }
 }

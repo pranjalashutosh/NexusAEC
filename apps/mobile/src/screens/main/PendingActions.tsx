@@ -7,7 +7,6 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 
 import { useTheme } from '../../hooks/useTheme';
 
-
 interface PendingAction {
   id: string;
   type: 'flag' | 'mute' | 'draft';
@@ -43,10 +42,17 @@ export function PendingActionsScreen(): React.JSX.Element {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <View style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.actionCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.actionInfo}>
               <Text style={[styles.actionType, { color: colors.text }]}>{item.type}</Text>
-              <Text style={[styles.actionDesc, { color: colors.textSecondary }]}>{item.description}</Text>
+              <Text style={[styles.actionDesc, { color: colors.textSecondary }]}>
+                {item.description}
+              </Text>
               <Text style={[styles.actionMeta, { color: colors.muted }]}>
                 {item.timestamp} • {item.retries} retries
               </Text>
@@ -64,7 +70,14 @@ export function PendingActionsScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: 16 },
-  actionCard: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 12 },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
   actionInfo: { flex: 1 },
   actionType: { fontSize: 16, fontWeight: '600', textTransform: 'capitalize' },
   actionDesc: { fontSize: 14, marginTop: 4 },

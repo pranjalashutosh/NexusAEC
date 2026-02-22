@@ -5,12 +5,7 @@ import {
   getPatternsForField,
   getPatternById,
 } from '../../src/red-flags/default-patterns';
-import {
-  RedFlagCategory,
-  Severity,
-  PatternType,
-  type RedFlagPattern,
-} from '../../src/types';
+import { RedFlagCategory, Severity, PatternType, type RedFlagPattern } from '../../src/types';
 
 describe('DEFAULT_RED_FLAG_PATTERNS', () => {
   describe('Pattern Array Structure', () => {
@@ -165,8 +160,7 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
     it('should include "urgent" keyword', () => {
       const hasUrgent = DEFAULT_RED_FLAG_PATTERNS.some(
         (p) =>
-          (typeof p.pattern === 'string' &&
-            p.pattern.toLowerCase() === 'urgent') ||
+          (typeof p.pattern === 'string' && p.pattern.toLowerCase() === 'urgent') ||
           (p.pattern instanceof RegExp &&
             p.pattern.test('urgent') &&
             p.category === RedFlagCategory.URGENCY)
@@ -177,8 +171,7 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
     it('should include "ASAP" keyword', () => {
       const hasAsap = DEFAULT_RED_FLAG_PATTERNS.some(
         (p) =>
-          (typeof p.pattern === 'string' &&
-            p.pattern.toLowerCase() === 'asap') ||
+          (typeof p.pattern === 'string' && p.pattern.toLowerCase() === 'asap') ||
           (p.pattern instanceof RegExp && p.pattern.test('asap'))
       );
       expect(hasAsap).toBe(true);
@@ -187,8 +180,7 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
     it('should include "incident" keyword', () => {
       const hasIncident = DEFAULT_RED_FLAG_PATTERNS.some(
         (p) =>
-          (typeof p.pattern === 'string' &&
-            p.pattern.toLowerCase() === 'incident') ||
+          (typeof p.pattern === 'string' && p.pattern.toLowerCase() === 'incident') ||
           (p.pattern instanceof RegExp && p.pattern.test('incident'))
       );
       expect(hasIncident).toBe(true);
@@ -197,8 +189,7 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
     it('should include "outage" keyword', () => {
       const hasOutage = DEFAULT_RED_FLAG_PATTERNS.some(
         (p) =>
-          (typeof p.pattern === 'string' &&
-            p.pattern.toLowerCase() === 'outage') ||
+          (typeof p.pattern === 'string' && p.pattern.toLowerCase() === 'outage') ||
           (p.pattern instanceof RegExp && p.pattern.test('outage'))
       );
       expect(hasOutage).toBe(true);
@@ -207,8 +198,7 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
     it('should include "escalation" keyword', () => {
       const hasEscalation = DEFAULT_RED_FLAG_PATTERNS.some(
         (p) =>
-          (typeof p.pattern === 'string' &&
-            p.pattern.toLowerCase() === 'escalation') ||
+          (typeof p.pattern === 'string' && p.pattern.toLowerCase() === 'escalation') ||
           (p.pattern instanceof RegExp && p.pattern.test('escalation'))
       );
       expect(hasEscalation).toBe(true);
@@ -217,8 +207,7 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
     it('should include "deadline" keyword', () => {
       const hasDeadline = DEFAULT_RED_FLAG_PATTERNS.some(
         (p) =>
-          (typeof p.pattern === 'string' &&
-            p.pattern.toLowerCase() === 'deadline') ||
+          (typeof p.pattern === 'string' && p.pattern.toLowerCase() === 'deadline') ||
           (p.pattern instanceof RegExp && p.pattern.test('deadline'))
       );
       expect(hasDeadline).toBe(true);
@@ -227,8 +216,7 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
     it('should include "critical" keyword', () => {
       const hasCritical = DEFAULT_RED_FLAG_PATTERNS.some(
         (p) =>
-          (typeof p.pattern === 'string' &&
-            p.pattern.toLowerCase() === 'critical') ||
+          (typeof p.pattern === 'string' && p.pattern.toLowerCase() === 'critical') ||
           (p.pattern instanceof RegExp && p.pattern.test('critical'))
       );
       expect(hasCritical).toBe(true);
@@ -237,8 +225,7 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
     it('should include "emergency" keyword', () => {
       const hasEmergency = DEFAULT_RED_FLAG_PATTERNS.some(
         (p) =>
-          (typeof p.pattern === 'string' &&
-            p.pattern.toLowerCase() === 'emergency') ||
+          (typeof p.pattern === 'string' && p.pattern.toLowerCase() === 'emergency') ||
           (p.pattern instanceof RegExp && p.pattern.test('emergency'))
       );
       expect(hasEmergency).toBe(true);
@@ -250,18 +237,14 @@ describe('DEFAULT_RED_FLAG_PATTERNS', () => {
       const keywordPatterns = DEFAULT_RED_FLAG_PATTERNS.filter(
         (p) => p.type === PatternType.KEYWORD
       );
-      const regexPatterns = DEFAULT_RED_FLAG_PATTERNS.filter(
-        (p) => p.type === PatternType.REGEX
-      );
+      const regexPatterns = DEFAULT_RED_FLAG_PATTERNS.filter((p) => p.type === PatternType.REGEX);
 
       expect(keywordPatterns.length).toBeGreaterThan(0);
       expect(regexPatterns.length).toBeGreaterThan(0);
     });
 
     it('should have regex patterns properly formatted', () => {
-      const regexPatterns = DEFAULT_RED_FLAG_PATTERNS.filter(
-        (p) => p.type === PatternType.REGEX
-      );
+      const regexPatterns = DEFAULT_RED_FLAG_PATTERNS.filter((p) => p.type === PatternType.REGEX);
 
       regexPatterns.forEach((pattern) => {
         expect(pattern.pattern instanceof RegExp).toBe(true);

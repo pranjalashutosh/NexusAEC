@@ -2,7 +2,11 @@
  * Tests for SupabaseVectorStore
  */
 
-import { SupabaseVectorStore, type VectorDocumentInsert, type SourceType } from '../supabase-vector-store';
+import {
+  SupabaseVectorStore,
+  type VectorDocumentInsert,
+  type SourceType,
+} from '../supabase-vector-store';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Mock Supabase client
@@ -223,7 +227,9 @@ describe('SupabaseVectorStore', () => {
 
       (mockClient.from as jest.Mock).mockReturnValue(mockBuilder);
 
-      await expect(store.upsertMany(docs)).rejects.toThrow('Failed to upsert documents: Bulk insert error');
+      await expect(store.upsertMany(docs)).rejects.toThrow(
+        'Failed to upsert documents: Bulk insert error'
+      );
     });
   });
 
@@ -313,7 +319,7 @@ describe('SupabaseVectorStore', () => {
             metadata: { category: 'Valve', location: 'Plant A' },
             created_at: '2024-01-01T00:00:00Z',
             updated_at: '2024-01-01T00:00:00Z',
-            similarity: 0.90,
+            similarity: 0.9,
           },
         ],
         error: null,
@@ -348,7 +354,9 @@ describe('SupabaseVectorStore', () => {
         error: { message: 'Search error' },
       });
 
-      await expect(store.search(queryEmbedding)).rejects.toThrow('Failed to search documents: Search error');
+      await expect(store.search(queryEmbedding)).rejects.toThrow(
+        'Failed to search documents: Search error'
+      );
     });
   });
 
@@ -433,7 +441,9 @@ describe('SupabaseVectorStore', () => {
 
       (mockClient.from as jest.Mock).mockReturnValue(mockBuilder);
 
-      await expect(store.delete('doc-1')).rejects.toThrow('Failed to delete document: Delete error');
+      await expect(store.delete('doc-1')).rejects.toThrow(
+        'Failed to delete document: Delete error'
+      );
     });
   });
 
@@ -477,7 +487,9 @@ describe('SupabaseVectorStore', () => {
 
       (mockClient.from as jest.Mock).mockReturnValue(mockBuilder);
 
-      await expect(store.deleteMany(['doc-1'])).rejects.toThrow('Failed to delete documents: Bulk delete error');
+      await expect(store.deleteMany(['doc-1'])).rejects.toThrow(
+        'Failed to delete documents: Bulk delete error'
+      );
     });
   });
 
@@ -739,7 +751,7 @@ describe('SupabaseVectorStore', () => {
             metadata: { category: 'Valve' },
             created_at: '2024-01-01T00:00:00Z',
             updated_at: '2024-01-01T00:00:00Z',
-            similarity: 0.90,
+            similarity: 0.9,
           },
         ],
         error: null,
@@ -776,7 +788,7 @@ describe('SupabaseVectorStore', () => {
             metadata: { category: 'Pump', location: 'Plant B' },
             created_at: '2024-01-01T00:00:00Z',
             updated_at: '2024-01-01T00:00:00Z',
-            similarity: 0.90,
+            similarity: 0.9,
           },
         ],
         error: null,

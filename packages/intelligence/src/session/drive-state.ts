@@ -267,7 +267,7 @@ export function createInitialDriveState(options: CreateDriveStateOptions): Drive
   );
 
   const firstTopicId = options.topicIds[0];
-  const firstTopicEmails = firstTopicId ? options.topicEmailMap[firstTopicId] ?? [] : [];
+  const firstTopicEmails = firstTopicId ? (options.topicEmailMap[firstTopicId] ?? []) : [];
   const firstEmailId = firstTopicEmails[0];
 
   return {
@@ -306,10 +306,7 @@ export function createInitialDriveState(options: CreateDriveStateOptions): Drive
 /**
  * Update drive state with new values
  */
-export function updateDriveState(
-  state: DriveState,
-  updates: UpdateDriveStateOptions
-): DriveState {
+export function updateDriveState(state: DriveState, updates: UpdateDriveStateOptions): DriveState {
   const updatedState: DriveState = {
     ...state,
     updatedAt: new Date(),
@@ -374,7 +371,7 @@ export function navigateToNextItem(state: DriveState): DriveState {
     if (!nextTopic) {
       return state;
     }
-    const nextTopicEmails = nextTopic ? briefingSnapshot.topicEmailMap[nextTopic] ?? [] : [];
+    const nextTopicEmails = nextTopic ? (briefingSnapshot.topicEmailMap[nextTopic] ?? []) : [];
     const nextEmailId = nextTopicEmails[0];
 
     return updateDriveState(state, {
@@ -408,7 +405,7 @@ export function navigateToPreviousItem(state: DriveState): DriveState {
   if (position.itemIndex > 0) {
     const currentTopic = briefingSnapshot.topicIds[position.topicIndex];
     const currentTopicEmails = currentTopic
-      ? briefingSnapshot.topicEmailMap[currentTopic] ?? []
+      ? (briefingSnapshot.topicEmailMap[currentTopic] ?? [])
       : [];
     const prevItemIndex = position.itemIndex - 1;
     const prevEmailId = currentTopicEmails[prevItemIndex];
@@ -434,7 +431,7 @@ export function navigateToPreviousItem(state: DriveState): DriveState {
   if (position.topicIndex > 0) {
     const prevTopicIndex = position.topicIndex - 1;
     const prevTopic = briefingSnapshot.topicIds[prevTopicIndex];
-    const prevTopicEmails = prevTopic ? briefingSnapshot.topicEmailMap[prevTopic] ?? [] : [];
+    const prevTopicEmails = prevTopic ? (briefingSnapshot.topicEmailMap[prevTopic] ?? []) : [];
     const lastItemIndex = Math.max(0, prevTopicEmails.length - 1);
     const prevEmailId = prevTopicEmails[lastItemIndex];
 
@@ -471,13 +468,13 @@ export function skipCurrentTopic(state: DriveState): DriveState {
   }
 
   const nextTopic = briefingSnapshot.topicIds[nextTopicIndex];
-  const nextTopicEmails = nextTopic ? briefingSnapshot.topicEmailMap[nextTopic] ?? [] : [];
+  const nextTopicEmails = nextTopic ? (briefingSnapshot.topicEmailMap[nextTopic] ?? []) : [];
   const nextEmailId = nextTopicEmails[0];
 
   // Calculate items skipped in current topic
   const currentTopic = briefingSnapshot.topicIds[position.topicIndex];
   const currentTopicEmails = currentTopic
-    ? briefingSnapshot.topicEmailMap[currentTopic] ?? []
+    ? (briefingSnapshot.topicEmailMap[currentTopic] ?? [])
     : [];
   const itemsSkipped = currentTopicEmails.length - position.itemIndex;
 
@@ -533,7 +530,7 @@ export function isBriefingComplete(state: DriveState): boolean {
   // Check if we're at the last topic
   if (position.topicIndex >= briefingSnapshot.topicIds.length - 1) {
     const lastTopic = briefingSnapshot.topicIds[position.topicIndex];
-    const lastTopicEmails = lastTopic ? briefingSnapshot.topicEmailMap[lastTopic] ?? [] : [];
+    const lastTopicEmails = lastTopic ? (briefingSnapshot.topicEmailMap[lastTopic] ?? []) : [];
 
     // Check if we're at the last item in the last topic
     return position.itemIndex >= lastTopicEmails.length - 1;

@@ -10,21 +10,16 @@
  *      for change detection before triggering a full refetch.
  */
 
+import { OutlookAdapter, GmailAdapter, UnifiedInboxService } from '@nexus-aec/email-providers';
 import { createLogger } from '@nexus-aec/logger';
-import {
-  OutlookAdapter,
-  GmailAdapter,
-  UnifiedInboxService,
-} from '@nexus-aec/email-providers';
-
-import type { EmailProvider, EmailProviderConfig, EmailSource } from '@nexus-aec/email-providers';
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import { getTokenManagerInstance } from './auth';
 import { getRedisClient } from '../lib/redis';
 import { EmailStatsCache, computeVipHash } from '../services/email-stats-cache';
 
 import type { CachedStats } from '../services/email-stats-cache';
+import type { EmailProvider, EmailProviderConfig, EmailSource } from '@nexus-aec/email-providers';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 const logger = createLogger({ baseContext: { component: 'email-stats-routes' } });
 
@@ -83,13 +78,17 @@ async function createAdaptersForUser(userId: string): Promise<UserAdapters> {
 
   for (const source of sources) {
     const hasTokens = await tokenManager.hasTokens(userId, source);
-    if (!hasTokens) continue;
+    if (!hasTokens) {
+      continue;
+    }
 
     try {
       // getValidAccessToken() auto-refreshes expired tokens using the refresh token
       const accessToken = await tokenManager.getValidAccessToken(userId, source);
       const data = await tokenManager.getTokens(userId, source);
-      if (!data?.tokens) continue;
+      if (!data?.tokens) {
+        continue;
+      }
 
       const config: EmailProviderConfig = {
         userId,
@@ -124,7 +123,7 @@ async function createAdaptersForUser(userId: string): Promise<UserAdapters> {
  */
 async function fullFetchStats(
   adapters: UserAdapters,
-  vipList: string[],
+  vipList: string[]
 ): Promise<{ newCount: number; vipCount: number; urgentCount: number }> {
   const inbox = new UnifiedInboxService(adapters.providers, {
     continueOnError: true,
@@ -132,23 +131,17 @@ async function fullFetchStats(
     requestTimeoutMs: 15000,
   });
 
-  const result = await inbox.fetchUnread(
-    { unreadOnly: true },
-    { pageSize: 50 },
-  );
+  const result = await inbox.fetchUnread({ unreadOnly: true }, { pageSize: 50 });
 
   const emails = result.items;
   const newCount = emails.length;
 
-  const vipCount = vipList.length > 0
-    ? emails.filter((e) =>
-        vipList.some((vip) => e.from.email.toLowerCase().includes(vip)),
-      ).length
-    : 0;
+  const vipCount =
+    vipList.length > 0
+      ? emails.filter((e) => vipList.some((vip) => e.from.email.toLowerCase().includes(vip))).length
+      : 0;
 
-  const urgentCount = emails.filter(
-    (e) => e.isFlagged || e.importance === 'high',
-  ).length;
+  const urgentCount = emails.filter((e) => e.isFlagged || e.importance === 'high').length;
 
   return { newCount, vipCount, urgentCount };
 }
@@ -163,7 +156,11 @@ async function fullFetchStats(
  *
  * Returns true if any provider detects changes (or on error, to be safe).
  */
-async function hasInboxChanged(adapters: UserAdapters, cache: EmailStatsCache, userId: string): Promise<boolean> {
+async function hasInboxChanged(
+  adapters: UserAdapters,
+  cache: EmailStatsCache,
+  userId: string
+): Promise<boolean> {
   const checks: Promise<boolean>[] = [];
 
   if (adapters.gmail) {
@@ -171,14 +168,16 @@ async function hasInboxChanged(adapters: UserAdapters, cache: EmailStatsCache, u
     checks.push(
       (async () => {
         const cursor = await cache.getSyncCursor(userId, 'GMAIL');
-        if (!cursor?.gmailHistoryId) return true; // No cursor = assume changed
+        if (!cursor?.gmailHistoryId) {
+          return true;
+        } // No cursor = assume changed
 
         const { hasChanges } = await gmailAdapter.fetchHistory(cursor.gmailHistoryId);
         if (!hasChanges) {
           logger.info('Gmail: no changes since last sync', { userId });
         }
         return hasChanges;
-      })().catch(() => true), // On error, assume changed
+      })().catch(() => true) // On error, assume changed
     );
   }
 
@@ -187,18 +186,22 @@ async function hasInboxChanged(adapters: UserAdapters, cache: EmailStatsCache, u
     checks.push(
       (async () => {
         const cursor = await cache.getSyncCursor(userId, 'OUTLOOK');
-        if (!cursor?.outlookLastReceivedAt) return true; // No cursor = assume changed
+        if (!cursor?.outlookLastReceivedAt) {
+          return true;
+        } // No cursor = assume changed
 
         const hasNew = await outlookAdapter.hasNewEmailsSince(cursor.outlookLastReceivedAt);
         if (!hasNew) {
           logger.info('Outlook: no changes since last sync', { userId });
         }
         return hasNew;
-      })().catch(() => true), // On error, assume changed
+      })().catch(() => true) // On error, assume changed
     );
   }
 
-  if (checks.length === 0) return true;
+  if (checks.length === 0) {
+    return true;
+  }
 
   const results = await Promise.all(checks);
   return results.some((changed) => changed);
@@ -211,7 +214,7 @@ async function updateSyncCursors(
   adapters: UserAdapters,
   cache: EmailStatsCache,
   userId: string,
-  stats: { newCount: number; vipCount: number; urgentCount: number },
+  stats: { newCount: number; vipCount: number; urgentCount: number }
 ): Promise<void> {
   const lastStats: CachedStats = { ...stats, cachedAt: new Date().toISOString() };
 
@@ -258,10 +261,7 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
    */
   app.get<{ Querystring: StatsQuery }>(
     '/email/stats',
-    async (
-      request: FastifyRequest<{ Querystring: StatsQuery }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Querystring: StatsQuery }>, reply: FastifyReply) => {
       const { userId, vips, forceRefresh } = request.query;
 
       if (!userId) {
@@ -271,9 +271,7 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
         });
       }
 
-      const vipList = vips
-        ? vips.split(',').map((v) => v.trim().toLowerCase())
-        : [];
+      const vipList = vips ? vips.split(',').map((v) => v.trim().toLowerCase()) : [];
       const vipHash = computeVipHash(vipList);
       const cache = getStatsCache();
       const shouldForceRefresh = forceRefresh === 'true';
@@ -374,7 +372,7 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
           error: 'Failed to fetch email stats',
         });
       }
-    },
+    }
   );
 
   /**
@@ -385,10 +383,7 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
    */
   app.post<{ Querystring: { userId: string } }>(
     '/email/cache/invalidate',
-    async (
-      request: FastifyRequest<{ Querystring: { userId: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Querystring: { userId: string } }>, reply: FastifyReply) => {
       const { userId } = request.query;
 
       if (!userId) {
@@ -404,6 +399,6 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
       logger.info('Email cache invalidated', { userId });
 
       return reply.send({ success: true });
-    },
+    }
   );
 }

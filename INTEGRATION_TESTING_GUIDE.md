@@ -1,8 +1,10 @@
 # NexusAEC Intelligence System - Integration Testing Guide
 
-This guide walks you through testing the complete intelligence system with real Gmail data, OpenAI, Supabase, and Redis.
+This guide walks you through testing the complete intelligence system with real
+Gmail data, OpenAI, Supabase, and Redis.
 
 ## Table of Contents
+
 1. [Prerequisites](#prerequisites)
 2. [API Keys & Credentials](#api-keys--credentials)
 3. [Infrastructure Setup](#infrastructure-setup)
@@ -16,12 +18,14 @@ This guide walks you through testing the complete intelligence system with real 
 ## Prerequisites
 
 ### Required Accounts
+
 - [ ] Google Cloud Platform account (for Gmail API)
 - [ ] OpenAI account (for GPT-4o)
 - [ ] Supabase account (for vector storage)
 - [ ] Redis hosting (Upstash, Redis Cloud, or local)
 
 ### Required Tools
+
 - [ ] Node.js 18+ installed
 - [ ] pnpm installed (`npm install -g pnpm`)
 - [ ] Git
@@ -34,6 +38,7 @@ This guide walks you through testing the complete intelligence system with real 
 ### 1. OpenAI API Key
 
 **Steps:**
+
 1. Go to https://platform.openai.com/
 2. Sign up or log in
 3. Navigate to **API Keys** section
@@ -84,6 +89,7 @@ This guide walks you through testing the complete intelligence system with real 
    - These will be requested during OAuth flow
 
 **Save as:**
+
 - `GOOGLE_CLIENT_ID` (from credentials.json)
 - `GOOGLE_CLIENT_SECRET` (from credentials.json)
 - `GOOGLE_REDIRECT_URI` (usually `http://localhost:3000/auth/callback`)
@@ -109,13 +115,16 @@ This guide walks you through testing the complete intelligence system with real 
    - In your Supabase dashboard, go to **SQL Editor**
    - Click **New query**
    - Run this SQL:
+
    ```sql
    CREATE EXTENSION IF NOT EXISTS vector;
    ```
+
    - Click **Run**
 
 3. **Create Documents Table:**
    - In SQL Editor, run this:
+
    ```sql
    -- Create documents table
    CREATE TABLE IF NOT EXISTS documents (
@@ -141,6 +150,7 @@ This guide walks you through testing the complete intelligence system with real 
    CREATE INDEX IF NOT EXISTS documents_metadata_idx
    ON documents USING gin(metadata);
    ```
+
    - Click **Run**
 
 4. **Get Connection Details:**
@@ -150,9 +160,11 @@ This guide walks you through testing the complete intelligence system with real 
      - **Project API keys** → **anon public** key
    - Go to **Project Settings** → **Database**
    - Copy **Connection string** → **URI** (direct connection)
-     - It looks like: `postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/postgres`
+     - It looks like:
+       `postgresql://postgres:[YOUR-PASSWORD]@db.xxxxx.supabase.co:5432/postgres`
 
 **Save as:**
+
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_DB_URL`
@@ -194,6 +206,7 @@ sudo systemctl start redis
 ```
 
 **Save as:**
+
 - `REDIS_URL` (format: `redis://localhost:6379` or Upstash URL)
 - `REDIS_TOKEN` (if using Upstash)
 
@@ -291,7 +304,8 @@ authenticateGmail().catch(console.error);
 
 ### 2. Update Gmail Connector (if needed)
 
-Check if `packages/connectors/src/gmail-connector.ts` has the `getCredentials()` method. If not, add it:
+Check if `packages/connectors/src/gmail-connector.ts` has the `getCredentials()`
+method. If not, add it:
 
 ```typescript
 /**
@@ -356,7 +370,8 @@ Copy the output and set it as `PREFERENCES_ENCRYPTION_KEY`.
 
 ### 1. Create Integration Test Script
 
-Create: `/Users/ashutoshpranjal/nexusAEC/packages/intelligence/test-integration.ts`
+Create:
+`/Users/ashutoshpranjal/nexusAEC/packages/intelligence/test-integration.ts`
 
 ```typescript
 /**
@@ -407,7 +422,10 @@ async function runIntegrationTest() {
 
   // Load saved credentials if available
   try {
-    const credentialsPath = path.join(__dirname, '../connectors/gmail-credentials.json');
+    const credentialsPath = path.join(
+      __dirname,
+      '../connectors/gmail-credentials.json'
+    );
     const credData = await fs.readFile(credentialsPath, 'utf8');
     const credentials = JSON.parse(credData);
     await gmail.setCredentials(credentials);
@@ -494,7 +512,9 @@ async function runIntegrationTest() {
   console.log('');
 
   if (emails.length === 0) {
-    console.log('No unread emails found. Mark some emails as unread and try again.');
+    console.log(
+      'No unread emails found. Mark some emails as unread and try again.'
+    );
     await cleanup();
     return;
   }
@@ -528,7 +548,9 @@ async function runIntegrationTest() {
     scores.set(email.id, score);
     if (score.isFlagged) {
       flaggedCount++;
-      console.log(`  🚩 Flagged: "${email.subject}" (score: ${score.score.toFixed(2)})`);
+      console.log(
+        `  🚩 Flagged: "${email.subject}" (score: ${score.score.toFixed(2)})`
+      );
     }
   }
   console.log(`  ✓ Scored ${emails.length} emails, ${flaggedCount} flagged`);
@@ -552,13 +574,17 @@ async function runIntegrationTest() {
   const topThreads = Array.from(threads.values()).slice(0, 5);
   for (const thread of topThreads) {
     try {
-      const summary = await summarizer.summarizeThread(thread, { mode: 'brief' });
+      const summary = await summarizer.summarizeThread(thread, {
+        mode: 'brief',
+      });
       summaries.set(thread.id, summary);
       summaryCount++;
       console.log(`  ✓ Summarized: "${thread.subject}"`);
       console.log(`    → ${summary.summary}`);
     } catch (error: any) {
-      console.log(`  ✗ Failed to summarize "${thread.subject}": ${error.message}`);
+      console.log(
+        `  ✗ Failed to summarize "${thread.subject}": ${error.message}`
+      );
     }
   }
   console.log(`  ✓ Generated ${summaryCount} summaries`);
@@ -578,8 +604,12 @@ async function runIntegrationTest() {
       { style: 'conversational' }
     );
 
-    console.log(`  ✓ Generated briefing with ${briefingScript.segments.length} segments`);
-    console.log(`  ✓ Estimated time: ${Math.ceil(briefingScript.totalSeconds / 60)} minutes`);
+    console.log(
+      `  ✓ Generated briefing with ${briefingScript.segments.length} segments`
+    );
+    console.log(
+      `  ✓ Estimated time: ${Math.ceil(briefingScript.totalSeconds / 60)} minutes`
+    );
     console.log('');
     console.log('  Briefing Preview:');
     briefingScript.segments.slice(0, 3).forEach((segment) => {
@@ -669,7 +699,9 @@ async function runIntegrationTest() {
   console.log('  ✓ Added custom keyword');
 
   const prefs = await preferencesStore.getPreferences();
-  console.log(`  ✓ Preferences: ${prefs.vips.length} VIPs, ${prefs.keywords.length} keywords`);
+  console.log(
+    `  ✓ Preferences: ${prefs.vips.length} VIPs, ${prefs.keywords.length} keywords`
+  );
   console.log('');
 
   // Step 11: Test Feedback Learning
@@ -683,17 +715,22 @@ async function runIntegrationTest() {
       type: 'correct',
       originalScore: score.score,
       signals: {
-        keyword: score.signalBreakdown.find((s) => s.signal === 'keyword')?.rawScore,
+        keyword: score.signalBreakdown.find((s) => s.signal === 'keyword')
+          ?.rawScore,
         vip: score.signalBreakdown.find((s) => s.signal === 'vip')?.rawScore,
-        velocity: score.signalBreakdown.find((s) => s.signal === 'velocity')?.rawScore,
-        calendar: score.signalBreakdown.find((s) => s.signal === 'calendar')?.rawScore,
+        velocity: score.signalBreakdown.find((s) => s.signal === 'velocity')
+          ?.rawScore,
+        calendar: score.signalBreakdown.find((s) => s.signal === 'calendar')
+          ?.rawScore,
       },
       note: 'System correctly identified this as urgent',
     });
     console.log('  ✓ Recorded feedback');
 
     const stats = await feedbackLearner.getStats();
-    console.log(`  ✓ Learning stats: ${stats.totalFeedback} feedback, ${(stats.accuracy * 100).toFixed(1)}% accuracy`);
+    console.log(
+      `  ✓ Learning stats: ${stats.totalFeedback} feedback, ${(stats.accuracy * 100).toFixed(1)}% accuracy`
+    );
   }
   console.log('');
 
@@ -733,7 +770,8 @@ runIntegrationTest().catch((error) => {
 
 ### 2. Add Missing Methods to Gmail Connector
 
-Update `packages/connectors/src/gmail-connector.ts` to add the `setCredentials` method if it doesn't exist:
+Update `packages/connectors/src/gmail-connector.ts` to add the `setCredentials`
+method if it doesn't exist:
 
 ```typescript
 /**
@@ -836,46 +874,46 @@ Summary:
 
 ### Gmail Authentication Issues
 
-**Problem:** "Invalid grant" or "Token expired"
-**Solution:**
+**Problem:** "Invalid grant" or "Token expired" **Solution:**
+
 - Delete `gmail-credentials.json`
 - Run `test-gmail-auth.ts` again
 - Make sure you're using the correct Google account
 
-**Problem:** "Access blocked: This app's request is invalid"
-**Solution:**
+**Problem:** "Access blocked: This app's request is invalid" **Solution:**
+
 - Check OAuth consent screen configuration
 - Make sure your email is added to test users
 - Verify redirect URI matches exactly
 
 ### OpenAI Rate Limits
 
-**Problem:** "Rate limit exceeded"
-**Solution:**
+**Problem:** "Rate limit exceeded" **Solution:**
+
 - Reduce number of emails processed (change `maxResults: 20` to `maxResults: 5`)
 - Add delays between API calls
 - Check your OpenAI usage limits
 
 ### Supabase Connection Issues
 
-**Problem:** "Connection refused" or "SSL error"
-**Solution:**
+**Problem:** "Connection refused" or "SSL error" **Solution:**
+
 - Verify `SUPABASE_URL` is correct (should start with `https://`)
 - Check `SUPABASE_ANON_KEY` is the anon/public key, not service role key
 - Ensure IP is not blocked in Supabase settings
 
 ### Redis Connection Issues
 
-**Problem:** "ECONNREFUSED" or "Connection timeout"
-**Solution:**
+**Problem:** "ECONNREFUSED" or "Connection timeout" **Solution:**
+
 - If using local Redis: `redis-cli ping` to test
 - If using Upstash: Check URL and token are correct
 - Verify Redis is actually running
 
 ### Missing Environment Variables
 
-**Problem:** "undefined is not a valid API key"
-**Solution:**
+**Problem:** "undefined is not a valid API key" **Solution:**
+
 - Double-check all variables in `.env` file
 - Make sure `.env` is in the correct location
 - No spaces around `=` in `.env` file
@@ -883,8 +921,8 @@ Summary:
 
 ### TypeScript Compilation Errors
 
-**Problem:** "Cannot find module" or type errors
-**Solution:**
+**Problem:** "Cannot find module" or type errors **Solution:**
+
 ```bash
 # Rebuild everything
 cd /Users/ashutoshpranjal/nexusAEC
@@ -897,6 +935,7 @@ pnpm -r build
 ## Cost Estimates
 
 ### OpenAI (GPT-4o)
+
 - **Input:** ~$5 per 1M tokens
 - **Output:** ~$15 per 1M tokens
 - **Estimate for 20 emails:**
@@ -906,10 +945,12 @@ pnpm -r build
   - **Total per test run:** ~$0.05
 
 ### Supabase
+
 - **Free tier:** 500MB database, 2GB bandwidth
 - **Should be fine for testing**
 
 ### Redis (Upstash)
+
 - **Free tier:** 10,000 commands/day
 - **Should be fine for testing**
 
@@ -920,9 +961,12 @@ pnpm -r build
 After successful testing:
 
 1. **Add More VIPs:** Use `preferencesStore.addVip()` to add important contacts
-2. **Customize Keywords:** Add domain-specific keywords with `preferencesStore.addKeyword()`
-3. **Provide Feedback:** Use `feedbackLearner.recordFeedback()` to improve scoring
-4. **Test Calendar Integration:** Add calendar events to test proximity detection
+2. **Customize Keywords:** Add domain-specific keywords with
+   `preferencesStore.addKeyword()`
+3. **Provide Feedback:** Use `feedbackLearner.recordFeedback()` to improve
+   scoring
+4. **Test Calendar Integration:** Add calendar events to test proximity
+   detection
 5. **Scale Up:** Increase email count to test with larger dataset
 6. **Build UI:** Create a web interface to visualize the intelligence
 

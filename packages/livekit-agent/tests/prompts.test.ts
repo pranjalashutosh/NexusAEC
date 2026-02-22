@@ -15,7 +15,7 @@ import {
   generateDisambiguationPrompt,
   generateBriefingOpening,
   generateBriefingClosing,
-  type BriefingTopic,
+  type BriefingTopicPrompt,
   type BriefingContext,
   type EmailSummaryInput,
 } from '../src/prompts';
@@ -52,7 +52,10 @@ describe('livekit-agent/prompts', () => {
 
     it('adapts greeting based on time of day', () => {
       const morning = buildSystemPrompt({ ...DEFAULT_SYSTEM_PROMPT_CONTEXT, timeOfDay: 'morning' });
-      const afternoon = buildSystemPrompt({ ...DEFAULT_SYSTEM_PROMPT_CONTEXT, timeOfDay: 'afternoon' });
+      const afternoon = buildSystemPrompt({
+        ...DEFAULT_SYSTEM_PROMPT_CONTEXT,
+        timeOfDay: 'afternoon',
+      });
       const evening = buildSystemPrompt({ ...DEFAULT_SYSTEM_PROMPT_CONTEXT, timeOfDay: 'evening' });
 
       expect(morning).toContain('Good morning');
@@ -80,7 +83,7 @@ describe('livekit-agent/prompts', () => {
       estimatedMinutesRemaining: 5,
     };
 
-    const mockTopic: BriefingTopic = {
+    const mockTopic: BriefingTopicPrompt = {
       name: 'VIP Emails',
       itemCount: 5,
       priority: 'high',

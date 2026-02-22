@@ -189,11 +189,9 @@ describe('GoogleOAuthProvider', () => {
 
 describe('GoogleOAuthError', () => {
   it('should create error with all properties', () => {
-    const error = new GoogleOAuthError(
-      'Token exchange failed',
-      'TOKEN_EXCHANGE_FAILED',
-      { error: 'invalid_grant' }
-    );
+    const error = new GoogleOAuthError('Token exchange failed', 'TOKEN_EXCHANGE_FAILED', {
+      error: 'invalid_grant',
+    });
 
     expect(error.message).toBe('Token exchange failed');
     expect(error.code).toBe('TOKEN_EXCHANGE_FAILED');
@@ -248,4 +246,3 @@ describe('DEFAULT_GOOGLE_SCOPES', () => {
     expect(DEFAULT_GOOGLE_SCOPES).toContain('https://www.googleapis.com/auth/contacts.readonly');
   });
 });
-

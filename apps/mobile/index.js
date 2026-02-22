@@ -21,7 +21,7 @@ if (typeof globalThis.TextEncoder === 'undefined') {
             0xf0 | (c >> 18),
             0x80 | ((c >> 12) & 0x3f),
             0x80 | ((c >> 6) & 0x3f),
-            0x80 | (c & 0x3f),
+            0x80 | (c & 0x3f)
           );
         } else {
           buf.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
@@ -46,7 +46,7 @@ if (typeof globalThis.TextDecoder === 'undefined') {
           result += String.fromCharCode(((c & 0x1f) << 6) | (bytes[i++] & 0x3f));
         } else if (c < 0xf0) {
           result += String.fromCharCode(
-            ((c & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f),
+            ((c & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f)
           );
         } else {
           const cp =

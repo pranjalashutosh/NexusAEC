@@ -8,13 +8,25 @@
 // Mock @livekit/agents module with all required namespaces
 const mockLLMBase = class {
   constructor() {}
-  label() { return 'mock'; }
-  get model() { return 'mock'; }
-  chat() { return {}; }
+  label() {
+    return 'mock';
+  }
+  get model() {
+    return 'mock';
+  }
+  chat() {
+    return {};
+  }
   prewarm() {}
-  aclose() { return Promise.resolve(); }
-  on() { return this; }
-  emit() { return false; }
+  aclose() {
+    return Promise.resolve();
+  }
+  on() {
+    return this;
+  }
+  emit() {
+    return false;
+  }
 };
 
 const mockLLMStream = class {
@@ -59,13 +71,23 @@ jest.mock('@livekit/agents', () => ({
     ChatContext: jest.fn(),
   },
   stt: {
-    STT: class { constructor() {} },
-    SpeechStream: class { constructor() {} },
+    STT: class {
+      constructor() {}
+    },
+    SpeechStream: class {
+      constructor() {}
+    },
   },
   tts: {
-    TTS: class { constructor() {} },
-    SynthesizeStream: class { constructor() {} },
-    ChunkedStream: class { constructor() {} },
+    TTS: class {
+      constructor() {}
+    },
+    SynthesizeStream: class {
+      constructor() {}
+    },
+    ChunkedStream: class {
+      constructor() {}
+    },
   },
   DEFAULT_API_CONNECT_OPTIONS: {
     maxRetry: 3,

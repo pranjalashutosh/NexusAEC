@@ -31,8 +31,10 @@ export type RootStackParamList = {
 /**
  * Screen props type helper
  */
-export type RootStackScreenProps<T extends keyof RootStackParamList> =
-  NativeStackScreenProps<RootStackParamList, T>;
+export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<
+  RootStackParamList,
+  T
+>;
 
 /**
  * Navigation prop type helper
@@ -42,5 +44,4 @@ export type NavigationProp = RootStackScreenProps<keyof RootStackParamList>['nav
 /**
  * Route prop type helper
  */
-export type RouteProp<T extends keyof RootStackParamList> =
-  RootStackScreenProps<T>['route'];
+export type RouteProp<T extends keyof RootStackParamList> = RootStackScreenProps<T>['route'];

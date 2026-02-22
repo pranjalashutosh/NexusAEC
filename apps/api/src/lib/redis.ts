@@ -6,8 +6,8 @@
  * cache operations become no-ops — the API works exactly as before.
  */
 
-import Redis from 'ioredis';
 import { createLogger } from '@nexus-aec/logger';
+import Redis from 'ioredis';
 
 const logger = createLogger({ baseContext: { component: 'redis' } });
 

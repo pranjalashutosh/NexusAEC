@@ -204,10 +204,7 @@ export class RAGRetriever {
    * @param options - Query options
    * @returns Array of relevant results with scores
    */
-  async retrieve(
-    query: string,
-    options: RAGQueryOptions = {}
-  ): Promise<RAGResult[]> {
+  async retrieve(query: string, options: RAGQueryOptions = {}): Promise<RAGResult[]> {
     const startTime = Date.now();
 
     try {
@@ -253,9 +250,7 @@ export class RAGRetriever {
       const queryTime = Date.now() - startTime;
 
       if (this.debug) {
-        console.log(
-          `[RAGRetriever] Found ${results.length} results in ${queryTime}ms`
-        );
+        console.log(`[RAGRetriever] Found ${results.length} results in ${queryTime}ms`);
       }
 
       return results;

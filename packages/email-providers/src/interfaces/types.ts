@@ -473,4 +473,3 @@ export interface OAuthState {
   /** Provider being authenticated */
   provider: EmailSource;
 }
-

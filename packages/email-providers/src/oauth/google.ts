@@ -394,4 +394,3 @@ export type GoogleOAuthErrorCode =
 export function isGoogleOAuthError(error: unknown): error is GoogleOAuthError {
   return error instanceof GoogleOAuthError;
 }
-

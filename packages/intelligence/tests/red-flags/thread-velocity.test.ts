@@ -181,7 +181,10 @@ describe('ThreadVelocityDetector', () => {
     it('should detect medium velocity in 6-hour window', () => {
       const now = new Date();
       const emails = [
-        createTestEmail({ id: 'msg-1', receivedAt: new Date(now.getTime() - 5.5 * 60 * 60 * 1000) }),
+        createTestEmail({
+          id: 'msg-1',
+          receivedAt: new Date(now.getTime() - 5.5 * 60 * 60 * 1000),
+        }),
         createTestEmail({ id: 'msg-2', receivedAt: new Date(now.getTime() - 4 * 60 * 60 * 1000) }),
         createTestEmail({ id: 'msg-3', receivedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000) }),
         createTestEmail({ id: 'msg-4', receivedAt: now }),
@@ -512,7 +515,10 @@ describe('ThreadVelocityDetector', () => {
       const thread2 = createTestThread({
         id: 'thread-2',
         messages: [
-          createTestEmail({ id: 'msg-5', receivedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000) }),
+          createTestEmail({
+            id: 'msg-5',
+            receivedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+          }),
           createTestEmail({ id: 'msg-6', receivedAt: now }),
         ],
       });

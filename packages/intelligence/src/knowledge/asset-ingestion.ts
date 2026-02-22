@@ -597,8 +597,9 @@ export class AssetIngestion {
     });
 
     // Generate embeddings with concurrency control
-    const embeddingPromiseFns = batch.map((item, index) => () =>
-      this.generateEmbeddingWithRetry(toContent(item), item, index + baseIndex)
+    const embeddingPromiseFns = batch.map(
+      (item, index) => () =>
+        this.generateEmbeddingWithRetry(toContent(item), item, index + baseIndex)
     );
 
     const embeddingResults = await this.limitConcurrency(
@@ -653,8 +654,7 @@ export class AssetIngestion {
         const errorMessage = error instanceof Error ? error.message : String(error);
         result.failed += documents.length;
         documents.forEach((doc, i) => {
-          const itemId =
-            typeof doc.metadata?.['id'] === 'string' ? (doc.metadata['id']) : undefined;
+          const itemId = typeof doc.metadata?.['id'] === 'string' ? doc.metadata['id'] : undefined;
           result.errors.push({
             ...(itemId ? { itemId } : {}),
             error: `Failed to store: ${errorMessage}`,
@@ -682,7 +682,9 @@ export class AssetIngestion {
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         if (attempt === retries - 1) {
-          return { error: `Failed to generate embedding after ${retries} attempts: ${errorMessage}` };
+          return {
+            error: `Failed to generate embedding after ${retries} attempts: ${errorMessage}`,
+          };
         }
 
         // Wait before retry (exponential backoff)

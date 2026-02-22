@@ -275,9 +275,7 @@ describe('RedFlagScorer', () => {
       const keywordContribution = result.signalBreakdown.find((s) => s.signal === 'keyword');
       const vipContribution = result.signalBreakdown.find((s) => s.signal === 'vip');
 
-      expect(keywordContribution?.contribution).toBeGreaterThan(
-        vipContribution?.contribution ?? 0
-      );
+      expect(keywordContribution?.contribution).toBeGreaterThan(vipContribution?.contribution ?? 0);
     });
   });
 

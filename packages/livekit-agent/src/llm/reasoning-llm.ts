@@ -10,17 +10,16 @@
  */
 
 import { llm, DEFAULT_API_CONNECT_OPTIONS } from '@livekit/agents';
-import type { APIConnectOptions } from '@livekit/agents';
-
 import { createLogger } from '@nexus-aec/logger';
 
 import { ReasoningLoop, createReasoningLoop } from '../reasoning/reasoning-loop.js';
 
 import type { BriefingSessionTracker } from '../briefing/briefing-session-tracker.js';
-import type { BriefingTopicRef } from '../reasoning/reasoning-loop.js';
 import type { OpenAIConfig } from '../config.js';
 import type { SystemPromptContext } from '../prompts/system-prompt.js';
+import type { BriefingTopicRef } from '../reasoning/reasoning-loop.js';
 import type { EmailActionContext } from '../tools/email-tools.js';
+import type { APIConnectOptions } from '@livekit/agents';
 
 const logger = createLogger({ baseContext: { component: 'reasoning-llm' } });
 
@@ -90,7 +89,7 @@ class ReasoningLLMStream extends llm.LLMStream {
       chatCtx: llm.ChatContext;
       toolCtx?: llm.ToolContext;
       connOptions: APIConnectOptions;
-    },
+    }
   ) {
     super(parentLlm, options);
     this.reasoningLoop = reasoningLoop;
@@ -113,7 +112,7 @@ class ReasoningLLMStream extends llm.LLMStream {
       chatCtxItemCount: items.length,
       chatCtxItems: items.map((item, i) => {
         if ('role' in item) {
-          const msg = item as llm.ChatMessage;
+          const msg = item;
           return `[${i}] ${msg.role}: ${msg.textContent?.substring(0, 50) ?? '(no text)'}`;
         }
         return `[${i}] (unknown item type)`;
@@ -195,7 +194,7 @@ class ReasoningLLMStream extends llm.LLMStream {
           actions: result.actionsTaken.map((a) => ({
             tool: a.tool,
             success: 'success' in a.result ? a.result.success : undefined,
-            message: 'message' in a.result ? (a.result.message as string)?.substring(0, 100) : undefined,
+            message: 'message' in a.result ? a.result.message?.substring(0, 100) : undefined,
           })),
         });
       }
@@ -230,7 +229,7 @@ class ReasoningLLMStream extends llm.LLMStream {
     for (let i = items.length - 1; i >= 0; i--) {
       const item = items[i];
       if (item && 'role' in item && item.role === 'user') {
-        const msg = item as llm.ChatMessage;
+        const msg = item;
         return msg.textContent ?? null;
       }
     }
@@ -260,7 +259,7 @@ export class ReasoningLLM extends llm.LLM {
     topicItems: number[] = [5, 3, 2],
     systemPromptContext?: Partial<SystemPromptContext>,
     topicRefs?: BriefingTopicRef[],
-    tracker?: BriefingSessionTracker,
+    tracker?: BriefingSessionTracker
   ) {
     super();
     this.openaiConfig = openaiConfig;
@@ -269,7 +268,7 @@ export class ReasoningLLM extends llm.LLM {
       systemPromptContext,
       openaiConfig,
       topicRefs,
-      tracker,
+      tracker
     );
 
     logger.info('ReasoningLLM initialized', {

@@ -2,7 +2,7 @@
  * @nexus-aec/livekit-agent - Reasoning Loop
  *
  * Orchestrates the STT → GPT-4o → TTS cycle for voice interactions.
- * 
+ *
  * Features:
  * - Process user speech transcripts
  * - Call GPT-4o with tools for reasoning
@@ -15,12 +15,13 @@
 import { createLogger } from '@nexus-aec/logger';
 import OpenAI from 'openai';
 
-import { loadOpenAIConfig } from '../config.js';
 import { BriefingSessionTracker } from '../briefing/briefing-session-tracker.js';
+import { loadOpenAIConfig } from '../config.js';
 import { generateConfirmation, generateDisambiguationPrompt } from '../prompts/briefing-prompts.js';
 import { buildSystemPrompt, DEFAULT_SYSTEM_PROMPT_CONTEXT } from '../prompts/system-prompt.js';
+import { generateTransition } from '../prompts/transition-generator.js';
 import { detectCommand, processTranscript } from '../stt/index.js';
-import { EMAIL_TOOLS, executeEmailTool } from '../tools/email-tools.js';
+import { EMAIL_TOOLS, executeEmailTool, getInboxService } from '../tools/email-tools.js';
 import { KNOWLEDGE_TOOLS, executeKnowledgeTool } from '../tools/knowledge-tools.js';
 import {
   createBriefingState,
@@ -137,6 +138,10 @@ export interface BriefingEmailRef {
   from: string;
   threadId?: string;
   isFlagged: boolean;
+  /** LLM-assigned priority from preprocessing */
+  priority?: 'high' | 'medium' | 'low';
+  /** Voice-friendly one-liner summary from preprocessing */
+  summary?: string;
 }
 
 /**
@@ -174,6 +179,65 @@ interface ChatCompletionResponse {
 }
 
 /**
+ * Check if an error is retryable (rate limit, server error, network issue)
+ */
+function isRetryableError(error: unknown): boolean {
+  const message =
+    error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  const retryablePatterns = [
+    'rate limit',
+    '429',
+    '500',
+    '502',
+    '503',
+    '504',
+    'timeout',
+    'network',
+    'econnreset',
+    'enotfound',
+    'econnrefused',
+    'etimedout',
+  ];
+  return retryablePatterns.some((pattern) => message.includes(pattern));
+}
+
+/**
+ * Execute a function with retry logic and exponential backoff.
+ * Retries up to maxRetries times for transient errors (429, 5xx, network).
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  initialDelayMs: number = 1000,
+  maxDelayMs: number = 60000
+): Promise<T> {
+  let lastError: Error | null = null;
+  let delay = initialDelayMs;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (!isRetryableError(error) || attempt === maxRetries) {
+        throw lastError;
+      }
+
+      logger.warn(`Retrying after error (attempt ${attempt + 1}/${maxRetries})`, {
+        error: lastError.message,
+        nextDelayMs: delay,
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay = Math.min(delay * 2, maxDelayMs);
+    }
+  }
+
+  throw lastError;
+}
+
+/**
  * Call OpenAI chat completion API with tool support
  */
 async function callChatCompletion(
@@ -185,7 +249,10 @@ async function callChatCompletion(
     messageCount: messages.length,
     toolCount: tools.length,
     model: config.model,
-    lastUserMessage: messages.filter(m => m.role === 'user').slice(-1)[0]?.content?.substring(0, 100),
+    lastUserMessage: messages
+      .filter((m) => m.role === 'user')
+      .slice(-1)[0]
+      ?.content?.substring(0, 100),
   });
   const llmStartTime = Date.now();
 
@@ -245,7 +312,7 @@ async function callChatCompletion(
   }
 
   try {
-    const response = await openai.chat.completions.create(requestParams);
+    const response = await withRetry(() => openai.chat.completions.create(requestParams));
 
     const llmDurationMs = Date.now() - llmStartTime;
     const choice = response.choices[0];
@@ -258,7 +325,9 @@ async function callChatCompletion(
       contentLength: choice?.message?.content?.length ?? 0,
       contentPreview: choice?.message?.content?.substring(0, 200),
       toolCallCount: toolCalls?.length ?? 0,
-      toolNames: toolCalls?.filter((tc) => tc.type === 'function').map((tc) => tc.type === 'function' ? tc.function.name : tc.type),
+      toolNames: toolCalls
+        ?.filter((tc) => tc.type === 'function')
+        .map((tc) => (tc.type === 'function' ? tc.function.name : tc.type)),
     });
 
     // Build the response, handling tool_calls explicitly
@@ -269,8 +338,9 @@ async function callChatCompletion(
 
     if (toolCalls && toolCalls.length > 0) {
       responseMessage.tool_calls = toolCalls
-        .filter((tc): tc is OpenAI.ChatCompletionMessageToolCall & { type: 'function' } =>
-          tc.type === 'function'
+        .filter(
+          (tc): tc is OpenAI.ChatCompletionMessageToolCall & { type: 'function' } =>
+            tc.type === 'function'
         )
         .map((tc) => ({
           id: tc.id,
@@ -283,10 +353,12 @@ async function callChatCompletion(
     }
 
     return {
-      choices: [{
-        message: responseMessage,
-        finish_reason: choice?.finish_reason ?? 'stop',
-      }],
+      choices: [
+        {
+          message: responseMessage,
+          finish_reason: choice?.finish_reason ?? 'stop',
+        },
+      ],
     };
   } catch (error) {
     logger.error('OpenAI API error', error instanceof Error ? error : null);
@@ -319,7 +391,7 @@ export class ReasoningLoop {
     systemPromptContext?: Partial<SystemPromptContext>,
     config?: OpenAIConfig,
     topicRefs?: BriefingTopicRef[],
-    tracker?: BriefingSessionTracker,
+    tracker?: BriefingSessionTracker
   ) {
     this.config = config ?? loadOpenAIConfig();
     this.topicRefs = topicRefs ?? [];
@@ -355,18 +427,22 @@ export class ReasoningLoop {
 
     // Initialize state
     this.state = {
-      messages: [{
-        role: 'system',
-        content: systemPrompt,
-      }],
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+      ],
       briefingState: createBriefingState(topicItems),
       ...(initialEmailContext ? { emailContext: initialEmailContext } : {}),
       briefingContext: {
         totalItems: topicItems.reduce((sum, count) => sum + count, 0),
         currentPosition: 0,
         currentTopic: this.topicRefs[0]?.label ?? 'Inbox',
-        remainingTopics: this.topicRefs.slice(1).map(t => t.label),
-        estimatedMinutesRemaining: Math.ceil(topicItems.reduce((sum, count) => sum + count, 0) * 0.5),
+        remainingTopics: this.topicRefs.slice(1).map((t) => t.label),
+        estimatedMinutesRemaining: Math.ceil(
+          topicItems.reduce((sum, count) => sum + count, 0) * 0.5
+        ),
       },
       isSpeaking: false,
       lastSpokenText: '',
@@ -394,7 +470,9 @@ export class ReasoningLoop {
       lines.push(`\nTopic ${t + 1}: "${topic.label}"`);
       for (const email of topic.emails) {
         const flag = email.isFlagged ? ' [FLAGGED]' : '';
-        lines.push(`  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${email.subject}${flag}`);
+        lines.push(
+          `  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${email.subject}${flag}`
+        );
       }
     }
 
@@ -421,7 +499,7 @@ export class ReasoningLoop {
   async processTranscript(event: TranscriptEvent): Promise<ReasoningResult> {
     // Check if we should process this transcript
     const processed = processTranscript(event);
-    
+
     if (!processed.shouldProcess) {
       logger.debug('Skipping low-quality transcript', {
         confidence: processed.confidence,
@@ -453,6 +531,27 @@ export class ReasoningLoop {
     const processStartTime = Date.now();
 
     try {
+      // Prune conversation history to prevent context window overflow.
+      // GPT-4o latency degrades non-linearly past ~45 messages with 20 tool defs.
+      // Keep the system prompt (index 0) and the last 20 messages.
+      // IMPORTANT: Ensure we don't start with orphaned 'tool' messages —
+      // OpenAI requires every 'tool' message to follow an 'assistant' message
+      // that contains the corresponding tool_calls.
+      if (this.state.messages.length > 30) {
+        const systemPrompt = this.state.messages[0]!;
+        let recentMessages = this.state.messages.slice(-20);
+
+        // Drop any leading 'tool' messages that lost their parent 'assistant' message
+        while (recentMessages.length > 0 && recentMessages[0]!.role === 'tool') {
+          recentMessages = recentMessages.slice(1);
+        }
+
+        this.state.messages = [systemPrompt, ...recentMessages];
+        logger.info('Pruned conversation history', {
+          keptMessages: this.state.messages.length,
+        });
+      }
+
       // Add user message to conversation
       this.state.messages.push({ role: 'user', content: text });
 
@@ -485,7 +584,7 @@ export class ReasoningLoop {
         durationMs: Date.now() - processStartTime,
         responseLength: result.responseText.length,
         responsePreview: result.responseText.substring(0, 200),
-        actionsTaken: result.actionsTaken.map(a => a.tool),
+        actionsTaken: result.actionsTaken.map((a) => a.tool),
         shouldEnd: result.shouldEnd,
         chunkCount: result.responseChunks.length,
       });
@@ -513,18 +612,37 @@ export class ReasoningLoop {
       });
     }
 
-    // Combine all tools
-    const allTools = [...EMAIL_TOOLS, ...NAVIGATION_TOOLS, ...KNOWLEDGE_TOOLS].map((t) => ({
+    // Conditional tool inclusion: during briefing, only send core tools
+    // to save ~170 tokens per call. Full tools available outside briefing.
+    const BRIEFING_CORE_TOOLS = new Set([
+      'archive_email',
+      'mark_read',
+      'flag_followup',
+      'create_draft',
+      'mute_sender',
+      'batch_action',
+      'next_item',
+      'skip_topic',
+      'go_deeper',
+      'stop_briefing',
+      'go_back',
+      'search_emails',
+    ]);
+
+    const isBriefing = this.tracker !== null;
+    const filteredTools = isBriefing
+      ? [...EMAIL_TOOLS, ...NAVIGATION_TOOLS, ...KNOWLEDGE_TOOLS].filter((t) =>
+          BRIEFING_CORE_TOOLS.has(t.function.name)
+        )
+      : [...EMAIL_TOOLS, ...NAVIGATION_TOOLS, ...KNOWLEDGE_TOOLS];
+
+    const allTools = filteredTools.map((t) => ({
       type: 'function' as const,
       function: t.function as unknown as Record<string, unknown>,
     }));
 
     // Call chat completion
-    const response = await callChatCompletion(
-      this.state.messages,
-      allTools,
-      this.config
-    );
+    const response = await callChatCompletion(this.state.messages, allTools, this.config);
 
     const choice = response.choices[0];
     const message = choice?.message;
@@ -537,7 +655,7 @@ export class ReasoningLoop {
     // Handle tool calls
     if (message.tool_calls && message.tool_calls.length > 0) {
       logger.info('GPT-4o requested tool calls', {
-        toolCalls: message.tool_calls.map(tc => ({
+        toolCalls: message.tool_calls.map((tc) => ({
           name: tc.function.name,
           args: tc.function.arguments.substring(0, 100),
         })),
@@ -549,7 +667,7 @@ export class ReasoningLoop {
       this.state.messages.push({
         role: 'assistant',
         content: message.content ?? '',
-        tool_calls: message.tool_calls.map(tc => ({
+        tool_calls: message.tool_calls.map((tc) => ({
           id: tc.id,
           type: 'function' as const,
           function: {
@@ -595,25 +713,48 @@ export class ReasoningLoop {
           const ref = this.findEmailRef(argEmailId);
           if (ref) {
             this.state.emailContext = buildEmailContext(ref);
-            logger.info('Updated emailContext from tool args', { emailId: ref.emailId, subject: ref.subject });
+            logger.info('Updated emailContext from tool args', {
+              emailId: ref.emailId,
+              subject: ref.subject,
+            });
           } else {
             // GPT-4o provided an ID we don't have a ref for — still set it
             this.state.emailContext = {
               emailId: argEmailId,
               ...(this.state.emailContext?.from ? { from: this.state.emailContext.from } : {}),
-              ...(this.state.emailContext?.subject ? { subject: this.state.emailContext.subject } : {}),
+              ...(this.state.emailContext?.subject
+                ? { subject: this.state.emailContext.subject }
+                : {}),
             };
           }
         }
 
         const emailCtx = this.state.emailContext ?? { emailId: argEmailId ?? 'current' };
-        const result = await executeEmailTool(
-          toolName,
-          args,
-          emailCtx,
-        );
+        const result = await executeEmailTool(toolName, args, emailCtx);
 
         actionsTaken.push({ tool: toolName, result });
+
+        // After search_emails, update emailContext to the first result so
+        // subsequent tools (go_deeper, archive) target the searched email.
+        if (toolName === 'search_emails' && result.success && result.data?.['emails']) {
+          const searchResults = result.data['emails'] as Array<{
+            id: string;
+            subject: string;
+            from: string;
+          }>;
+          const firstResult = searchResults[0];
+          if (firstResult) {
+            this.state.emailContext = {
+              emailId: firstResult.id,
+              subject: firstResult.subject,
+              from: firstResult.from,
+            };
+            logger.info('Updated emailContext from search_emails result', {
+              emailId: firstResult.id,
+              subject: firstResult.subject,
+            });
+          }
+        }
 
         // Handle confirmation requirement
         if (result.requiresConfirmation) {
@@ -657,7 +798,7 @@ export class ReasoningLoop {
       }
       // Check if it's a navigation tool
       else if (NAVIGATION_TOOLS.some((t) => t.function.name === toolName)) {
-        const result = executeNavigationTool(toolName, args, this.state.briefingState);
+        let result = executeNavigationTool(toolName, args, this.state.briefingState);
 
         actionsTaken.push({ tool: toolName, result });
 
@@ -688,14 +829,75 @@ export class ReasoningLoop {
           shouldEnd = true;
         } else if (result.action === 'repeat') {
           responseText = this.state.lastSpokenText;
+        } else if (result.action === 'go_deeper') {
+          // Fetch full email content on demand
+          const aspect = (result.data?.['aspect'] as string) ?? 'full_email';
+          // Use explicit email_id from tool args if provided, otherwise fall back to current context
+          const targetEmailId = (args['email_id'] as string) ?? this.state.emailContext?.emailId;
+
+          // Update emailContext to the target email so subsequent actions target it
+          if (args['email_id']) {
+            const ref = this.findEmailRef(args['email_id'] as string);
+            if (ref) {
+              this.state.emailContext = buildEmailContext(ref);
+            } else {
+              this.state.emailContext = {
+                emailId: args['email_id'] as string,
+                ...(this.state.emailContext?.from ? { from: this.state.emailContext.from } : {}),
+                ...(this.state.emailContext?.subject
+                  ? { subject: this.state.emailContext.subject }
+                  : {}),
+              };
+            }
+          }
+          const currentEmailId = targetEmailId;
+
+          if (currentEmailId) {
+            try {
+              const inbox = getInboxService();
+              const fullEmail = await inbox.fetchEmail(currentEmailId);
+
+              if (fullEmail) {
+                let content = '';
+                if (aspect === 'full_email' || aspect === 'thread_history') {
+                  // Summarize via LLM instead of dumping raw text
+                  const detailedSummary = await this.summarizeEmailForVoice(fullEmail);
+                  content = [
+                    `From: ${fullEmail.from.name ?? fullEmail.from.email}`,
+                    `To: ${fullEmail.to.map((r) => r.name ?? r.email).join(', ')}`,
+                    `Subject: ${fullEmail.subject}`,
+                    `Sent: ${fullEmail.sentAt}`,
+                    '',
+                    'Detailed summary:',
+                    detailedSummary,
+                  ].join('\n');
+                } else if (aspect === 'sender_info') {
+                  content = `Sender: ${fullEmail.from.name ?? ''} <${fullEmail.from.email}>`;
+                } else if (aspect === 'attachments') {
+                  content =
+                    fullEmail.attachments.length > 0
+                      ? fullEmail.attachments.map((a) => `${a.name} (${a.contentType})`).join(', ')
+                      : 'No attachments.';
+                }
+
+                // Override the tool result with actual content
+                result = {
+                  ...result,
+                  message: content,
+                  data: { ...result.data, emailContent: content },
+                };
+              }
+            } catch (error) {
+              logger.warn('Failed to fetch email for go_deeper', {
+                emailId: currentEmailId,
+                error: error instanceof Error ? error.message : String(error),
+              });
+              // Fall through with original "Getting more details..." message
+            }
+          }
         }
 
-        // Enrich message with progress if tracker is available
-        const progress = this.tracker?.getProgress();
-        const progressSuffix = progress
-          ? ` [${progress.emailsBriefed + progress.emailsActioned}/${progress.totalEmails} handled]`
-          : '';
-        responseText += result.message + progressSuffix + ' ';
+        responseText += result.message + ' ';
 
         // Add tool result to messages
         this.state.messages.push({
@@ -718,6 +920,21 @@ export class ReasoningLoop {
           tool_call_id: toolCall.id,
         });
       }
+    }
+
+    // After tool execution, if a navigation/action tool advanced the cursor to a new
+    // email, use a template transition instead of an LLM call.
+    // This cuts LLM calls per email from 2 to 1 (~1.5s saved per transition).
+    const navigationTools = new Set(['next_item', 'skip_topic', 'archive_email', 'mark_read']);
+    const didNavigate = actionsTaken.some((a) => navigationTools.has(a.tool));
+
+    if (didNavigate && this.tracker && !shouldEnd) {
+      const nextEmail = this.tracker.getCurrentEmail();
+      const progress = this.tracker.getProgress();
+      responseText = generateTransition(actionsTaken[0]?.tool ?? '', nextEmail, {
+        handled: progress.emailsBriefed + progress.emailsActioned,
+        total: progress.totalEmails,
+      });
     }
 
     return this.createTextResult(responseText.trim(), actionsTaken, shouldEnd);
@@ -745,14 +962,13 @@ export class ReasoningLoop {
       const confirmMessage = generateConfirmation(pending.action, 'high');
       delete this.state.pendingConfirmation;
 
-      return this.createTextResult(
-        confirmMessage,
-        [{ tool: pending.action, result: confirmResult }]
-      );
+      return this.createTextResult(confirmMessage, [
+        { tool: pending.action, result: confirmResult },
+      ]);
     } else {
       // User cancelled
       delete this.state.pendingConfirmation;
-      return this.createTextResult("Okay, cancelled.");
+      return this.createTextResult('Okay, cancelled.');
     }
   }
 
@@ -762,7 +978,7 @@ export class ReasoningLoop {
   private async handleDisambiguation(text: string): Promise<ReasoningResult> {
     // Try to match user input to options
     const options = this.state.disambiguationOptions;
-    
+
     if (!options || options.length === 0) {
       return this.createTextResult("I'm not sure what you're referring to.");
     }
@@ -771,7 +987,7 @@ export class ReasoningLoop {
 
     // Check for number selection
     const numberMatch = text.match(/\b(\d+)\b/);
-    if (numberMatch && numberMatch[1]) {
+    if (numberMatch?.[1]) {
       const index = parseInt(numberMatch[1], 10) - 1;
       const selectedOption = options[index];
       if (index >= 0 && selectedOption) {
@@ -789,9 +1005,7 @@ export class ReasoningLoop {
     }
 
     // No match - ask again
-    return this.createTextResult(
-      generateDisambiguationPrompt(options, text)
-    );
+    return this.createTextResult(generateDisambiguationPrompt(options, text));
   }
 
   /**
@@ -878,7 +1092,7 @@ export class ReasoningLoop {
       chunkCount: chunks.length,
       chunks: chunks.map((c, i) => `[${i}] ${c.substring(0, 60)}`),
       hasTtsCallback: !!this.ttsCallback,
-      actionsTaken: actionsTaken.map(a => a.tool),
+      actionsTaken: actionsTaken.map((a) => a.tool),
       shouldEnd,
     });
 
@@ -920,6 +1134,15 @@ export class ReasoningLoop {
   // ===========================================================================
 
   /**
+   * Inject a system message into the conversation.
+   * Used by background batch processing to notify about new high-priority emails.
+   */
+  injectSystemAlert(message: string): void {
+    this.state.messages.push({ role: 'system', content: message });
+    logger.info('System alert injected', { messagePreview: message.substring(0, 100) });
+  }
+
+  /**
    * Set the inbox service and historyId for mid-session new-email detection.
    * Called once at session start from agent.ts.
    */
@@ -935,20 +1158,32 @@ export class ReasoningLoop {
    * into the conversation for GPT-4o to surface on the next turn.
    */
   async checkForNewEmails(): Promise<{ hasNew: boolean }> {
-    if (!this.inboxService || !this.sessionHistoryId) return { hasNew: false };
+    if (!this.inboxService || !this.sessionHistoryId) {
+      return { hasNew: false };
+    }
 
     try {
       // Duck-type check for Gmail provider with fetchHistory
       const service = this.inboxService as { getProvider?: (source: string) => unknown };
-      if (!service.getProvider) return { hasNew: false };
+      if (!service.getProvider) {
+        return { hasNew: false };
+      }
 
-      const gmailProvider = service.getProvider('GMAIL') as {
-        fetchHistory?: (historyId: string) => Promise<{ hasChanges: boolean; currentHistoryId: string }>;
-      } | undefined;
+      const gmailProvider = service.getProvider('GMAIL') as
+        | {
+            fetchHistory?: (
+              historyId: string
+            ) => Promise<{ hasChanges: boolean; currentHistoryId: string }>;
+          }
+        | undefined;
 
-      if (!gmailProvider?.fetchHistory) return { hasNew: false };
+      if (!gmailProvider?.fetchHistory) {
+        return { hasNew: false };
+      }
 
-      const { hasChanges, currentHistoryId } = await gmailProvider.fetchHistory(this.sessionHistoryId);
+      const { hasChanges, currentHistoryId } = await gmailProvider.fetchHistory(
+        this.sessionHistoryId
+      );
 
       if (hasChanges) {
         this.sessionHistoryId = currentHistoryId;
@@ -956,9 +1191,10 @@ export class ReasoningLoop {
         // Inject alert into conversation so GPT-4o mentions it
         this.state.messages.push({
           role: 'system',
-          content: 'ALERT: New emails have arrived since this briefing started. '
-            + 'After finishing the current email, let the user know: '
-            + '"New emails have come in. Want me to check them after we finish this topic?"',
+          content:
+            'ALERT: New emails have arrived since this briefing started. ' +
+            'After finishing the current email, let the user know: ' +
+            '"New emails have come in. Want me to check them after we finish this topic?"',
         });
 
         logger.info('New emails detected mid-session', {
@@ -982,10 +1218,55 @@ export class ReasoningLoop {
    */
   private findEmailRef(emailId: string): BriefingEmailRef | undefined {
     for (const topic of this.topicRefs) {
-      const found = topic.emails.find(e => e.emailId === emailId);
-      if (found) return found;
+      const found = topic.emails.find((e) => e.emailId === emailId);
+      if (found) {
+        return found;
+      }
     }
     return undefined;
+  }
+
+  /**
+   * Summarize an email for voice output using GPT-4o.
+   * Produces a clean 2-4 sentence summary without URLs, signatures, or garbage.
+   */
+  private async summarizeEmailForVoice(email: {
+    subject: string;
+    from: { email: string; name?: string };
+    bodyText?: string;
+    bodyPreview?: string;
+  }): Promise<string> {
+    const body = email.bodyText ?? email.bodyPreview ?? '';
+    const truncated = body.length > 3000 ? body.substring(0, 3000) : body;
+
+    try {
+      const response = await callChatCompletion(
+        [
+          {
+            role: 'system',
+            content:
+              'Summarize this email in 2-4 sentences for a voice briefing. ' +
+              'Focus on the key message, action items, and important details. ' +
+              'Do NOT include URLs, tracking codes, legal disclaimers, or email signatures. ' +
+              'Write naturally as if speaking to an executive.',
+          },
+          {
+            role: 'user',
+            content: `Subject: ${email.subject}\nFrom: ${email.from.email}\n\n${truncated}`,
+          },
+        ],
+        [],
+        this.config
+      );
+
+      return response.choices[0]?.message?.content ?? 'Unable to summarize this email.';
+    } catch (error) {
+      logger.warn('Failed to summarize email for voice', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Fallback: return a basic summary from subject
+      return `This email is about: ${email.subject}`;
+    }
   }
 }
 
@@ -1001,7 +1282,7 @@ export function createReasoningLoop(
   systemPromptContext?: Partial<SystemPromptContext>,
   config?: OpenAIConfig,
   topicRefs?: BriefingTopicRef[],
-  tracker?: BriefingSessionTracker,
+  tracker?: BriefingSessionTracker
 ): ReasoningLoop {
   return new ReasoningLoop(topicItems, systemPromptContext, config, topicRefs, tracker);
 }
@@ -1016,9 +1297,15 @@ export function createReasoningLoop(
  */
 function buildEmailContext(ref: BriefingEmailRef): EmailActionContext {
   const ctx: EmailActionContext = { emailId: ref.emailId };
-  if (ref.from) ctx.from = ref.from;
-  if (ref.subject) ctx.subject = ref.subject;
-  if (ref.threadId) ctx.threadId = ref.threadId;
+  if (ref.from) {
+    ctx.from = ref.from;
+  }
+  if (ref.subject) {
+    ctx.subject = ref.subject;
+  }
+  if (ref.threadId) {
+    ctx.threadId = ref.threadId;
+  }
   return ctx;
 }
 

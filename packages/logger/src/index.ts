@@ -164,7 +164,15 @@ export function filterPIIFromObject(
     const filtered: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       // Also filter the key name for sensitive field names
-      const sensitiveKeys = ['password', 'secret', 'token', 'apiKey', 'authorization', 'ssn', 'creditCard'];
+      const sensitiveKeys = [
+        'password',
+        'secret',
+        'token',
+        'apiKey',
+        'authorization',
+        'ssn',
+        'creditCard',
+      ];
       if (sensitiveKeys.some((sk) => key.toLowerCase().includes(sk.toLowerCase()))) {
         filtered[key] = replacement;
       } else {

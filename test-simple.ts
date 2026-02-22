@@ -38,17 +38,15 @@ function section(title: string) {
 async function testEnvironment() {
   section('Environment Check');
 
-  const requiredVars = [
-    'OPENAI_API_KEY',
-    'SUPABASE_URL',
-    'SUPABASE_SERVICE_ROLE_KEY',
-  ];
+  const requiredVars = ['OPENAI_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 
   let allPresent = true;
   for (const envVar of requiredVars) {
     const isPresent = !!process.env[envVar];
     log(`${isPresent ? '✅' : '❌'} ${envVar}`, isPresent ? 'green' : 'red');
-    if (!isPresent) {allPresent = false;}
+    if (!isPresent) {
+      allPresent = false;
+    }
   }
 
   if (!allPresent) {
@@ -148,7 +146,8 @@ async function testLLMClient() {
         },
         {
           role: 'user',
-          content: 'Summarize this: "Urgent pump failure at P-104. Water distribution affected. Need immediate repair."',
+          content:
+            'Summarize this: "Urgent pump failure at P-104. Water distribution affected. Need immediate repair."',
         },
       ],
       {
@@ -158,7 +157,9 @@ async function testLLMClient() {
 
     log('✅ LLM response received:', 'green');
     console.log(`\n   ${result.content}\n`);
-    console.log(`   Tokens used: ${result.totalTokens} (prompt: ${result.promptTokens}, completion: ${result.completionTokens})`);
+    console.log(
+      `   Tokens used: ${result.totalTokens} (prompt: ${result.promptTokens}, completion: ${result.completionTokens})`
+    );
     console.log(`   Response time: ${result.responseTimeMs}ms`);
 
     return true;
@@ -220,7 +221,7 @@ async function main() {
     log(`${passed ? '✅' : '❌'} ${name}`, passed ? 'green' : 'red');
   });
 
-  const allPassed = results.every(r => r.passed);
+  const allPassed = results.every((r) => r.passed);
 
   if (allPassed) {
     log('\n🎉 All tests passed! The intelligence layer is working correctly.', 'green');

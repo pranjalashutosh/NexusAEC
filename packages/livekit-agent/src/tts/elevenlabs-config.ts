@@ -2,7 +2,7 @@
  * @nexus-aec/livekit-agent - ElevenLabs TTS Configuration
  *
  * Configures ElevenLabs Turbo v2.5 for text-to-speech in the voice agent.
- * 
+ *
  * Features:
  * - Turbo v2.5 model for low-latency streaming
  * - Professional voice selection for in-motion listening
@@ -25,9 +25,9 @@ const logger = createLogger({ baseContext: { component: 'elevenlabs-tts' } });
 /**
  * ElevenLabs model IDs
  */
-export type ElevenLabsModel = 
-  | 'eleven_turbo_v2_5'      // Fastest, good quality
-  | 'eleven_turbo_v2'        // Fast, good quality
+export type ElevenLabsModel =
+  | 'eleven_turbo_v2_5' // Fastest, good quality
+  | 'eleven_turbo_v2' // Fast, good quality
   | 'eleven_multilingual_v2' // Multi-language, highest quality
   | 'eleven_monolingual_v1'; // Legacy
 
@@ -35,15 +35,15 @@ export type ElevenLabsModel =
  * Audio output formats supported by ElevenLabs
  */
 export type AudioFormat =
-  | 'mp3_22050_32'     // MP3, 22.05kHz, 32kbps
-  | 'mp3_44100_32'     // MP3, 44.1kHz, 32kbps
-  | 'mp3_44100_64'     // MP3, 44.1kHz, 64kbps
-  | 'mp3_44100_96'     // MP3, 44.1kHz, 96kbps
-  | 'mp3_44100_128'    // MP3, 44.1kHz, 128kbps
-  | 'mp3_44100_192'    // MP3, 44.1kHz, 192kbps
-  | 'pcm_16000'        // PCM, 16kHz (phone quality)
-  | 'pcm_22050'        // PCM, 22.05kHz (recommended for free tier)
-  | 'pcm_44100';       // PCM, 44.1kHz (Pro tier only)
+  | 'mp3_22050_32' // MP3, 22.05kHz, 32kbps
+  | 'mp3_44100_32' // MP3, 44.1kHz, 32kbps
+  | 'mp3_44100_64' // MP3, 44.1kHz, 64kbps
+  | 'mp3_44100_96' // MP3, 44.1kHz, 96kbps
+  | 'mp3_44100_128' // MP3, 44.1kHz, 128kbps
+  | 'mp3_44100_192' // MP3, 44.1kHz, 192kbps
+  | 'pcm_16000' // PCM, 16kHz (phone quality)
+  | 'pcm_22050' // PCM, 22.05kHz (recommended for free tier)
+  | 'pcm_44100'; // PCM, 44.1kHz (Pro tier only)
 
 /**
  * Voice settings for ElevenLabs
@@ -144,7 +144,7 @@ export const VOICE_PROFILES: Record<string, VoiceProfile> = {
       useSpeakerBoost: true,
     },
   },
-  
+
   // Male voices
   adam: {
     id: 'pNInz6obpgDQGcFmaJgB',
@@ -314,9 +314,7 @@ export const DEFAULT_STREAMING_CONFIG: StreamingConfig = {
 /**
  * Create streaming configuration for TTS
  */
-export function createStreamingConfig(
-  options?: Partial<StreamingConfig>
-): StreamingConfig {
+export function createStreamingConfig(options?: Partial<StreamingConfig>): StreamingConfig {
   return {
     ...DEFAULT_STREAMING_CONFIG,
     ...options,
@@ -359,10 +357,7 @@ export function preprocessTextForTTS(text: string): string {
  * Split text into chunks suitable for streaming TTS
  * Breaks at natural points (sentences, clauses)
  */
-export function splitTextForStreaming(
-  text: string,
-  maxChunkLength: number = 200
-): string[] {
+export function splitTextForStreaming(text: string, maxChunkLength: number = 200): string[] {
   const chunks: string[] = [];
   const sentences = text.split(/(?<=[.!?])\s+/);
 

@@ -65,14 +65,10 @@ export function DraftCard({ draft, onClick }: DraftCardProps): React.ReactElemen
     <div className="draft-card" onClick={onClick} role="button" tabIndex={0}>
       <div className="draft-card-header">
         <div className="draft-card-recipient">
-          <span className="recipient-avatar">
-            {displayName.charAt(0).toUpperCase()}
-          </span>
+          <span className="recipient-avatar">{displayName.charAt(0).toUpperCase()}</span>
           <div className="recipient-info">
             <span className="recipient-name">{displayName}</span>
-            {draft.recipientName && (
-              <span className="recipient-email">{draft.recipientEmail}</span>
-            )}
+            {draft.recipientName && <span className="recipient-email">{draft.recipientEmail}</span>}
           </div>
         </div>
         <div className="draft-card-meta">
@@ -90,13 +86,9 @@ export function DraftCard({ draft, onClick }: DraftCardProps): React.ReactElemen
 
       {redFlag && (
         <div className="draft-card-footer">
-          <span className={`priority-badge ${redFlag.className}`}>
-            {redFlag.label}
-          </span>
+          <span className={`priority-badge ${redFlag.className}`}>{redFlag.label}</span>
           {draft.redFlagReasons && draft.redFlagReasons.length > 0 && (
-            <span className="red-flag-reasons">
-              {draft.redFlagReasons.slice(0, 2).join(' • ')}
-            </span>
+            <span className="red-flag-reasons">{draft.redFlagReasons.slice(0, 2).join(' • ')}</span>
           )}
         </div>
       )}

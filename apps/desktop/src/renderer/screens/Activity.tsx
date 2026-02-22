@@ -74,9 +74,7 @@ export function ActivityScreen(): React.ReactElement {
   const handleUndo = async (entryId: string) => {
     // In production, call electronAPI.audit.undo(entryId)
     setEntries((prev) =>
-      prev.map((e) =>
-        e.id === entryId ? { ...e, undoneAt: new Date().toISOString() } : e
-      )
+      prev.map((e) => (e.id === entryId ? { ...e, undoneAt: new Date().toISOString() } : e))
     );
   };
 

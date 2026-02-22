@@ -30,7 +30,8 @@ const MOCK_DRAFTS: Draft[] = [
     recipientName: 'John Smith',
     subject: 'Re: Q4 Budget Review',
     bodyPreview: 'Thank you for your detailed breakdown. I have reviewed the numbers and...',
-    fullBody: 'Thank you for your detailed breakdown. I have reviewed the numbers and have a few questions about the marketing allocation. Could we schedule a call to discuss?\n\nBest regards',
+    fullBody:
+      'Thank you for your detailed breakdown. I have reviewed the numbers and have a few questions about the marketing allocation. Could we schedule a call to discuss?\n\nBest regards',
     redFlagScore: 0.8,
     redFlagReasons: ['Budget discussion', 'Client communication'],
     createdAt: new Date(Date.now() - 3600000).toISOString(),
@@ -43,7 +44,8 @@ const MOCK_DRAFTS: Draft[] = [
     recipientName: 'Sarah Johnson',
     subject: 'Contract Amendment Request',
     bodyPreview: 'Following our discussion yesterday, I wanted to formally request...',
-    fullBody: 'Following our discussion yesterday, I wanted to formally request an amendment to Section 4.2 of our agreement. The proposed changes would allow for greater flexibility in delivery timelines.',
+    fullBody:
+      'Following our discussion yesterday, I wanted to formally request an amendment to Section 4.2 of our agreement. The proposed changes would allow for greater flexibility in delivery timelines.',
     redFlagScore: 0.9,
     redFlagReasons: ['Contract modification', 'Legal implications'],
     createdAt: new Date(Date.now() - 7200000).toISOString(),
@@ -56,7 +58,8 @@ const MOCK_DRAFTS: Draft[] = [
     recipientName: 'Team',
     subject: 'Weekly Status Update',
     bodyPreview: 'Hi everyone, here is this weeks status update for Project Alpha...',
-    fullBody: 'Hi everyone,\n\nHere is this weeks status update for Project Alpha:\n\n- Milestone 3: Complete\n- Milestone 4: In progress (80%)\n- Blockers: None\n\nPlease let me know if you have questions.',
+    fullBody:
+      'Hi everyone,\n\nHere is this weeks status update for Project Alpha:\n\n- Milestone 3: Complete\n- Milestone 4: In progress (80%)\n- Blockers: None\n\nPlease let me know if you have questions.',
     redFlagScore: 0.2,
     createdAt: new Date(Date.now() - 10800000).toISOString(),
     status: 'pending',
@@ -150,11 +153,7 @@ export function DraftsScreen(): React.ReactElement {
       ) : (
         <div className="list-container">
           {filteredDrafts.map((draft) => (
-            <DraftCard
-              key={draft.id}
-              draft={draft}
-              onClick={() => setSelectedDraft(draft)}
-            />
+            <DraftCard key={draft.id} draft={draft} onClick={() => setSelectedDraft(draft)} />
           ))}
         </div>
       )}

@@ -537,8 +537,10 @@ export class RedisSessionStore {
     return {
       totalSessions: metadata.length,
       uniqueUsers,
-      oldestSession: startDates.length > 0 ? new Date(Math.min(...startDates.map((d) => d.getTime()))) : null,
-      newestSession: startDates.length > 0 ? new Date(Math.max(...startDates.map((d) => d.getTime()))) : null,
+      oldestSession:
+        startDates.length > 0 ? new Date(Math.min(...startDates.map((d) => d.getTime()))) : null,
+      newestSession:
+        startDates.length > 0 ? new Date(Math.max(...startDates.map((d) => d.getTime()))) : null,
     };
   }
 }

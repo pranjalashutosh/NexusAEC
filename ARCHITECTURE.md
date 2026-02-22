@@ -1,8 +1,7 @@
 # NexusAEC - Architecture Documentation
 
-**Last Updated:** 2026-01-09
-**Version:** 1.0
-**Architecture Type:** Unified LiveKit Voice Stack
+**Last Updated:** 2026-01-09 **Version:** 1.0 **Architecture Type:** Unified
+LiveKit Voice Stack
 
 ---
 
@@ -27,7 +26,9 @@
 
 ### 1.1 Purpose
 
-NexusAEC is a **voice-driven AI executive assistant** that enables professionals to manage email communications through natural voice interactions while on the go. The system:
+NexusAEC is a **voice-driven AI executive assistant** that enables professionals
+to manage email communications through natural voice interactions while on the
+go. The system:
 
 - Aggregates emails from multiple providers (Outlook + Gmail)
 - Identifies critical/urgent messages using AI-powered red flag detection
@@ -41,17 +42,20 @@ NexusAEC is a **voice-driven AI executive assistant** that enables professionals
 2. **Safety-First**: High-risk actions require explicit approval
 3. **Privacy-First**: Minimal data retention, transparent audit trails
 4. **Provider-Agnostic**: Unified interface across Outlook and Gmail
-5. **Scalable Intelligence**: Three-tier memory for performance and personalization
+5. **Scalable Intelligence**: Three-tier memory for performance and
+   personalization
 
 ### 1.3 System Boundaries
 
 **In Scope:**
+
 - Email reading, prioritization, and simple actions (mark read, flag, move)
 - Voice-based briefing and command execution
 - Draft creation (requires review before sending)
 - Calendar and contact integration for context
 
 **Out of Scope (MVP):**
+
 - Sending emails without review
 - File attachment handling
 - Complex workflow automation
@@ -156,7 +160,8 @@ NexusAEC is a **voice-driven AI executive assistant** that enables professionals
 
 ## 3. Three-Tier Memory Model
 
-The system uses a **three-tier memory architecture** to balance performance, personalization, and cost:
+The system uses a **three-tier memory architecture** to balance performance,
+personalization, and cost:
 
 ### 3.1 Architecture Overview
 
@@ -287,15 +292,15 @@ User Voice Command → LiveKit Agent
 
 ### 3.3 Memory Tier Selection Guide
 
-| Use Case | Tier | Rationale |
-|----------|------|-----------|
-| Email content analysis | Tier 1 | Ephemeral, no need to persist email bodies |
-| Red flag scoring | Tier 1 | Computed per-request, discarded after |
+| Use Case                  | Tier   | Rationale                                     |
+| ------------------------- | ------ | --------------------------------------------- |
+| Email content analysis    | Tier 1 | Ephemeral, no need to persist email bodies    |
+| Red flag scoring          | Tier 1 | Computed per-request, discarded after         |
 | Current briefing position | Tier 2 | Session state, needs to survive interruptions |
-| User interrupt handling | Tier 2 | Real-time updates from transcript |
-| Asset knowledge (NCE IDs) | Tier 3 | Persistent domain knowledge |
-| Safety manual excerpts | Tier 3 | Persistent, rarely changes |
-| User preferences (VIPs) | Tier 3 | Persistent, sync across devices |
+| User interrupt handling   | Tier 2 | Real-time updates from transcript             |
+| Asset knowledge (NCE IDs) | Tier 3 | Persistent domain knowledge                   |
+| Safety manual excerpts    | Tier 3 | Persistent, rarely changes                    |
+| User preferences (VIPs)   | Tier 3 | Persistent, sync across devices               |
 
 ---
 
@@ -303,7 +308,8 @@ User Voice Command → LiveKit Agent
 
 ### 4.1 LiveKit Unified Architecture
 
-**Key Decision:** Use LiveKit Cloud as the central hub for ALL voice processing, eliminating custom WebRTC implementation.
+**Key Decision:** Use LiveKit Cloud as the central hub for ALL voice processing,
+eliminating custom WebRTC implementation.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -488,7 +494,8 @@ Mobile App monitors ConnectionQuality events from LiveKit SDK
 
 ### 5.1 Unified Adapter Pattern
 
-**Key Decision:** Abstract provider differences behind a common `EmailProvider` interface.
+**Key Decision:** Abstract provider differences behind a common `EmailProvider`
+interface.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -572,6 +579,7 @@ All provider-specific data is normalized to standard types:
 ```
 
 **Benefits:**
+
 - Single interface for all email operations
 - Easy to add new providers (Yahoo, ProtonMail, etc.)
 - Simplified testing (mock one interface, not multiple APIs)
@@ -1146,7 +1154,8 @@ Topics[] + RedFlags[] → Narrative Generator (GPT-4o)
 
 ### 9.2 Build Order (Managed by Turborepo)
 
-Turborepo automatically determines build order based on `package.json` dependencies:
+Turborepo automatically determines build order based on `package.json`
+dependencies:
 
 ```
 1. shared-types      (no dependencies)
@@ -1281,16 +1290,16 @@ Command: `pnpm turbo run build` handles this automatically.
 
 ### 10.2 Threat Model
 
-| Threat | Mitigation |
-|--------|------------|
-| OAuth token theft | Secure storage (Keychain, etc.), never log tokens |
-| Man-in-the-middle | TLS 1.3, certificate pinning, HTTPS everywhere |
-| PII leak in logs | PII filtering via @nexus-aec/logger |
+| Threat                    | Mitigation                                                          |
+| ------------------------- | ------------------------------------------------------------------- |
+| OAuth token theft         | Secure storage (Keychain, etc.), never log tokens                   |
+| Man-in-the-middle         | TLS 1.3, certificate pinning, HTTPS everywhere                      |
+| PII leak in logs          | PII filtering via @nexus-aec/logger                                 |
 | Unauthorized email access | OAuth scopes limited to read + draft only, no send without approval |
-| Session hijacking | JWT with short TTL (1h), rotate on refresh |
-| Email content exposure | Tier 1 ephemeral only, never persist email bodies |
-| Unintended actions | Confirmation verbosity, desktop draft approval, undo window |
-| Credential stuffing | Rate limiting (100 req/min per user) |
+| Session hijacking         | JWT with short TTL (1h), rotate on refresh                          |
+| Email content exposure    | Tier 1 ephemeral only, never persist email bodies                   |
+| Unintended actions        | Confirmation verbosity, desktop draft approval, undo window         |
+| Credential stuffing       | Rate limiting (100 req/min per user)                                |
 
 ---
 
@@ -1386,13 +1395,13 @@ Developer Machine
 
 ### 11.3 Scaling Strategy
 
-| Component | Scaling Strategy | Rationale |
-|-----------|------------------|-----------|
-| Backend API | Horizontal (3-10 replicas) | Stateless, scale based on HTTP requests/sec |
-| LiveKit Agent | Horizontal (auto-scale 2-50) | Scale based on active rooms, CPU-intensive |
-| Redis | Vertical (managed service) | Session state is small, latency critical |
-| Supabase | Managed (auto-scaling) | Vector queries scale with data size |
-| LiveKit Cloud | Managed (auto-scaling) | Handles WebRTC media routing automatically |
+| Component     | Scaling Strategy             | Rationale                                   |
+| ------------- | ---------------------------- | ------------------------------------------- |
+| Backend API   | Horizontal (3-10 replicas)   | Stateless, scale based on HTTP requests/sec |
+| LiveKit Agent | Horizontal (auto-scale 2-50) | Scale based on active rooms, CPU-intensive  |
+| Redis         | Vertical (managed service)   | Session state is small, latency critical    |
+| Supabase      | Managed (auto-scaling)       | Vector queries scale with data size         |
+| LiveKit Cloud | Managed (auto-scaling)       | Handles WebRTC media routing automatically  |
 
 ---
 
@@ -1403,7 +1412,9 @@ Developer Machine
 **Decision:** Use LiveKit Cloud for all voice processing.
 
 **Rationale:**
-- WebRTC is complex (signaling, STUN/TURN, codec negotiation, network resilience)
+
+- WebRTC is complex (signaling, STUN/TURN, codec negotiation, network
+  resilience)
 - LiveKit provides production-ready infrastructure:
   - Auto-scaling media servers
   - Built-in STT/TTS plugins (Deepgram, ElevenLabs)
@@ -1414,6 +1425,7 @@ Developer Machine
 - Eliminates need for custom audio pipeline maintenance
 
 **Trade-offs:**
+
 - Vendor lock-in to LiveKit (mitigated: open-source, self-hostable)
 - Monthly cost based on usage (acceptable for MVP)
 
@@ -1422,6 +1434,7 @@ Developer Machine
 **Decision:** Abstract Outlook and Gmail behind `EmailProvider` interface.
 
 **Rationale:**
+
 - Provider APIs are different (Graph vs REST)
 - Normalization simplifies application logic
 - Easy to add new providers (Yahoo, ProtonMail, etc.)
@@ -1429,6 +1442,7 @@ Developer Machine
 - Source tagging enables smart draft routing
 
 **Trade-offs:**
+
 - Abstraction overhead (mitigated: thin adapter layer)
 - Potential loss of provider-specific features (acceptable for MVP)
 
@@ -1437,6 +1451,7 @@ Developer Machine
 **Decision:** Ephemeral (in-memory) → Redis (session) → Supabase (knowledge).
 
 **Rationale:**
+
 - **Tier 1 (Ephemeral):** Email content is sensitive, discard after processing
 - **Tier 2 (Redis):** Session state needs fast access (<10ms latency)
 - **Tier 3 (Supabase):** Knowledge base requires vector search (pgvector)
@@ -1444,6 +1459,7 @@ Developer Machine
 - Privacy: Minimal data retention
 
 **Trade-offs:**
+
 - Complexity of managing three stores (mitigated: clear boundaries)
 - Redis cost for session state (acceptable: TTL-based auto-expiry)
 
@@ -1452,12 +1468,14 @@ Developer Machine
 **Decision:** Draft approval via desktop Electron app only.
 
 **Rationale:**
+
 - Safety: Large screen for reviewing draft content + thread context
 - Deliberate action: Requires user to stop and focus (not in-motion)
 - Audit trail: Desktop UI better suited for activity history
 - Ergonomics: Easier to edit drafts on desktop
 
 **Trade-offs:**
+
 - Requires desktop installation (acceptable: enterprise use case)
 - Cannot send emails purely from mobile (intentional safety feature)
 
@@ -1466,12 +1484,14 @@ Developer Machine
 **Decision:** Single monorepo with Turborepo + pnpm workspaces.
 
 **Rationale:**
+
 - Shared types across all packages (single source of truth)
 - Atomic commits (change shared types + consumers in one PR)
 - Faster CI (Turborepo caching and parallel builds)
 - Easier refactoring (grep across entire codebase)
 
 **Trade-offs:**
+
 - Larger repo size (mitigated: pnpm saves disk space)
 - Learning curve for monorepo tools (acceptable: well-documented)
 
@@ -1479,6 +1499,5 @@ Developer Machine
 
 **End of Architecture Documentation**
 
-*For implementation details, see `.claude/RULES.md`*
-*For code conventions, see `.claude/CONVENTIONS.md`*
-*For workflows, see `.claude/WORKFLOWS.md`*
+_For implementation details, see `.claude/RULES.md`_ _For code conventions, see
+`.claude/CONVENTIONS.md`_ _For workflows, see `.claude/WORKFLOWS.md`_

@@ -120,9 +120,7 @@ describe('OutlookAdapter', () => {
     });
 
     it('should return null for not found', async () => {
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse({ error: { message: 'Not found' } }, 404)
-      );
+      mockFetch.mockResolvedValueOnce(createMockResponse({ error: { message: 'Not found' } }, 404));
 
       const email = await adapter.fetchEmail('outlook:nonexistent');
       expect(email).toBeNull();
@@ -419,9 +417,7 @@ describe('OutlookAdapter', () => {
     });
 
     it('should handle 403 as PERMISSION_DENIED', async () => {
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse({ error: { message: 'Forbidden' } }, 403)
-      );
+      mockFetch.mockResolvedValueOnce(createMockResponse({ error: { message: 'Forbidden' } }, 403));
 
       await expect(adapter.fetchEmail('outlook:msg-123')).rejects.toMatchObject({
         code: 'PERMISSION_DENIED',
@@ -477,4 +473,3 @@ describe('ID helpers', () => {
     });
   });
 });
-

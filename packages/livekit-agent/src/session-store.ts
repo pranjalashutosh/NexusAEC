@@ -14,6 +14,8 @@ export interface AgentSession {
   roomName: string;
   /** User participant identity */
   userIdentity: string;
+  /** User display name (from JWT, may differ from identity) */
+  displayName?: string;
   /** Session start time */
   startedAt: Date;
   /** Whether the agent is currently speaking */

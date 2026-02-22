@@ -244,9 +244,7 @@ export function parseAssetCSV(filePath: string, options: CSVParseOptions = {}): 
     const columnMap = buildColumnMap(headers, columnMapping);
 
     // Check for required columns
-    const missingColumns = REQUIRED_COLUMNS.filter(
-      (col) => !Object.keys(columnMap).includes(col)
-    );
+    const missingColumns = REQUIRED_COLUMNS.filter((col) => !Object.keys(columnMap).includes(col));
 
     if (missingColumns.length > 0) {
       throw new Error(
@@ -363,9 +361,7 @@ export function parseAssetCSVString(
     const headers = Object.keys(firstRecord);
     const columnMap = buildColumnMap(headers, columnMapping);
 
-    const missingColumns = REQUIRED_COLUMNS.filter(
-      (col) => !Object.keys(columnMap).includes(col)
-    );
+    const missingColumns = REQUIRED_COLUMNS.filter((col) => !Object.keys(columnMap).includes(col));
 
     if (missingColumns.length > 0) {
       throw new Error(
@@ -484,11 +480,21 @@ function parseAssetRecord(
 
   // Validate required fields (unless skipValidation is true)
   if (!options.skipValidation) {
-    if (!assetId) {throw new Error('AssetID is required');}
-    if (!name) {throw new Error('Name is required');}
-    if (!description) {throw new Error('Description is required');}
-    if (!category) {throw new Error('Category is required');}
-    if (!location) {throw new Error('Location is required');}
+    if (!assetId) {
+      throw new Error('AssetID is required');
+    }
+    if (!name) {
+      throw new Error('Name is required');
+    }
+    if (!description) {
+      throw new Error('Description is required');
+    }
+    if (!category) {
+      throw new Error('Category is required');
+    }
+    if (!location) {
+      throw new Error('Location is required');
+    }
   }
 
   // Normalize category if requested

@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export interface TokenRequest {
   roomName: string;
   participantName?: string;
+  displayName?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -57,6 +58,7 @@ async function fetchToken(request: TokenRequest): Promise<TokenResponse> {
     body: JSON.stringify({
       userId: request.participantName ?? 'user',
       roomName: request.roomName,
+      name: request.displayName,
       metadata: request.metadata,
     }),
   });

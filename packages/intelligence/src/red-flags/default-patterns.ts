@@ -1,9 +1,4 @@
-import {
-  RedFlagPattern,
-  Severity,
-  RedFlagCategory,
-  PatternType,
-} from '../types';
+import { RedFlagPattern, Severity, RedFlagCategory, PatternType } from '../types';
 
 /**
  * Default red flag patterns for detecting urgent, important, or critical emails
@@ -114,7 +109,8 @@ export const DEFAULT_RED_FLAG_PATTERNS: RedFlagPattern[] = [
   },
   {
     id: 'deadline-response-needed-regex',
-    pattern: /\b(need|require|must have)\s+(your\s+)?(response|reply|answer|feedback)\s+(by|before|asap)\b/i,
+    pattern:
+      /\b(need|require|must have)\s+(your\s+)?(response|reply|answer|feedback)\s+(by|before|asap)\b/i,
     type: PatternType.REGEX,
     severity: Severity.MEDIUM,
     weight: 0.7,
@@ -151,7 +147,8 @@ export const DEFAULT_RED_FLAG_PATTERNS: RedFlagPattern[] = [
   },
   {
     id: 'incident-down-regex',
-    pattern: /\b(system|service|server|website|application|app|site)\s+(is\s+)?(down|offline|unavailable|not\s+working)\b/i,
+    pattern:
+      /\b(system|service|server|website|application|app|site)\s+(is\s+)?(down|offline|unavailable|not\s+working)\b/i,
     type: PatternType.REGEX,
     severity: Severity.HIGH,
     weight: 0.95,
@@ -258,7 +255,8 @@ export const DEFAULT_RED_FLAG_PATTERNS: RedFlagPattern[] = [
   },
   {
     id: 'escalation-management-attention-regex',
-    pattern: /\b(ceo|cto|cfo|vp|director|executive|management|leadership)\s+(needs|requires|wants|attention)\b/i,
+    pattern:
+      /\b(ceo|cto|cfo|vp|director|executive|management|leadership)\s+(needs|requires|wants|attention)\b/i,
     type: PatternType.REGEX,
     severity: Severity.HIGH,
     weight: 0.85,
@@ -346,9 +344,7 @@ export const DEFAULT_RED_FLAG_PATTERNS: RedFlagPattern[] = [
 /**
  * Get patterns by category
  */
-export function getPatternsByCategory(
-  category: RedFlagCategory
-): RedFlagPattern[] {
+export function getPatternsByCategory(category: RedFlagCategory): RedFlagPattern[] {
   return DEFAULT_RED_FLAG_PATTERNS.filter((p) => p.category === category);
 }
 
@@ -362,12 +358,8 @@ export function getPatternsBySeverity(severity: Severity): RedFlagPattern[] {
 /**
  * Get patterns applicable to a specific field
  */
-export function getPatternsForField(
-  field: 'subject' | 'body' | 'sender'
-): RedFlagPattern[] {
-  return DEFAULT_RED_FLAG_PATTERNS.filter((p) =>
-    p.contextFields.includes(field)
-  );
+export function getPatternsForField(field: 'subject' | 'body' | 'sender'): RedFlagPattern[] {
+  return DEFAULT_RED_FLAG_PATTERNS.filter((p) => p.contextFields.includes(field));
 }
 
 /**

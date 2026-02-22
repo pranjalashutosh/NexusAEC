@@ -1,17 +1,7 @@
 import type { StandardEmail } from '@nexus-aec/shared-types';
-import {
-  KeywordMatcher,
-  type KeywordMatcherOptions,
-} from '../../src/red-flags/keyword-matcher';
-import {
-  DEFAULT_RED_FLAG_PATTERNS,
-} from '../../src/red-flags/default-patterns';
-import {
-  Severity,
-  RedFlagCategory,
-  PatternType,
-  type RedFlagPattern,
-} from '../../src/types';
+import { KeywordMatcher, type KeywordMatcherOptions } from '../../src/red-flags/keyword-matcher';
+import { DEFAULT_RED_FLAG_PATTERNS } from '../../src/red-flags/default-patterns';
+import { Severity, RedFlagCategory, PatternType, type RedFlagPattern } from '../../src/types';
 
 // Helper to create test emails
 function createTestEmail(overrides: Partial<StandardEmail> = {}): StandardEmail {

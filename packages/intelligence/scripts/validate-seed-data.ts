@@ -27,7 +27,9 @@ function validateSeedAssets(): void {
     const fileContent = fs.readFileSync(SEED_ASSETS_FILE, 'utf-8');
     assets = JSON.parse(fileContent);
   } catch (error) {
-    console.error(`❌ Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `❌ Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+    );
     process.exit(1);
   }
 
@@ -52,9 +54,10 @@ function validateSeedAssets(): void {
       console.log(`✓ [${index + 1}/${assets.length}] ${a.assetId} - ${a.name}`);
     } else {
       invalidCount++;
-      const assetId = typeof asset === 'object' && asset !== null && 'assetId' in asset
-        ? String((asset as any).assetId)
-        : 'UNKNOWN';
+      const assetId =
+        typeof asset === 'object' && asset !== null && 'assetId' in asset
+          ? String((asset as any).assetId)
+          : 'UNKNOWN';
 
       errors.push({
         index: index + 1,

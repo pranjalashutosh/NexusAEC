@@ -482,4 +482,3 @@ describe('UnifiedInboxService', () => {
     });
   });
 });
-

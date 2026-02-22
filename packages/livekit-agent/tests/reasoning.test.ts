@@ -2,97 +2,107 @@
  * Tests for reasoning loop module
  */
 
-import {
-  ReasoningLoop,
-  createReasoningLoop,
-  type TranscriptEvent,
-} from '../src/index';
+import { ReasoningLoop, createReasoningLoop, type TranscriptEvent } from '../src/index';
 
 // Mock OpenAI SDK
 jest.mock('openai', () => {
   return jest.fn().mockImplementation(() => ({
     chat: {
       completions: {
-        create: jest.fn().mockImplementation(async (params: { messages: Array<{ content: string }> }) => {
-          // Get the last user message to determine response
-          const lastMessage = params.messages?.find(
-            (m: { role?: string }) => m.role === 'user'
-          );
-          const userText = (lastMessage?.content || '').toLowerCase();
+        create: jest
+          .fn()
+          .mockImplementation(async (params: { messages: Array<{ content: string }> }) => {
+            // Get the last user message to determine response
+            const lastMessage = params.messages?.find((m: { role?: string }) => m.role === 'user');
+            const userText = (lastMessage?.content || '').toLowerCase();
 
-          // Handle different test cases based on user input
-          if (userText.includes('skip') || userText.includes('next')) {
-            return {
-              choices: [{
-                message: {
-                  role: 'assistant',
-                  content: null,
-                  tool_calls: [{
-                    id: 'call_123',
-                    type: 'function',
-                    function: {
-                      name: 'skip_topic',
-                      arguments: JSON.stringify({}),
+            // Handle different test cases based on user input
+            if (userText.includes('skip') || userText.includes('next')) {
+              return {
+                choices: [
+                  {
+                    message: {
+                      role: 'assistant',
+                      content: null,
+                      tool_calls: [
+                        {
+                          id: 'call_123',
+                          type: 'function',
+                          function: {
+                            name: 'skip_topic',
+                            arguments: JSON.stringify({}),
+                          },
+                        },
+                      ],
                     },
-                  }],
-                },
-                finish_reason: 'tool_calls',
-              }],
-            };
-          }
+                    finish_reason: 'tool_calls',
+                  },
+                ],
+              };
+            }
 
-          if (userText.includes('flag') || userText.includes('follow up')) {
-            return {
-              choices: [{
-                message: {
-                  role: 'assistant',
-                  content: null,
-                  tool_calls: [{
-                    id: 'call_456',
-                    type: 'function',
-                    function: {
-                      name: 'flag_followup',
-                      arguments: JSON.stringify({ urgency: 'medium' }),
+            if (userText.includes('flag') || userText.includes('follow up')) {
+              return {
+                choices: [
+                  {
+                    message: {
+                      role: 'assistant',
+                      content: null,
+                      tool_calls: [
+                        {
+                          id: 'call_456',
+                          type: 'function',
+                          function: {
+                            name: 'flag_followup',
+                            arguments: JSON.stringify({ urgency: 'medium' }),
+                          },
+                        },
+                      ],
                     },
-                  }],
-                },
-                finish_reason: 'tool_calls',
-              }],
-            };
-          }
+                    finish_reason: 'tool_calls',
+                  },
+                ],
+              };
+            }
 
-          if (userText.includes('stop')) {
-            return {
-              choices: [{
-                message: {
-                  role: 'assistant',
-                  content: null,
-                  tool_calls: [{
-                    id: 'call_789',
-                    type: 'function',
-                    function: {
-                      name: 'stop_briefing',
-                      arguments: JSON.stringify({}),
+            if (userText.includes('stop')) {
+              return {
+                choices: [
+                  {
+                    message: {
+                      role: 'assistant',
+                      content: null,
+                      tool_calls: [
+                        {
+                          id: 'call_789',
+                          type: 'function',
+                          function: {
+                            name: 'stop_briefing',
+                            arguments: JSON.stringify({}),
+                          },
+                        },
+                      ],
                     },
-                  }],
-                },
-                finish_reason: 'tool_calls',
-              }],
-            };
-          }
+                    finish_reason: 'tool_calls',
+                  },
+                ],
+              };
+            }
 
-          // Default response
-          return {
-            choices: [{
-              message: {
-                role: 'assistant',
-                content: 'I understand. How can I help you?',
-                tool_calls: undefined,
-              },
-              finish_reason: 'stop',
-            }],
-          };
-        }),
+            // Default response
+            return {
+              choices: [
+                {
+                  message: {
+                    role: 'assistant',
+                    content: 'I understand. How can I help you?',
+                    tool_calls: undefined,
+                  },
+                  finish_reason: 'stop',
+                },
+              ],
+            };
+          }),
       },
     },
   }));

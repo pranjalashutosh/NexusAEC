@@ -149,9 +149,7 @@ describe('PDF Extractor', () => {
 
       expect(result.stats.characterCount).toBe(mockPdfData.text.length);
       expect(result.stats.wordCount).toBe(10);
-      expect(result.stats.avgCharsPerPage).toBe(
-        Math.round(mockPdfData.text.length / 2)
-      );
+      expect(result.stats.avgCharsPerPage).toBe(Math.round(mockPdfData.text.length / 2));
     });
 
     it('should handle PDFs with no pages gracefully', async () => {

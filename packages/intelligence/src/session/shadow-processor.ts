@@ -145,10 +145,7 @@ const DEFAULT_COMMAND_PATTERNS: CommandPattern[] = [
   // Go back commands
   {
     type: 'GO_BACK',
-    patterns: [
-      /\b(go\s+back|previous|last\s+one)\b/i,
-      /\b(what\s+was\s+that)\b/i,
-    ],
+    patterns: [/\b(go\s+back|previous|last\s+one)\b/i, /\b(what\s+was\s+that)\b/i],
     confidence: 0.85,
   },
 
@@ -166,10 +163,7 @@ const DEFAULT_COMMAND_PATTERNS: CommandPattern[] = [
   // Next commands
   {
     type: 'NEXT',
-    patterns: [
-      /\b(next(\s+one)?|next\s+email|next\s+item)\b/i,
-      /\b(move\s+to\s+next)\b/i,
-    ],
+    patterns: [/\b(next(\s+one)?|next\s+email|next\s+item)\b/i, /\b(move\s+to\s+next)\b/i],
     confidence: 0.9,
   },
 
@@ -186,10 +180,7 @@ const DEFAULT_COMMAND_PATTERNS: CommandPattern[] = [
   // Stop commands
   {
     type: 'STOP',
-    patterns: [
-      /\b(stop|cancel|end\s+briefing|that'?s\s+all)\b/i,
-      /\b(i'?m\s+done|finish)\b/i,
-    ],
+    patterns: [/\b(stop|cancel|end\s+briefing|that'?s\s+all)\b/i, /\b(i'?m\s+done|finish)\b/i],
     confidence: 0.95,
   },
 ];

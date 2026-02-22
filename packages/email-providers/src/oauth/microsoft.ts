@@ -52,10 +52,8 @@ export const DEFAULT_MICROSOFT_SCOPES = [
 const MICROSOFT_ENDPOINTS = {
   authorize: (tenant: string) =>
     `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`,
-  token: (tenant: string) =>
-    `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
-  logout: (tenant: string) =>
-    `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/logout`,
+  token: (tenant: string) => `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
+  logout: (tenant: string) => `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/logout`,
 };
 
 // =============================================================================
@@ -285,10 +283,7 @@ export class MicrosoftOAuthProvider {
       };
 
       // Check for specific error codes that indicate re-auth is needed
-      if (
-        error.error === 'invalid_grant' ||
-        error.error === 'interaction_required'
-      ) {
+      if (error.error === 'invalid_grant' || error.error === 'interaction_required') {
         throw new MicrosoftOAuthError(
           'Refresh token expired or revoked. Re-authentication required.',
           'REFRESH_TOKEN_EXPIRED',
@@ -446,4 +441,3 @@ export type MicrosoftOAuthErrorCode =
 export function isMicrosoftOAuthError(error: unknown): error is MicrosoftOAuthError {
   return error instanceof MicrosoftOAuthError;
 }
-

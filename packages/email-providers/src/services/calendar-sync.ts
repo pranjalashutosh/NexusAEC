@@ -8,11 +8,7 @@
 import { parseStandardId } from '../interfaces/email-provider';
 
 import type { EmailProvider } from '../interfaces/email-provider';
-import type {
-  EmailSource,
-  CalendarEvent,
-  CalendarQueryFilters,
-} from '../interfaces/types';
+import type { EmailSource, CalendarEvent, CalendarQueryFilters } from '../interfaces/types';
 
 // =============================================================================
 // Types
@@ -107,10 +103,7 @@ export class CalendarSyncService {
   private eventCache: Map<string, { event: CalendarEvent; cachedAt: number }> = new Map();
   private cacheLastUpdated = 0;
 
-  constructor(
-    providers: EmailProvider[],
-    config: CalendarSyncConfig = {}
-  ) {
+  constructor(providers: EmailProvider[], config: CalendarSyncConfig = {}) {
     this.providers = new Map();
     for (const provider of providers) {
       this.providers.set(provider.source, provider);
@@ -164,7 +157,9 @@ export class CalendarSyncService {
 
           events.push(...response.items);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
@@ -173,9 +168,7 @@ export class CalendarSyncService {
     this.cacheLastUpdated = Date.now();
 
     // Sort by start time
-    events.sort((a, b) =>
-      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-    );
+    events.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     return { events, errors };
   }
@@ -192,7 +185,9 @@ export class CalendarSyncService {
 
     // Fetch from provider
     const provider = this.getProviderForId(eventId);
-    if (!provider) {return null;}
+    if (!provider) {
+      return null;
+    }
 
     const event = await provider.fetchCalendarEvent(eventId);
     if (event) {
@@ -273,7 +268,9 @@ export class CalendarSyncService {
       const isOngoing = start <= now && end > now;
       const isNext = !foundNext && start > now;
 
-      if (isNext) {foundNext = true;}
+      if (isNext) {
+        foundNext = true;
+      }
 
       proximities.push({
         event,
@@ -390,7 +387,9 @@ export class CalendarSyncService {
 
     return events.filter((e) => {
       // Check organizer
-      if (e.organizer.email.toLowerCase() === emailLower) {return true;}
+      if (e.organizer.email.toLowerCase() === emailLower) {
+        return true;
+      }
 
       // Check attendees
       return e.attendees.some((a) => a.email.toLowerCase() === emailLower);
@@ -529,7 +528,9 @@ export class CalendarSyncService {
    */
   private getProviderForId(id: string): EmailProvider | undefined {
     const parsed = parseStandardId(id);
-    if (!parsed) {return undefined;}
+    if (!parsed) {
+      return undefined;
+    }
     return this.providers.get(parsed.source);
   }
 
@@ -537,8 +538,9 @@ export class CalendarSyncService {
    * Get error message from unknown error
    */
   private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {return error.message;}
+    if (error instanceof Error) {
+      return error.message;
+    }
     return String(error);
   }
 }
-

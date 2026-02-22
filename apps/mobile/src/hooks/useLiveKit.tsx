@@ -5,6 +5,23 @@
  * Uses livekit-client Room class with the token service for authentication.
  */
 
+import {
+  AudioSession,
+  AndroidAudioTypePresets,
+  useIOSAudioManagement,
+  type AppleAudioConfiguration,
+  type AudioTrackState,
+} from '@livekit/react-native';
+import {
+  Room,
+  RoomEvent,
+  ConnectionState,
+  ParticipantKind,
+  Track,
+  type RemoteTrack,
+  type RemoteTrackPublication,
+  type RemoteParticipant,
+} from 'livekit-client';
 import React, {
   createContext,
   useContext,
@@ -14,35 +31,14 @@ import React, {
   useMemo,
   type ReactNode,
 } from 'react';
-import {
-  Room,
-  RoomEvent,
-  ConnectionState,
-  Track,
-  type RemoteTrack,
-  type RemoteTrackPublication,
-  type RemoteParticipant,
-} from 'livekit-client';
-import {
-  AudioSession,
-  AndroidAudioTypePresets,
-  useIOSAudioManagement,
-  type AppleAudioConfiguration,
-  type AudioTrackState,
-} from '@livekit/react-native';
 
-import { getLiveKitToken } from '../services/livekit-token';
 import { getLiveKitUrl } from '../config/api';
+import { getLiveKitToken } from '../services/livekit-token';
 
 /**
  * LiveKit room state
  */
-export type RoomState =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'error';
+export type RoomState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
 
 /**
  * LiveKit participant info
@@ -73,7 +69,7 @@ interface LiveKitContextValue {
   /** Microphone enabled */
   isMicEnabled: boolean;
   /** Connect to a room */
-  connect: (roomName: string, userId?: string) => Promise<void>;
+  connect: (roomName: string, userId?: string, displayName?: string) => Promise<void>;
   /** Disconnect from room */
   disconnect: () => Promise<void>;
   /** Toggle microphone */
@@ -117,7 +113,7 @@ function mapConnectionState(state: ConnectionState): RoomState {
  */
 function configureAppleAudio(
   trackState: AudioTrackState,
-  preferSpeakerOutput: boolean,
+  preferSpeakerOutput: boolean
 ): AppleAudioConfiguration {
   console.log('[LiveKit] configureAppleAudio called:', { trackState, preferSpeakerOutput });
 
@@ -204,7 +200,7 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
 
     // Check if agent is speaking (agent identity typically starts with "agent")
     const agent = Array.from(r.remoteParticipants.values()).find(
-      (p) => p.identity.startsWith('agent') || p.kind === 1, // ParticipantKind.AGENT = 1
+      (p) => p.identity.startsWith('agent') || p.kind === ParticipantKind.AGENT
     );
     setIsAgentSpeaking(agent?.isSpeaking ?? false);
   }, []);
@@ -234,7 +230,7 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
     const onTrackSubscribed = (
       track: RemoteTrack,
       publication: RemoteTrackPublication,
-      participant: RemoteParticipant,
+      participant: RemoteParticipant
     ) => {
       console.log('[LiveKit] Track subscribed:', {
         kind: track.kind,
@@ -255,7 +251,7 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
     const onTrackUnsubscribed = (
       track: RemoteTrack,
       _publication: RemoteTrackPublication,
-      participant: RemoteParticipant,
+      participant: RemoteParticipant
     ) => {
       console.log('[LiveKit] Track unsubscribed:', {
         kind: track.kind,
@@ -326,65 +322,85 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
     void initAudio();
   }, []);
 
-  const connect = useCallback(async (name: string, userId?: string) => {
-    try {
-      console.log('[LiveKit] Connecting to room:', name, 'userId:', userId);
-      setRoomState('connecting');
-      setRoomName(name);
-
-      // Ensure the iOS audio session is in playAndRecord mode with
-      // defaultToSpeaker before starting. This prevents early WebRTC audio
-      // packets from the agent being dropped due to soloAmbient default.
-      await AudioSession.setAppleAudioConfiguration({
-        audioCategory: 'playAndRecord',
-        audioCategoryOptions: ['allowBluetooth', 'defaultToSpeaker', 'mixWithOthers'],
-        audioMode: 'voiceChat',
-      });
-
-      // Start the native AudioSession for playback + recording
-      await AudioSession.startAudioSession();
-      console.log('[LiveKit] Audio session started');
-
-      // Force audio output to speaker (ensures audio isn't routed to
-      // a non-existent earpiece, especially important on Simulator)
-      await AudioSession.selectAudioOutput('force_speaker');
-      console.log('[LiveKit] Audio output forced to speaker');
-
-      // Fetch a real token from the backend API
-      const tokenResponse = await getLiveKitToken({
-        roomName: name,
-        participantName: userId,
-      });
-      setToken(tokenResponse.token);
-
-      // Connect the existing Room instance (listeners already attached)
-      const serverUrl = tokenResponse.serverUrl ?? getLiveKitUrl();
-      console.log('[LiveKit] Connecting to server:', serverUrl);
-      await room.connect(serverUrl, tokenResponse.token);
-
-      console.log('[LiveKit] Connected to room, remote participants:', room.remoteParticipants.size);
-      setRoomState('connected');
-      syncParticipants(room);
-
-      // Enable microphone for voice interaction (may fail on simulator)
+  const connect = useCallback(
+    async (name: string, userId?: string, displayName?: string) => {
       try {
-        await room.localParticipant.setMicrophoneEnabled(true);
-      } catch (micError) {
-        console.warn('Could not enable microphone:', micError);
-        setIsMicEnabled(false);
+        console.log(
+          '[LiveKit] Connecting to room:',
+          name,
+          'userId:',
+          userId,
+          'displayName:',
+          displayName
+        );
+        setRoomState('connecting');
+        setRoomName(name);
+
+        // Ensure the iOS audio session is in playAndRecord mode with
+        // defaultToSpeaker before starting. This prevents early WebRTC audio
+        // packets from the agent being dropped due to soloAmbient default.
+        await AudioSession.setAppleAudioConfiguration({
+          audioCategory: 'playAndRecord',
+          audioCategoryOptions: ['allowBluetooth', 'defaultToSpeaker', 'mixWithOthers'],
+          audioMode: 'voiceChat',
+        });
+
+        // Start the native AudioSession for playback + recording
+        await AudioSession.startAudioSession();
+        console.log('[LiveKit] Audio session started');
+
+        // Force audio output to speaker (ensures audio isn't routed to
+        // a non-existent earpiece, especially important on Simulator)
+        await AudioSession.selectAudioOutput('force_speaker');
+        console.log('[LiveKit] Audio output forced to speaker');
+
+        // Fetch a real token from the backend API
+        const tokenResponse = await getLiveKitToken({
+          roomName: name,
+          participantName: userId,
+          displayName,
+        });
+        setToken(tokenResponse.token);
+
+        // Connect the existing Room instance (listeners already attached)
+        const serverUrl = tokenResponse.serverUrl ?? getLiveKitUrl();
+        console.log('[LiveKit] Connecting to server:', serverUrl);
+        await room.connect(serverUrl, tokenResponse.token);
+
+        console.log(
+          '[LiveKit] Connected to room, remote participants:',
+          room.remoteParticipants.size
+        );
+        setRoomState('connected');
+        syncParticipants(room);
+
+        // Enable microphone for voice interaction (may fail on simulator)
+        try {
+          await room.localParticipant.setMicrophoneEnabled(true);
+        } catch (micError) {
+          console.warn('Could not enable microphone:', micError);
+          setIsMicEnabled(false);
+        }
+      } catch (error) {
+        console.error('Failed to connect to LiveKit:', error);
+        setRoomState('error');
+        throw error;
       }
-    } catch (error) {
-      console.error('Failed to connect to LiveKit:', error);
-      setRoomState('error');
-      throw error;
-    }
-  }, [room, syncParticipants]);
+    },
+    [room, syncParticipants]
+  );
 
   const disconnect = useCallback(async () => {
-    console.log('[LiveKit] Disconnecting from room');
-    if (room) {
-      await room.disconnect();
+    // Guard against double-disconnect: if already disconnected, skip.
+    // Calling room.disconnect() on an already-closing connection causes
+    // an unclean WebSocket close (code 1001, wasClean: false) and can
+    // trigger a C++ mutex crash in the native LiveKit SDK.
+    if (room.state === ConnectionState.Disconnected) {
+      return;
     }
+
+    console.log('[LiveKit] Disconnecting from room');
+    await room.disconnect();
 
     // Stop the native AudioSession when leaving the room
     await AudioSession.stopAudioSession();
@@ -406,21 +422,23 @@ export function LiveKitProvider({ children }: { children: ReactNode }): React.JS
     }
   }, [room, isMicEnabled]);
 
-  const sendMessage = useCallback((message: string) => {
-    if (room.state === ConnectionState.Connected) {
-      const encoder = new TextEncoder();
-      void room.localParticipant.publishData(
-        encoder.encode(message),
-        { reliable: true },
-      );
-    }
-  }, [room]);
+  const sendMessage = useCallback(
+    (message: string) => {
+      if (room.state === ConnectionState.Connected) {
+        const encoder = new TextEncoder();
+        void room.localParticipant.publishData(encoder.encode(message), { reliable: true });
+      }
+    },
+    [room]
+  );
 
-  // Clean up on unmount
+  // Clean up on unmount (safety net — disconnect() guard prevents double-close)
   useEffect(() => {
     return () => {
-      void room.disconnect();
-      void AudioSession.stopAudioSession();
+      if (room.state !== ConnectionState.Disconnected) {
+        void room.disconnect();
+        void AudioSession.stopAudioSession();
+      }
     };
   }, [room]);
 

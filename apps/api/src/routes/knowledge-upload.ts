@@ -13,9 +13,9 @@ import * as path from 'path';
 import { pipeline } from 'stream/promises';
 
 import multipart from '@fastify/multipart';
-import OpenAI from 'openai';
-import { createLogger } from '@nexus-aec/logger';
 import { AssetIngestion, SupabaseVectorStore } from '@nexus-aec/intelligence';
+import { createLogger } from '@nexus-aec/logger';
+import OpenAI from 'openai';
 
 import type { FastifyInstance } from 'fastify';
 
@@ -156,7 +156,7 @@ export function registerKnowledgeUploadRoutes(app: FastifyInstance): void {
     } catch (error) {
       logger.error(
         'Knowledge upload failed',
-        error instanceof Error ? error : new Error(String(error)),
+        error instanceof Error ? error : new Error(String(error))
       );
       return reply.status(500).send({
         success: false,

@@ -8,13 +8,15 @@
  * 4. Registering them via setEmailServices() so tool executors can use them
  */
 
-import { createLogger } from '@nexus-aec/logger';
 import {
   OutlookAdapter,
   GmailAdapter,
   UnifiedInboxService,
   SmartDraftService,
 } from '@nexus-aec/email-providers';
+import { createLogger } from '@nexus-aec/logger';
+
+import { setEmailServices, clearEmailServices } from './tools/email-tools.js';
 
 import type {
   EmailProvider,
@@ -22,8 +24,6 @@ import type {
   OAuthTokens,
   EmailSource,
 } from '@nexus-aec/email-providers';
-
-import { setEmailServices, clearEmailServices } from './tools/email-tools.js';
 
 const logger = createLogger({ baseContext: { component: 'email-bootstrap' } });
 
@@ -131,7 +131,10 @@ export function parseEmailCredentials(metadata: string | undefined): EmailCreden
 
     return credentials;
   } catch (error) {
-    logger.error('Failed to parse email credentials from metadata', error instanceof Error ? error : null);
+    logger.error(
+      'Failed to parse email credentials from metadata',
+      error instanceof Error ? error : null
+    );
     return null;
   }
 }

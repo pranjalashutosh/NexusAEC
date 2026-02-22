@@ -28,15 +28,17 @@ const createMockResponse = <T>(data: T, status = 200) => ({
 });
 
 // Helper to create mock Gmail message
-const createMockGmailMessage = (overrides: Partial<{
-  id: string;
-  threadId: string;
-  labelIds: string[];
-  snippet: string;
-  subject: string;
-  from: string;
-  to: string;
-}> = {}) => ({
+const createMockGmailMessage = (
+  overrides: Partial<{
+    id: string;
+    threadId: string;
+    labelIds: string[];
+    snippet: string;
+    subject: string;
+    from: string;
+    to: string;
+  }> = {}
+) => ({
   id: overrides.id ?? 'msg-123',
   threadId: overrides.threadId ?? 'thread-456',
   labelIds: overrides.labelIds ?? ['INBOX', 'UNREAD'],
@@ -79,9 +81,7 @@ describe('GmailAdapter', () => {
 
   describe('testConnection', () => {
     it('should return connected true on successful API call', async () => {
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse({ emailAddress: 'user@gmail.com' })
-      );
+      mockFetch.mockResolvedValueOnce(createMockResponse({ emailAddress: 'user@gmail.com' }));
 
       const result = await adapter.testConnection();
 
@@ -126,9 +126,7 @@ describe('GmailAdapter', () => {
     });
 
     it('should return null for not found', async () => {
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse({ error: { message: 'Not found' } }, 404)
-      );
+      mockFetch.mockResolvedValueOnce(createMockResponse({ error: { message: 'Not found' } }, 404));
 
       const email = await adapter.fetchEmail('gmail:nonexistent');
       expect(email).toBeNull();
@@ -423,9 +421,7 @@ describe('GmailAdapter', () => {
     });
 
     it('should handle 403 as PERMISSION_DENIED', async () => {
-      mockFetch.mockResolvedValueOnce(
-        createMockResponse({ error: { message: 'Forbidden' } }, 403)
-      );
+      mockFetch.mockResolvedValueOnce(createMockResponse({ error: { message: 'Forbidden' } }, 403));
 
       await expect(adapter.fetchEmail('gmail:msg-123')).rejects.toMatchObject({
         code: 'PERMISSION_DENIED',
@@ -477,4 +473,3 @@ describe('Gmail ID helpers', () => {
     });
   });
 });
-

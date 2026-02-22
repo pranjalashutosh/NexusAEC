@@ -5,22 +5,16 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConnectionQualityIndicator } from '../../components/ConnectionQualityIndicator';
 import { PTTButton } from '../../components/PTTButton';
+import { getApiBaseUrl } from '../../config/api';
 import { useAuth } from '../../hooks/useAuth';
 import { useLiveKit } from '../../hooks/useLiveKit';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTheme } from '../../hooks/useTheme';
-import { getApiBaseUrl } from '../../config/api';
 import { generateRoomName } from '../../services/livekit-token';
 
 interface BriefingStats {
@@ -56,12 +50,12 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
 
   // Fetch live email stats for the topic card
   const fetchBriefingStats = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      return;
+    }
     try {
       const apiUrl = getApiBaseUrl();
-      const response = await fetch(
-        `${apiUrl}/email/stats?userId=${encodeURIComponent(userId)}`,
-      );
+      const response = await fetch(`${apiUrl}/email/stats?userId=${encodeURIComponent(userId)}`);
       if (response.ok) {
         const data = (await response.json()) as { success: boolean } & BriefingStats;
         if (data.success) {
@@ -84,15 +78,17 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
   // Track whether the voice agent has joined the room
   useEffect(() => {
     const hasAgent = participants.some(
-      (p) => !p.isLocal && (p.identity.startsWith('agent') || p.name?.toLowerCase().includes('agent')),
+      (p) =>
+        !p.isLocal && (p.identity.startsWith('agent') || p.name?.toLowerCase().includes('agent'))
     );
     setAgentConnected(hasAgent);
   }, [participants]);
 
   useEffect(() => {
     const roomName = route.params?.roomName ?? generateRoomName();
+    const displayName = accounts[0]?.name;
 
-    void connect(roomName, userId).catch((err) => {
+    void connect(roomName, userId, displayName).catch((err) => {
       setError(err instanceof Error ? err.message : 'Failed to connect');
     });
 
@@ -103,14 +99,17 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
   }, []);
 
   const handleClose = () => {
-    void disconnect();
+    // Don't call disconnect() here — the useEffect cleanup (line 100)
+    // already calls disconnect() when the screen unmounts via goBack().
+    // Calling it twice causes an unclean WebSocket close and agent-side crash.
     navigation.goBack();
   };
 
   const handleRetry = () => {
     setError(null);
     const roomName = route.params?.roomName ?? generateRoomName();
-    void connect(roomName, userId).catch((err) => {
+    const displayName = accounts[0]?.name;
+    void connect(roomName, userId, displayName).catch((err) => {
       setError(err instanceof Error ? err.message : 'Failed to connect');
     });
   };
@@ -121,9 +120,7 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.overlay}>
           <Text style={styles.overlayIcon}>📡</Text>
-          <Text style={[styles.overlayTitle, { color: colors.text }]}>
-            Connection Lost
-          </Text>
+          <Text style={[styles.overlayTitle, { color: colors.text }]}>Connection Lost</Text>
           <Text style={[styles.overlaySubtitle, { color: colors.textSecondary }]}>
             Waiting for connection to restore...
           </Text>
@@ -132,9 +129,7 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
             style={[styles.closeButton, { backgroundColor: colors.card }]}
             onPress={handleClose}
           >
-            <Text style={[styles.closeButtonText, { color: colors.text }]}>
-              End Briefing
-            </Text>
+            <Text style={[styles.closeButtonText, { color: colors.text }]}>End Briefing</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -147,9 +142,7 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.overlay}>
           <Text style={styles.overlayIcon}>⚠️</Text>
-          <Text style={[styles.overlayTitle, { color: colors.text }]}>
-            Connection Error
-          </Text>
+          <Text style={[styles.overlayTitle, { color: colors.text }]}>Connection Error</Text>
           <Text style={[styles.overlaySubtitle, { color: colors.textSecondary }]}>
             {error ?? 'Failed to connect to briefing room'}
           </Text>
@@ -164,9 +157,7 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
               style={[styles.closeButton, { backgroundColor: colors.card }]}
               onPress={handleClose}
             >
-              <Text style={[styles.closeButtonText, { color: colors.text }]}>
-                Go Back
-              </Text>
+              <Text style={[styles.closeButtonText, { color: colors.text }]}>Go Back</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -228,15 +219,17 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
             {isAgentSpeaking
               ? 'Speaking...'
               : isUserSpeaking
-              ? 'Listening...'
-              : agentConnected
-              ? 'Ready'
-              : 'Waiting for agent...'}
+                ? 'Listening...'
+                : agentConnected
+                  ? 'Ready'
+                  : 'Waiting for agent...'}
           </Text>
         </View>
 
         {/* Email Briefing Overview */}
-        <View style={[styles.topicCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[styles.topicCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
           {briefingStats ? (
             <>
               <Text style={[styles.topicLabel, { color: colors.muted }]}>Email Briefing</Text>
@@ -260,10 +253,7 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
       <View style={styles.controls}>
         {/* Mic Toggle */}
         <TouchableOpacity
-          style={[
-            styles.micButton,
-            { backgroundColor: isMicEnabled ? colors.card : colors.error },
-          ]}
+          style={[styles.micButton, { backgroundColor: isMicEnabled ? colors.card : colors.error }]}
           onPress={toggleMic}
         >
           <Text style={styles.micButtonIcon}>{isMicEnabled ? '🎤' : '🔇'}</Text>

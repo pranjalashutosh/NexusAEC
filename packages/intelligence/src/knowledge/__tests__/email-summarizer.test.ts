@@ -2,11 +2,7 @@
  * Tests for EmailSummarizer
  */
 
-import {
-  EmailSummarizer,
-  type SummarizationMode,
-  type EmailSummary,
-} from '../email-summarizer';
+import { EmailSummarizer, type SummarizationMode, type EmailSummary } from '../email-summarizer';
 import type { LLMClient } from '../llm-client';
 import type { StandardEmail, StandardThread, EmailAddress } from '@nexus-aec/shared-types';
 
@@ -376,8 +372,7 @@ describe('EmailSummarizer', () => {
   describe('action items extraction', () => {
     it('should handle action items with different formats', async () => {
       mockLLMClient.complete.mockResolvedValue({
-        content:
-          '* Send report to team\n• Review documentation\n- Complete testing by Monday',
+        content: '* Send report to team\n• Review documentation\n- Complete testing by Monday',
         model: 'gpt-4o',
         promptTokens: 50,
         completionTokens: 25,
@@ -415,8 +410,7 @@ describe('EmailSummarizer', () => {
   describe('key points extraction', () => {
     it('should handle key points with numbered lists', async () => {
       mockLLMClient.complete.mockResolvedValue({
-        content:
-          '1. First key point\n2. Second key point\n3. Third key point',
+        content: '1. First key point\n2. Second key point\n3. Third key point',
         model: 'gpt-4o',
         promptTokens: 50,
         completionTokens: 20,
@@ -496,9 +490,7 @@ describe('EmailSummarizer', () => {
 
       await summarizer.summarizeEmail(mockEmail);
 
-      expect(consoleLogSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('[EmailSummarizer]')
-      );
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(expect.stringContaining('[EmailSummarizer]'));
 
       consoleLogSpy.mockRestore();
     });

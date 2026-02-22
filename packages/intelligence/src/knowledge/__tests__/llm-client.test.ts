@@ -304,9 +304,7 @@ describe('LLMClient', () => {
     });
 
     it('should not retry on non-retryable errors', async () => {
-      mockCreate.mockRejectedValue(
-        new Error('Invalid API key')
-      );
+      mockCreate.mockRejectedValue(new Error('Invalid API key'));
 
       const messages: LLMMessage[] = [{ role: 'user', content: 'Test' }];
 
@@ -325,9 +323,7 @@ describe('LLMClient', () => {
 
       const mockRetryCreate = (clientWithRetry as any).client.chat.completions.create;
 
-      mockRetryCreate.mockRejectedValue(
-        new Error('Rate limit exceeded')
-      );
+      mockRetryCreate.mockRejectedValue(new Error('Rate limit exceeded'));
 
       const messages: LLMMessage[] = [{ role: 'user', content: 'Test' }];
 
@@ -481,9 +477,7 @@ describe('LLMClient', () => {
 
   describe('error handling', () => {
     it('should handle OpenAI API errors', async () => {
-      mockCreate.mockRejectedValue(
-        new Error('OpenAI API error: Invalid request')
-      );
+      mockCreate.mockRejectedValue(new Error('OpenAI API error: Invalid request'));
 
       const messages: LLMMessage[] = [{ role: 'user', content: 'Test' }];
 
@@ -501,9 +495,7 @@ describe('LLMClient', () => {
 
       const mockNoRetryCreate = (noRetryClient as any).client.chat.completions.create;
 
-      mockNoRetryCreate.mockRejectedValue(
-        new Error('Network error: ECONNREFUSED')
-      );
+      mockNoRetryCreate.mockRejectedValue(new Error('Network error: ECONNREFUSED'));
 
       const messages: LLMMessage[] = [{ role: 'user', content: 'Test' }];
 
@@ -556,9 +548,7 @@ describe('LLMClient', () => {
       const messages: LLMMessage[] = [{ role: 'user', content: 'Test' }];
       await client.complete(messages);
 
-      expect(consoleLogSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('[LLMClient]')
-      );
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(expect.stringContaining('[LLMClient]'));
 
       consoleLogSpy.mockRestore();
     });

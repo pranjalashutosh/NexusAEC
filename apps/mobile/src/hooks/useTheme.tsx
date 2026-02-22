@@ -2,7 +2,14 @@
  * Theme hook and provider
  */
 
-import React, { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  type ReactNode,
+} from 'react';
 import { useColorScheme } from 'react-native';
 
 /**

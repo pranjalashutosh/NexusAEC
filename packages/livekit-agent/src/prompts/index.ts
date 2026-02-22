@@ -31,6 +31,6 @@ export {
   CONFIRMATION_TEMPLATES,
   getTimeAgo,
   type EmailSummaryInput,
-  type BriefingTopic,
+  type BriefingTopicPrompt,
   type BriefingContext,
 } from './briefing-prompts.js';

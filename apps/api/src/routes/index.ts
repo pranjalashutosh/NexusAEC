@@ -1,4 +1,5 @@
 import { registerAuthRoutes } from './auth';
+import { registerBriefingRoutes } from './briefing';
 import { registerEmailStatsRoutes } from './email-stats';
 import { registerHealthRoutes } from './health';
 import { registerKnowledgeUploadRoutes } from './knowledge-upload';
@@ -29,5 +30,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
 
   // Knowledge file upload (ingestion into vector store)
   registerKnowledgeUploadRoutes(app);
-}
 
+  // Briefing pre-computation
+  registerBriefingRoutes(app);
+}

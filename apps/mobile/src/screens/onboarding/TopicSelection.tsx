@@ -5,13 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -53,10 +47,8 @@ export function TopicSelectionScreen({ navigation }: Props): React.JSX.Element {
   };
 
   const handleContinue = async () => {
-    const selectedTopics = SUGGESTED_TOPICS
-      .filter((t) => selectedIds.has(t.id))
-      .map((t) => t.name);
-    
+    const selectedTopics = SUGGESTED_TOPICS.filter((t) => selectedIds.has(t.id)).map((t) => t.name);
+
     await updatePreferences({ topics: selectedTopics });
     navigation.navigate('KeywordSelection');
   };
@@ -70,19 +62,14 @@ export function TopicSelectionScreen({ navigation }: Props): React.JSX.Element {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            What Matters to You?
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>What Matters to You?</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Select topics you want highlighted in briefings
           </Text>
         </View>
 
         {/* Topics Grid */}
-        <ScrollView
-          contentContainerStyle={styles.topicsGrid}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.topicsGrid} showsVerticalScrollIndicator={false}>
           {SUGGESTED_TOPICS.map((topic) => (
             <TouchableOpacity
               key={topic.id}

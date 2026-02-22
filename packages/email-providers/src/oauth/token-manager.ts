@@ -553,7 +553,9 @@ export class FileTokenStorage implements ITokenStorage {
   }
 
   private load(): void {
-    if (this.loaded) return;
+    if (this.loaded) {
+      return;
+    }
     this.loaded = true;
 
     try {
@@ -604,4 +606,3 @@ export class FileTokenStorage implements ITokenStorage {
     return this.data.has(key);
   }
 }
-

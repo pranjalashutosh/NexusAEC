@@ -19,8 +19,8 @@
  * (singleton client, graceful fallback if Redis unavailable).
  */
 
-import Redis from 'ioredis';
 import { createLogger } from '@nexus-aec/logger';
+import Redis from 'ioredis';
 
 const logger = createLogger({ baseContext: { component: 'briefed-email-store' } });
 
@@ -52,13 +52,16 @@ const TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 export class BriefedEmailStore {
   private redis: Redis | null = null;
   private redisAvailable = false;
+  private connectPromise: Promise<void> | null = null;
 
   constructor(options: BriefedEmailStoreOptions) {
     try {
       this.redis = new Redis(options.redisUrl, {
         maxRetriesPerRequest: 1,
         retryStrategy(times) {
-          if (times > 3) return null;
+          if (times > 3) {
+            return null;
+          }
           return Math.min(times * 200, 1000);
         },
         lazyConnect: true,
@@ -80,16 +83,31 @@ export class BriefedEmailStore {
         this.redisAvailable = false;
       });
 
-      this.redis.connect().catch((err) => {
-        logger.warn('BriefedEmailStore Redis unavailable', {
-          error: err instanceof Error ? err.message : String(err),
+      this.connectPromise = this.redis
+        .connect()
+        .then(() => {
+          this.redisAvailable = true;
+        })
+        .catch((err) => {
+          logger.warn('BriefedEmailStore Redis unavailable', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          this.redisAvailable = false;
         });
-        this.redisAvailable = false;
-      });
     } catch (err) {
       logger.warn('BriefedEmailStore Redis init failed', {
         error: err instanceof Error ? err.message : String(err),
       });
+    }
+  }
+
+  /**
+   * Wait for Redis to be connected before reading.
+   * Must be called before getBriefedIds/getAll in critical paths.
+   */
+  async waitForReady(): Promise<void> {
+    if (this.connectPromise) {
+      await this.connectPromise;
     }
   }
 
@@ -136,9 +154,11 @@ export class BriefedEmailStore {
    */
   async markBatch(
     userId: string,
-    records: Array<{ emailId: string; record: BriefedEmailRecord }>,
+    records: Array<{ emailId: string; record: BriefedEmailRecord }>
   ): Promise<void> {
-    if (!this.redis || !this.redisAvailable || records.length === 0) return;
+    if (!this.redis || !this.redisAvailable || records.length === 0) {
+      return;
+    }
 
     const key = `${REDIS_KEY_PREFIX}${userId}`;
     try {
@@ -166,11 +186,20 @@ export class BriefedEmailStore {
   // ===========================================================================
 
   /**
-   * Get all briefed/actioned/skipped email IDs (any status).
+   * Get email IDs that should be excluded from future briefings.
+   * Only excludes emails that were actioned (archived, flagged, marked read)
+   * or fully briefed. Skipped emails return in future sessions — the user
+   * may have been in a hurry but still wants to hear about them later.
    */
   async getBriefedIds(userId: string): Promise<Set<string>> {
     const all = await this.getAll(userId);
-    return new Set(all.keys());
+    const excludeIds = new Set<string>();
+    for (const [emailId, record] of all) {
+      if (record.status !== 'skipped') {
+        excludeIds.add(emailId);
+      }
+    }
+    return excludeIds;
   }
 
   /**
@@ -192,7 +221,9 @@ export class BriefedEmailStore {
    */
   async getAll(userId: string): Promise<Map<string, BriefedEmailRecord>> {
     const result = new Map<string, BriefedEmailRecord>();
-    if (!this.redis || !this.redisAvailable) return result;
+    if (!this.redis || !this.redisAvailable) {
+      return result;
+    }
 
     const key = `${REDIS_KEY_PREFIX}${userId}`;
     try {
@@ -240,9 +271,11 @@ export class BriefedEmailStore {
   private async writeRecord(
     userId: string,
     emailId: string,
-    record: BriefedEmailRecord,
+    record: BriefedEmailRecord
   ): Promise<void> {
-    if (!this.redis || !this.redisAvailable) return;
+    if (!this.redis || !this.redisAvailable) {
+      return;
+    }
 
     const key = `${REDIS_KEY_PREFIX}${userId}`;
     try {

@@ -119,9 +119,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       }
 
       // Sort by updatedAt descending
-      drafts.sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
+      drafts.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
       logger.info('Drafts fetched', { userId, count: drafts.length });
 
@@ -220,41 +218,40 @@ export function registerSyncRoutes(app: FastifyInstance): void {
    * Create a new draft
    * POST /sync/drafts
    */
-  app.post<{ Body: { userId?: string; draft: Omit<DraftReference, 'id' | 'createdAt' | 'updatedAt'> } }>(
-    '/sync/drafts',
-    async (request, reply) => {
-      const userId = request.body.userId ?? 'default-user';
-      const draftData = request.body.draft;
+  app.post<{
+    Body: { userId?: string; draft: Omit<DraftReference, 'id' | 'createdAt' | 'updatedAt'> };
+  }>('/sync/drafts', async (request, reply) => {
+    const userId = request.body.userId ?? 'default-user';
+    const draftData = request.body.draft;
 
-      if (!draftData) {
-        return reply.status(400).send({
-          success: false,
-          error: 'draft is required',
-          code: 'MISSING_DRAFT',
-        } satisfies SyncErrorResponse);
-      }
-
-      const now = new Date().toISOString();
-      const newDraft: DraftReference = {
-        ...draftData,
-        id: `draft-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      const currentDrafts = userDrafts.get(userId) ?? [];
-      currentDrafts.push(newDraft);
-      userDrafts.set(userId, currentDrafts);
-
-      logger.info('Draft created', { userId, draftId: newDraft.id });
-
-      return reply.status(201).send({
-        success: true,
-        data: newDraft,
-        syncedAt: now,
-      } satisfies SyncResponse<DraftReference>);
+    if (!draftData) {
+      return reply.status(400).send({
+        success: false,
+        error: 'draft is required',
+        code: 'MISSING_DRAFT',
+      } satisfies SyncErrorResponse);
     }
-  );
+
+    const now = new Date().toISOString();
+    const newDraft: DraftReference = {
+      ...draftData,
+      id: `draft-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const currentDrafts = userDrafts.get(userId) ?? [];
+    currentDrafts.push(newDraft);
+    userDrafts.set(userId, currentDrafts);
+
+    logger.info('Draft created', { userId, draftId: newDraft.id });
+
+    return reply.status(201).send({
+      success: true,
+      data: newDraft,
+      syncedAt: now,
+    } satisfies SyncResponse<DraftReference>);
+  });
 
   /**
    * Update a draft
@@ -345,22 +342,19 @@ export function registerSyncRoutes(app: FastifyInstance): void {
    * Get user preferences
    * GET /sync/preferences
    */
-  app.get<{ Querystring: { userId?: string } }>(
-    '/sync/preferences',
-    async (request, reply) => {
-      const userId = request.query.userId ?? 'default-user';
+  app.get<{ Querystring: { userId?: string } }>('/sync/preferences', async (request, reply) => {
+    const userId = request.query.userId ?? 'default-user';
 
-      const prefs = userPreferences.get(userId) ?? { ...DEFAULT_PREFERENCES };
+    const prefs = userPreferences.get(userId) ?? { ...DEFAULT_PREFERENCES };
 
-      logger.info('Preferences fetched', { userId });
+    logger.info('Preferences fetched', { userId });
 
-      return reply.send({
-        success: true,
-        data: prefs,
-        syncedAt: new Date().toISOString(),
-      } satisfies SyncResponse<UserPreferences>);
-    }
-  );
+    return reply.send({
+      success: true,
+      data: prefs,
+      syncedAt: new Date().toISOString(),
+    } satisfies SyncResponse<UserPreferences>);
+  });
 
   /**
    * Update user preferences
@@ -444,25 +438,22 @@ export function registerSyncRoutes(app: FastifyInstance): void {
    * Reset preferences to defaults
    * DELETE /sync/preferences
    */
-  app.delete<{ Querystring: { userId?: string } }>(
-    '/sync/preferences',
-    async (request, reply) => {
-      const userId = request.query.userId ?? 'default-user';
+  app.delete<{ Querystring: { userId?: string } }>('/sync/preferences', async (request, reply) => {
+    const userId = request.query.userId ?? 'default-user';
 
-      const resetPrefs: UserPreferences = {
-        ...DEFAULT_PREFERENCES,
-        lastSyncedAt: new Date().toISOString(),
-      };
+    const resetPrefs: UserPreferences = {
+      ...DEFAULT_PREFERENCES,
+      lastSyncedAt: new Date().toISOString(),
+    };
 
-      userPreferences.set(userId, resetPrefs);
+    userPreferences.set(userId, resetPrefs);
 
-      logger.info('Preferences reset', { userId });
+    logger.info('Preferences reset', { userId });
 
-      return reply.send({
-        success: true,
-        data: resetPrefs,
-        syncedAt: new Date().toISOString(),
-      } satisfies SyncResponse<UserPreferences>);
-    }
-  );
+    return reply.send({
+      success: true,
+      data: resetPrefs,
+      syncedAt: new Date().toISOString(),
+    } satisfies SyncResponse<UserPreferences>);
+  });
 }

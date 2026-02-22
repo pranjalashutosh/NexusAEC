@@ -114,10 +114,7 @@ export function ActivityRow({ entry, onUndo }: ActivityRowProps): React.ReactEle
         </div>
         <div className="activity-meta">
           <span className="activity-time">{formatTimestamp(entry.timestamp)}</span>
-          <span
-            className="activity-outcome"
-            style={{ color: outcomeStyle.color }}
-          >
+          <span className="activity-outcome" style={{ color: outcomeStyle.color }}>
             {outcomeStyle.label}
           </span>
           {isUndone && <span className="activity-undone-label">Undone</span>}
@@ -125,9 +122,7 @@ export function ActivityRow({ entry, onUndo }: ActivityRowProps): React.ReactEle
       </div>
 
       <div className="activity-actions">
-        {onUndo && !isUndone && entry.undoable && (
-          <UndoButton onUndo={onUndo} entryId={entry.id} />
-        )}
+        {onUndo && !isUndone && entry.undoable && <UndoButton onUndo={onUndo} entryId={entry.id} />}
       </div>
     </div>
   );

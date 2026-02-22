@@ -71,9 +71,7 @@ export function ConnectionQualityIndicator({
           ]}
         />
       </View>
-      {showLabel && (
-        <Text style={[styles.label, { color }]}>{getLabel()}</Text>
-      )}
+      {showLabel && <Text style={[styles.label, { color }]}>{getLabel()}</Text>}
     </View>
   );
 }

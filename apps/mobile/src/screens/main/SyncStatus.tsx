@@ -7,9 +7,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { getApiBaseUrl } from '../../config/api';
 import { useAuth, type AccountTokenStatus } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
-import { getApiBaseUrl } from '../../config/api';
 
 interface AccountSyncInfo {
   accountId: string;
@@ -44,7 +44,7 @@ export function SyncStatusScreen(): React.JSX.Element {
       try {
         const response = await fetch(
           `${apiUrl}/email/stats?userId=${encodeURIComponent(account.id)}`,
-          { headers: { Accept: 'application/json' } },
+          { headers: { Accept: 'application/json' } }
         );
 
         if (response.ok) {
@@ -84,29 +84,27 @@ export function SyncStatusScreen(): React.JSX.Element {
     void fetchSyncStatus();
   }, [fetchSyncStatus]);
 
-  const allValid = accounts.length > 0
-    && accounts.every((a) => !syncInfo[a.id]?.error);
+  const allValid = accounts.length > 0 && accounts.every((a) => !syncInfo[a.id]?.error);
   const hasErrors = accounts.some((a) => syncInfo[a.id]?.error);
 
-  const overallColor = loading ? colors.textSecondary
-    : hasErrors ? colors.error
-    : colors.success;
+  const overallColor = loading ? colors.textSecondary : hasErrors ? colors.error : colors.success;
   const overallIcon = loading ? '...' : hasErrors ? '!' : '✓';
-  const overallTitle = loading ? 'Checking...'
-    : hasErrors ? 'Sync Issues'
-    : 'All Synced';
+  const overallTitle = loading ? 'Checking...' : hasErrors ? 'Sync Issues' : 'All Synced';
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         {/* Overall Status */}
-        <View style={[styles.statusCard, { backgroundColor: overallColor + '15', borderColor: overallColor }]}>
+        <View
+          style={[
+            styles.statusCard,
+            { backgroundColor: overallColor + '15', borderColor: overallColor },
+          ]}
+        >
           <Text style={styles.statusIcon}>{overallIcon}</Text>
           <Text style={[styles.statusTitle, { color: overallColor }]}>{overallTitle}</Text>
           {!loading && allValid && (
-            <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>
-              Just now
-            </Text>
+            <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>Just now</Text>
           )}
         </View>
 
@@ -118,21 +116,34 @@ export function SyncStatusScreen(): React.JSX.Element {
             const tokenStatus: AccountTokenStatus = accountStatuses[account.id] ?? 'checking';
             const hasError = !!info?.error;
             const statusColor = hasError ? colors.error : colors.success;
-            const statusLabel = tokenStatus === 'checking' ? 'Checking...'
-              : tokenStatus === 'expired' ? 'Reconnect needed'
-              : hasError ? info.error
-              : 'Connected';
+            const statusLabel =
+              tokenStatus === 'checking'
+                ? 'Checking...'
+                : tokenStatus === 'expired'
+                  ? 'Reconnect needed'
+                  : hasError
+                    ? info.error
+                    : 'Connected';
 
             return (
               <View
                 key={account.id}
-                style={[styles.accountCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                style={[
+                  styles.accountCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
               >
                 <View style={styles.accountHeader}>
-                  <Text style={styles.accountIcon}>{account.provider === 'google' ? '📧' : '📨'}</Text>
+                  <Text style={styles.accountIcon}>
+                    {account.provider === 'google' ? '📧' : '📨'}
+                  </Text>
                   <View style={styles.accountInfo}>
-                    <Text style={[styles.accountEmail, { color: colors.text }]}>{account.email}</Text>
-                    <Text style={[styles.accountStatus, { color: statusColor }]}>{statusLabel}</Text>
+                    <Text style={[styles.accountEmail, { color: colors.text }]}>
+                      {account.email}
+                    </Text>
+                    <Text style={[styles.accountStatus, { color: statusColor }]}>
+                      {statusLabel}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.syncDetails}>
@@ -173,9 +184,13 @@ export function SyncStatusScreen(): React.JSX.Element {
 
 function formatTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return 'Just now';
+  if (seconds < 60) {
+    return 'Just now';
+  }
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
   const hours = Math.floor(minutes / 60);
   return `${hours}h ago`;
 }
@@ -198,7 +213,13 @@ function SyncDetail({ label, value, colors }: SyncDetailProps): React.JSX.Elemen
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16 },
-  statusCard: { padding: 24, borderRadius: 12, borderWidth: 1, alignItems: 'center', marginBottom: 24 },
+  statusCard: {
+    padding: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   statusIcon: { fontSize: 32, marginBottom: 8 },
   statusTitle: { fontSize: 20, fontWeight: '700' },
   statusSubtitle: { fontSize: 14, marginTop: 4 },

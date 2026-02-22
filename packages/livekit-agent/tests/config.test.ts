@@ -117,7 +117,9 @@ describe('livekit-agent/config', () => {
       delete process.env['LIVEKIT_API_KEY'];
       delete process.env['LIVEKIT_API_SECRET'];
 
-      expect(() => loadLiveKitConfig()).toThrow('Missing required environment variable: LIVEKIT_URL');
+      expect(() => loadLiveKitConfig()).toThrow(
+        'Missing required environment variable: LIVEKIT_URL'
+      );
     });
   });
 

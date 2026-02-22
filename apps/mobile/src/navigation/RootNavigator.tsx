@@ -67,11 +67,7 @@ function MainNavigator(): React.JSX.Element {
         animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen
         name="BriefingRoom"
         component={BriefingRoomScreen}
@@ -81,11 +77,7 @@ function MainNavigator(): React.JSX.Element {
           gestureEnabled: false,
         }}
       />
-      <Stack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ title: 'Settings' }}
-      />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       <Stack.Screen
         name="PrivacyDashboard"
         component={PrivacyDashboardScreen}

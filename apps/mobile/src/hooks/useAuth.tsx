@@ -124,7 +124,7 @@ async function initiateOAuth(provider: 'google' | 'microsoft'): Promise<Initiate
 
   const response = await fetch(`${apiUrl}${endpoint}`, {
     method: 'GET',
-    headers: { 'Accept': 'application/json' },
+    headers: { Accept: 'application/json' },
   });
 
   if (!response.ok) {
@@ -147,7 +147,7 @@ async function pollForResult(state: string): Promise<AuthSuccessResult> {
 
     const response = await fetch(`${apiUrl}/auth/result/${state}`, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' },
+      headers: { Accept: 'application/json' },
     });
 
     if (response.status === 202) {
@@ -166,7 +166,7 @@ async function pollForResult(state: string): Promise<AuthSuccessResult> {
     }
 
     if ('success' in data && data.success === true) {
-      return data as AuthSuccessResult;
+      return data;
     }
 
     if ('success' in data && data.success === false) {
@@ -188,7 +188,7 @@ async function pollForResult(state: string): Promise<AuthSuccessResult> {
  * Verify token status with backend for each account
  */
 async function verifyTokenStatus(
-  accts: ConnectedAccount[],
+  accts: ConnectedAccount[]
 ): Promise<Record<string, AccountTokenStatus>> {
   const statuses: Record<string, AccountTokenStatus> = {};
   const apiUrl = getApiBaseUrl();
@@ -198,7 +198,7 @@ async function verifyTokenStatus(
     try {
       const response = await fetch(
         `${apiUrl}/auth/token-status?userId=${encodeURIComponent(account.id)}&source=${source}`,
-        { headers: { 'Accept': 'application/json' } },
+        { headers: { Accept: 'application/json' } }
       );
 
       if (response.ok) {
@@ -274,79 +274,92 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
     void loadState();
   }, []);
 
-  const connectAccount = useCallback(async (provider: 'google' | 'microsoft') => {
-    // 1. Call backend to initiate OAuth and get the authorization URL
-    const { authorizationUrl, state } = await initiateOAuth(provider);
+  const connectAccount = useCallback(
+    async (provider: 'google' | 'microsoft') => {
+      // 1. Call backend to initiate OAuth and get the authorization URL
+      const { authorizationUrl, state } = await initiateOAuth(provider);
 
-    // 2. Open the authorization URL in the system browser
-    const supported = await Linking.canOpenURL(authorizationUrl);
-    if (!supported) {
-      throw new Error(`Cannot open OAuth URL for ${provider}`);
-    }
-    await Linking.openURL(authorizationUrl);
+      // 2. Open the authorization URL in the system browser
+      const supported = await Linking.canOpenURL(authorizationUrl);
+      if (!supported) {
+        throw new Error(`Cannot open OAuth URL for ${provider}`);
+      }
+      await Linking.openURL(authorizationUrl);
 
-    // 3. Poll the backend for the OAuth result
-    const result = await pollForResult(state);
+      // 3. Poll the backend for the OAuth result
+      const result = await pollForResult(state);
 
-    // 4. Create the connected account from the OAuth result
-    const newAccount: ConnectedAccount = {
-      id: result.userId,
-      provider,
-      email: result.email ?? (provider === 'google' ? 'connected@gmail.com' : 'connected@outlook.com'),
-      name: result.displayName ?? 'Connected User',
-      connectedAt: new Date().toISOString(),
-    };
+      // 4. Create the connected account from the OAuth result
+      const newAccount: ConnectedAccount = {
+        id: result.userId,
+        provider,
+        email:
+          result.email ?? (provider === 'google' ? 'connected@gmail.com' : 'connected@outlook.com'),
+        name: result.displayName ?? 'Connected User',
+        connectedAt: new Date().toISOString(),
+      };
 
-    const newAccounts = [...accounts, newAccount];
-    setAccounts(newAccounts);
-    await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
-  }, [accounts]);
+      const newAccounts = [...accounts, newAccount];
+      setAccounts(newAccounts);
+      await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
+    },
+    [accounts]
+  );
 
-  const disconnectAccount = useCallback(async (accountId: string) => {
-    const newAccounts = accounts.filter((a) => a.id !== accountId);
-    setAccounts(newAccounts);
-    setAccountStatuses((prev) => {
-      const next = { ...prev };
-      delete next[accountId];
-      return next;
-    });
-    await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
-  }, [accounts]);
+  const disconnectAccount = useCallback(
+    async (accountId: string) => {
+      const newAccounts = accounts.filter((a) => a.id !== accountId);
+      setAccounts(newAccounts);
+      setAccountStatuses((prev) => {
+        const next = { ...prev };
+        delete next[accountId];
+        return next;
+      });
+      await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
+    },
+    [accounts]
+  );
 
-  const reconnectAccount = useCallback(async (account: ConnectedAccount) => {
-    // Remove the old account, re-run OAuth, and store the new one
-    const filtered = accounts.filter((a) => a.id !== account.id);
+  const reconnectAccount = useCallback(
+    async (account: ConnectedAccount) => {
+      // Remove the old account, re-run OAuth, and store the new one
+      const filtered = accounts.filter((a) => a.id !== account.id);
 
-    // Initiate OAuth
-    const { authorizationUrl, state } = await initiateOAuth(account.provider);
+      // Initiate OAuth
+      const { authorizationUrl, state } = await initiateOAuth(account.provider);
 
-    const supported = await Linking.canOpenURL(authorizationUrl);
-    if (!supported) {
-      throw new Error(`Cannot open OAuth URL for ${account.provider}`);
-    }
-    await Linking.openURL(authorizationUrl);
+      const supported = await Linking.canOpenURL(authorizationUrl);
+      if (!supported) {
+        throw new Error(`Cannot open OAuth URL for ${account.provider}`);
+      }
+      await Linking.openURL(authorizationUrl);
 
-    const result = await pollForResult(state);
+      const result = await pollForResult(state);
 
-    const newAccount: ConnectedAccount = {
-      id: result.userId,
-      provider: account.provider,
-      email: result.email ?? account.email,
-      name: result.displayName ?? account.name,
-      connectedAt: new Date().toISOString(),
-    };
+      const newAccount: ConnectedAccount = {
+        id: result.userId,
+        provider: account.provider,
+        email: result.email ?? account.email,
+        name: result.displayName ?? account.name,
+        connectedAt: new Date().toISOString(),
+      };
 
-    const newAccounts = [...filtered, newAccount];
-    setAccounts(newAccounts);
-    setAccountStatuses((prev) => ({ ...prev, [newAccount.id]: 'valid' }));
-    await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
-  }, [accounts]);
+      const newAccounts = [...filtered, newAccount];
+      setAccounts(newAccounts);
+      setAccountStatuses((prev) => ({ ...prev, [newAccount.id]: 'valid' }));
+      await AsyncStorage.setItem(STORAGE_KEYS.AUTH_STATE, JSON.stringify(newAccounts));
+    },
+    [accounts]
+  );
 
-  const updatePreferences = useCallback(async (prefs: Partial<UserPreferences>) => {
-    const newPrefs = { ...preferences, ...prefs };
-    setPreferences(newPrefs);
-    await AsyncStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(newPrefs));
-  }, [preferences]);
+  const updatePreferences = useCallback(
+    async (prefs: Partial<UserPreferences>) => {
+      const newPrefs = { ...preferences, ...prefs };
+      setPreferences(newPrefs);
+      await AsyncStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(newPrefs));
+    },
+    [preferences]
+  );
 
   const completeOnboarding = useCallback(async () => {
     setHasCompletedOnboarding(true);

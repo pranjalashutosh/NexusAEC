@@ -18,7 +18,7 @@ import { Platform } from 'react-native';
  * Then paste the https URL here (e.g., 'https://abc123.ngrok-free.app')
  * Set to null to use default localhost/IP-based URL.
  */
-const NGROK_URL: string | null = 'https://forty-blocks-impaired-phd.trycloudflare.com';
+const NGROK_URL: string | null = 'https://necessity-consumer-crafts-folk.trycloudflare.com';
 
 /**
  * Get the API base URL.
@@ -32,13 +32,16 @@ const NGROK_URL: string | null = 'https://forty-blocks-impaired-phd.trycloudflar
  */
 export function getApiBaseUrl(): string {
   // Check for runtime override (e.g., from react-native-config in the future)
-  const envApiUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.API_BASE_URL;
-  if (envApiUrl) return envApiUrl;
+  const envApiUrl = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+    .process?.env?.API_BASE_URL;
+  if (envApiUrl) {
+    return envApiUrl;
+  }
 
   // Use ngrok tunnel if configured (for physical device testing)
-  if (NGROK_URL) return NGROK_URL;
+  if (NGROK_URL) {
+    return NGROK_URL;
+  }
 
   // Development defaults
   if (__DEV__) {
@@ -58,8 +61,7 @@ export function getApiBaseUrl(): string {
  * Get the LiveKit server URL.
  */
 export function getLiveKitUrl(): string {
-  const envUrl =
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
-      ?.env?.LIVEKIT_URL;
+  const envUrl = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+    ?.env?.LIVEKIT_URL;
   return envUrl ?? 'wss://nexusaec-xabnsrmi.livekit.cloud';
 }

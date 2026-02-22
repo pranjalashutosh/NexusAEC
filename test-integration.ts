@@ -74,7 +74,10 @@ async function testGmailAuth() {
     const userId = process.env.GMAIL_USER_ID || process.env.TEST_USER_ID || 'test-user';
 
     if (!accessToken) {
-      log('⚠️  Skipping Gmail API call (no GMAIL_ACCESS_TOKEN/GOOGLE_ACCESS_TOKEN in env)', 'yellow');
+      log(
+        '⚠️  Skipping Gmail API call (no GMAIL_ACCESS_TOKEN/GOOGLE_ACCESS_TOKEN in env)',
+        'yellow'
+      );
       log('   OAuth flow needs browser interaction to obtain tokens', 'yellow');
       return null;
     }
@@ -127,7 +130,10 @@ async function testVectorStore() {
       return null;
     }
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      log('⚠️  Skipping vector store test (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)', 'yellow');
+      log(
+        '⚠️  Skipping vector store test (missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)',
+        'yellow'
+      );
       return null;
     }
 
@@ -142,7 +148,8 @@ async function testVectorStore() {
 
     // Test 1: Upsert a document
     log('📝 Upserting test document...', 'cyan');
-    const testContent = 'Pump Station P-104 is located at Riverside Bridge. It handles main water distribution for the district.';
+    const testContent =
+      'Pump Station P-104 is located at Riverside Bridge. It handles main water distribution for the district.';
 
     // Generate embedding
     log('   Generating embedding...', 'cyan');
@@ -173,7 +180,9 @@ async function testVectorStore() {
 
     log(`✅ Found ${results.length} relevant documents:`, 'green');
     results.forEach((result, idx) => {
-      console.log(`   ${idx + 1}. Score: ${result.similarity.toFixed(3)} | ${result.document.content.substring(0, 100)}...`);
+      console.log(
+        `   ${idx + 1}. Score: ${result.similarity.toFixed(3)} | ${result.document.content.substring(0, 100)}...`
+      );
       console.log(`      Metadata: ${JSON.stringify(result.document.metadata)}`);
     });
 
@@ -300,7 +309,10 @@ async function testRedFlagDetection() {
       existing.push(email);
       emailsByThread.set(email.threadId, existing);
     }
-    const threadVelocityByThreadId = new Map<string, ReturnType<ThreadVelocityDetector['analyzeEmails']>>();
+    const threadVelocityByThreadId = new Map<
+      string,
+      ReturnType<ThreadVelocityDetector['analyzeEmails']>
+    >();
     for (const [threadId, emails] of emailsByThread.entries()) {
       threadVelocityByThreadId.set(threadId, velocityDetector.analyzeEmails(emails));
     }
@@ -333,7 +345,9 @@ async function testRedFlagDetection() {
       console.log(`   🎯 Score: ${score.score.toFixed(3)} (severity: ${score.severity ?? 'none'})`);
       console.log(`   📊 Signals:`);
       score.signalBreakdown.forEach((c) => {
-        if (!c.isPresent) {return;}
+        if (!c.isPresent) {
+          return;
+        }
         console.log(
           `      - ${c.signal}: raw=${c.rawScore.toFixed(2)} weight=${c.weight.toFixed(2)} contrib=${c.contribution.toFixed(2)}`
         );
@@ -515,7 +529,9 @@ async function runTests() {
   for (const envVar of requiredEnvVars) {
     const isPresent = !!process.env[envVar];
     log(`${isPresent ? '✅' : '❌'} ${envVar}`, isPresent ? 'green' : 'red');
-    if (!isPresent) {allPresent = false;}
+    if (!isPresent) {
+      allPresent = false;
+    }
   }
 
   if (!allPresent) {

@@ -14,10 +14,14 @@
  * - archive_email
  */
 
-import { createLogger } from '@nexus-aec/logger';
 import { isEmailProviderError } from '@nexus-aec/email-providers';
+import { createLogger } from '@nexus-aec/logger';
 
-import type { UnifiedInboxService, SmartDraftService, EmailQueryFilters } from '@nexus-aec/email-providers';
+import type {
+  UnifiedInboxService,
+  SmartDraftService,
+  EmailQueryFilters,
+} from '@nexus-aec/email-providers';
 
 const logger = createLogger({ baseContext: { component: 'email-tools' } });
 
@@ -35,11 +39,14 @@ export interface ToolDefinition {
     description: string;
     parameters: {
       type: 'object';
-      properties: Record<string, {
-        type: string;
-        description: string;
-        enum?: string[];
-      }>;
+      properties: Record<
+        string,
+        {
+          type: string;
+          description: string;
+          enum?: string[];
+        }
+      >;
       required: string[];
     };
   };
@@ -86,10 +93,7 @@ let _draftService: SmartDraftService | null = null;
  * Register email services for use by tool executors.
  * Call this after user authenticates and providers are ready.
  */
-export function setEmailServices(
-  inbox: UnifiedInboxService,
-  draft?: SmartDraftService
-): void {
+export function setEmailServices(inbox: UnifiedInboxService, draft?: SmartDraftService): void {
   _inboxService = inbox;
   if (draft !== undefined) {
     _draftService = draft;
@@ -109,9 +113,11 @@ export function clearEmailServices(): void {
 /**
  * Get the inbox service or throw if not initialized
  */
-function getInboxService(): UnifiedInboxService {
+export function getInboxService(): UnifiedInboxService {
   if (!_inboxService) {
-    throw new Error('Email services not initialized. Call setEmailServices() after authentication.');
+    throw new Error(
+      'Email services not initialized. Call setEmailServices() after authentication.'
+    );
   }
   return _inboxService;
 }
@@ -122,6 +128,26 @@ function getInboxService(): UnifiedInboxService {
 
 const vipList = new Set<string>();
 const muteList = new Map<string, { until: Date | null }>();
+
+/**
+ * Initialize VIP and mute lists from persisted preferences.
+ * Called at session start to pre-populate in-memory state.
+ */
+export function initializeFromPreferences(
+  vips: string[],
+  muted: Array<{ email: string; expiresAt?: Date | null }>
+): void {
+  for (const v of vips) {
+    vipList.add(v);
+  }
+  for (const m of muted) {
+    muteList.set(m.email, { until: m.expiresAt ?? null });
+  }
+  logger.info('Initialized email tools from preferences', {
+    vipCount: vips.length,
+    mutedCount: muted.length,
+  });
+}
 
 /**
  * Check if a sender email is on the VIP list
@@ -135,7 +161,9 @@ export function isVip(email: string): boolean {
  */
 export function isMuted(email: string): boolean {
   const entry = muteList.get(email);
-  if (!entry) {return false;}
+  if (!entry) {
+    return false;
+  }
   if (entry.until && entry.until < new Date()) {
     muteList.delete(email);
     return false;
@@ -147,13 +175,19 @@ export function isMuted(email: string): boolean {
  * Compute mute expiration date
  */
 function computeExpiration(duration: string): Date | null {
-  if (duration === 'forever') {return null;}
+  if (duration === 'forever') {
+    return null;
+  }
   const now = new Date();
   switch (duration) {
-    case '1_day': return new Date(now.getTime() + 86400000);
-    case '1_week': return new Date(now.getTime() + 7 * 86400000);
-    case '1_month': return new Date(now.getTime() + 30 * 86400000);
-    default: return new Date(now.getTime() + 86400000);
+    case '1_day':
+      return new Date(now.getTime() + 86400000);
+    case '1_week':
+      return new Date(now.getTime() + 7 * 86400000);
+    case '1_month':
+      return new Date(now.getTime() + 30 * 86400000);
+    default:
+      return new Date(now.getTime() + 86400000);
   }
 }
 
@@ -207,7 +241,10 @@ function handleProviderError(error: unknown, actionDescription: string): ToolRes
     };
   }
 
-  logger.error(`Failed to ${actionDescription}`, error instanceof Error ? error : new Error(message));
+  logger.error(
+    `Failed to ${actionDescription}`,
+    error instanceof Error ? error : new Error(message)
+  );
   return {
     success: false,
     message: `Failed to ${actionDescription}. Please try again.`,
@@ -223,7 +260,8 @@ export const muteSenderTool: ToolDefinition = {
   type: 'function',
   function: {
     name: 'mute_sender',
-    description: 'Mute all future emails from a sender. User will not receive notifications for emails from this sender.',
+    description:
+      'Mute all future emails from a sender. User will not receive notifications for emails from this sender.',
     parameters: {
       type: 'object',
       properties: {
@@ -246,7 +284,8 @@ export const prioritizeVipTool: ToolDefinition = {
   type: 'function',
   function: {
     name: 'prioritize_vip',
-    description: 'Add a sender to the VIP list. Their emails will be prioritized in future briefings.',
+    description:
+      'Add a sender to the VIP list. Their emails will be prioritized in future briefings.',
     parameters: {
       type: 'object',
       properties: {
@@ -340,7 +379,8 @@ export const flagFollowupTool: ToolDefinition = {
         },
         due_date: {
           type: 'string',
-          description: 'Optional due date for follow-up (e.g., "tomorrow", "next_week", "end_of_day")',
+          description:
+            'Optional due date for follow-up (e.g., "tomorrow", "next_week", "end_of_day")',
           enum: ['today', 'tomorrow', 'this_week', 'next_week', 'no_date'],
         },
         note: {
@@ -357,7 +397,8 @@ export const createDraftTool: ToolDefinition = {
   type: 'function',
   function: {
     name: 'create_draft',
-    description: 'Create a draft email. For replies, provide in_reply_to with the email ID. For new emails, provide to with the recipient email address and subject.',
+    description:
+      'Create a draft email. For replies, provide in_reply_to with the email ID. For new emails, provide to with the recipient email address and subject.',
     parameters: {
       type: 'object',
       properties: {
@@ -367,7 +408,8 @@ export const createDraftTool: ToolDefinition = {
         },
         to: {
           type: 'string',
-          description: 'Recipient email address (for new emails). Use this when composing a new email rather than replying.',
+          description:
+            'Recipient email address (for new emails). Use this when composing a new email rather than replying.',
         },
         subject: {
           type: 'string',
@@ -451,6 +493,30 @@ export const archiveEmailTool: ToolDefinition = {
   },
 };
 
+export const batchActionTool: ToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'batch_action',
+    description:
+      'Apply an action to multiple emails at once. Use this when the user says things like "archive all LinkedIn" or "mark all newsletters as read".',
+    parameters: {
+      type: 'object',
+      properties: {
+        email_ids: {
+          type: 'string',
+          description: 'Comma-separated list of email IDs to act on',
+        },
+        action: {
+          type: 'string',
+          description: 'Action to perform on all listed emails',
+          enum: ['archive', 'mark_read', 'flag'],
+        },
+      },
+      required: ['email_ids', 'action'],
+    },
+  },
+};
+
 // =============================================================================
 // All Email Tools
 // =============================================================================
@@ -466,6 +532,7 @@ export const EMAIL_TOOLS: ToolDefinition[] = [
   searchEmailsTool,
   undoLastActionTool,
   archiveEmailTool,
+  batchActionTool,
 ];
 
 export function getEmailTool(name: string): ToolDefinition | undefined {
@@ -576,7 +643,9 @@ export async function executeMarkRead(
   args: Record<string, unknown>,
   context: EmailActionContext
 ): Promise<ToolResult> {
-  const emailIds = (args['email_ids'] as string)?.split(',').map((s) => s.trim()) ?? [context.emailId];
+  const emailIds = (args['email_ids'] as string)?.split(',').map((s) => s.trim()) ?? [
+    context.emailId,
+  ];
 
   logger.info('Executing mark_read', { emailIds, context });
 
@@ -592,7 +661,8 @@ export async function executeMarkRead(
 
     return {
       success: true,
-      message: emailIds.length === 1 ? 'Marked as read.' : `Marked ${emailIds.length} emails as read.`,
+      message:
+        emailIds.length === 1 ? 'Marked as read.' : `Marked ${emailIds.length} emails as read.`,
       riskLevel: 'low',
     };
   } catch (error) {
@@ -643,7 +713,14 @@ export async function executeCreateDraft(
   const tone = (args['tone'] as string) ?? 'friendly';
   const isNewEmail = !inReplyTo && toAddress;
 
-  logger.info('Executing create_draft', { inReplyTo, toAddress, subject, tone, isNewEmail, context });
+  logger.info('Executing create_draft', {
+    inReplyTo,
+    toAddress,
+    subject,
+    tone,
+    isNewEmail,
+    context,
+  });
 
   try {
     const inbox = getInboxService();
@@ -669,7 +746,9 @@ export async function executeCreateDraft(
       const replyTo = originalEmail?.from?.email ?? context.from;
       const replySubject = originalEmail?.subject
         ? `Re: ${originalEmail.subject}`
-        : context.subject ? `Re: ${context.subject}` : 'Re:';
+        : context.subject
+          ? `Re: ${context.subject}`
+          : 'Re:';
 
       const draft = await inbox.createDraft({
         subject: replySubject,
@@ -789,7 +868,11 @@ export async function executeMoveEmails(
   args: Record<string, unknown>,
   context: EmailActionContext
 ): Promise<ToolResult> {
-  const emailIds = (args['email_ids'] as string)?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+  const emailIds =
+    (args['email_ids'] as string)
+      ?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
   const targetFolder = args['target_folder'] as string;
 
   logger.info('Executing move_emails', { emailIds, targetFolder, context });
@@ -817,16 +900,22 @@ export async function executeMoveEmails(
     await inbox.moveToFolder(emailIds, matchedFolder.id);
 
     // Move is not reversible (unknown source folder)
-    recordAction('move_emails', {
-      email_ids: emailIds.join(','),
-      target_folder: matchedFolder.id,
-    }, context, false);
+    recordAction(
+      'move_emails',
+      {
+        email_ids: emailIds.join(','),
+        target_folder: matchedFolder.id,
+      },
+      context,
+      false
+    );
 
     return {
       success: true,
-      message: emailIds.length === 1
-        ? `Moved to "${matchedFolder.name}".`
-        : `Moved ${emailIds.length} emails to "${matchedFolder.name}".`,
+      message:
+        emailIds.length === 1
+          ? `Moved to "${matchedFolder.name}".`
+          : `Moved ${emailIds.length} emails to "${matchedFolder.name}".`,
       riskLevel: 'low',
     };
   } catch (error) {
@@ -852,8 +941,12 @@ export async function executeSearchEmails(
     const inbox = getInboxService();
 
     const filters: EmailQueryFilters = { query };
-    if (from) {filters.from = from;}
-    if (hasAttachment === 'true') {filters.hasAttachments = true;}
+    if (from) {
+      filters.from = from;
+    }
+    if (hasAttachment === 'true') {
+      filters.hasAttachments = true;
+    }
     if (dateRange) {
       const now = new Date();
       switch (dateRange) {
@@ -884,9 +977,13 @@ export async function executeSearchEmails(
 
     return {
       success: true,
-      message: result.items.length === 0
-        ? 'No emails found matching your search.'
-        : `Found ${result.items.length} email${result.items.length > 1 ? 's' : ''}. ${result.items.slice(0, 3).map((e) => `"${e.subject}" from ${e.from.name ?? e.from.email}`).join('; ')}.`,
+      message:
+        result.items.length === 0
+          ? 'No emails found matching your search.'
+          : `Found ${result.items.length} email${result.items.length > 1 ? 's' : ''}. ${result.items
+              .slice(0, 3)
+              .map((e) => `"${e.subject}" from ${e.from.name ?? e.from.email}`)
+              .join('; ')}.`,
       data: {
         count: result.items.length,
         emails: result.items.slice(0, 5).map((e) => ({
@@ -962,7 +1059,9 @@ export async function executeUndoLastAction(
       case 'prioritize_vip': {
         const email = lastAction.args['sender_email'] as string;
         const wasVip = lastAction.args['_wasVip'] as boolean;
-        if (!wasVip) {vipList.delete(email);}
+        if (!wasVip) {
+          vipList.delete(email);
+        }
         return { success: true, message: `Removed ${email} from VIP list.`, riskLevel: 'low' };
       }
       case 'create_folder': {
@@ -974,10 +1073,69 @@ export async function executeUndoLastAction(
         return { success: true, message: 'Deleted the folder.', riskLevel: 'low' };
       }
       default:
-        return { success: true, message: `Undid ${lastAction.action.replace('_', ' ')}.`, riskLevel: 'low' };
+        return {
+          success: true,
+          message: `Undid ${lastAction.action.replace('_', ' ')}.`,
+          riskLevel: 'low',
+        };
     }
   } catch (error) {
     return handleProviderError(error, `undo ${lastAction.action}`);
+  }
+}
+
+/**
+ * Execute batch_action — applies a single action to multiple emails at once.
+ * Leverages Gmail's batchModifyMessages for efficiency.
+ */
+export async function executeBatchAction(
+  args: Record<string, unknown>,
+  context: EmailActionContext
+): Promise<ToolResult> {
+  const emailIds =
+    (args['email_ids'] as string)
+      ?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+  const action = args['action'] as string;
+
+  logger.info('Executing batch_action', { emailIds, action, context });
+
+  if (emailIds.length === 0) {
+    return { success: false, message: 'No email IDs provided.', riskLevel: 'low' };
+  }
+
+  try {
+    const inbox = getInboxService();
+
+    switch (action) {
+      case 'archive':
+        await inbox.archiveEmails(emailIds);
+        break;
+      case 'mark_read':
+        await inbox.markRead(emailIds);
+        break;
+      case 'flag':
+        await inbox.flagEmails(emailIds);
+        break;
+      default:
+        return {
+          success: false,
+          message: `Unknown batch action: ${action}`,
+          riskLevel: 'low',
+        };
+    }
+
+    recordAction('batch_action', { email_ids: emailIds.join(','), action }, context, false);
+
+    const actionLabel = action === 'mark_read' ? 'marked as read' : `${action}d`;
+    return {
+      success: true,
+      message: `${emailIds.length} emails ${actionLabel}.`,
+      riskLevel: 'low',
+    };
+  } catch (error) {
+    return handleProviderError(error, `batch ${action}`);
   }
 }
 
@@ -996,6 +1154,7 @@ export const EMAIL_TOOL_EXECUTORS: Record<string, ToolExecutor> = {
   create_folder: executeCreateFolder,
   move_emails: executeMoveEmails,
   search_emails: executeSearchEmails,
+  batch_action: executeBatchAction,
 };
 
 /**

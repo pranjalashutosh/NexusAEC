@@ -101,11 +101,7 @@ export function PTTButton({ size = 80 }: PTTButtonProps): React.JSX.Element {
             styles.innerCircle,
             innerSize,
             {
-              backgroundColor: isPressed
-                ? '#FFFFFF'
-                : isMicEnabled
-                ? colors.primary
-                : colors.muted,
+              backgroundColor: isPressed ? '#FFFFFF' : isMicEnabled ? colors.primary : colors.muted,
             },
           ]}
         />

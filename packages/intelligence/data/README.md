@@ -1,6 +1,7 @@
 # Asset Seed Data
 
-This directory contains seed data for development and testing of the NexusAEC knowledge base (Tier 3).
+This directory contains seed data for development and testing of the NexusAEC
+knowledge base (Tier 3).
 
 ## Files
 
@@ -8,9 +9,11 @@ This directory contains seed data for development and testing of the NexusAEC kn
 
 **Purpose:** MVP seed data for asset management system integration testing
 
-**Contents:** 39 sample assets representing a typical water/wastewater utility infrastructure
+**Contents:** 39 sample assets representing a typical water/wastewater utility
+infrastructure
 
 **Asset Categories:**
+
 - Pumps (6) - P-xxx
 - Sensors (5) - S-xxx
 - Tanks (4) - T-xxx
@@ -25,6 +28,7 @@ This directory contains seed data for development and testing of the NexusAEC kn
 - Other (2) - X-xxx
 
 **Locations Represented:**
+
 - Riverside Bridge Station
 - North Plant
 - South Treatment Plant
@@ -33,6 +37,7 @@ This directory contains seed data for development and testing of the NexusAEC kn
 - Central Control Room
 
 **Criticality Levels:**
+
 - CRITICAL: 13 assets
 - HIGH: 19 assets
 - MEDIUM: 7 assets
@@ -41,21 +46,24 @@ This directory contains seed data for development and testing of the NexusAEC kn
 
 **Purpose:** MVP seed data for safety documentation and procedures
 
-**Contents:** 7 comprehensive safety documents including manuals, procedures, and guidelines
+**Contents:** 7 comprehensive safety documents including manuals, procedures,
+and guidelines
 
 **Document Types:**
+
 - Safety Manuals (3) - SM-xxx
-  * Pump Station Emergency Shutdown
-  * Chlorine Handling and Spill Response
-  * Water Quality Monitoring Safety
+  - Pump Station Emergency Shutdown
+  - Chlorine Handling and Spill Response
+  - Water Quality Monitoring Safety
 - Procedures (3) - PROC-xxx
-  * Lockout/Tagout (LOTO)
-  * Confined Space Entry
-  * Generator Testing and Maintenance
+  - Lockout/Tagout (LOTO)
+  - Confined Space Entry
+  - Generator Testing and Maintenance
 - Guidelines (1) - GUIDE-xxx
-  * Electrical Safety and Arc Flash
+  - Electrical Safety and Arc Flash
 
 **Topics Covered:**
+
 - Emergency response procedures
 - Chemical safety (sodium hypochlorite)
 - Lockout/tagout requirements (OSHA 29 CFR 1910.147)
@@ -64,10 +72,12 @@ This directory contains seed data for development and testing of the NexusAEC kn
 - Water quality sampling and regulatory compliance
 - Generator operation and maintenance (NFPA 110)
 
-**Related Assets:**
-Documents reference 23 unique assets including pumps, valves, tanks, sensors, electrical equipment, and generators. Each document provides safety context for operations involving specific equipment.
+**Related Assets:** Documents reference 23 unique assets including pumps,
+valves, tanks, sensors, electrical equipment, and generators. Each document
+provides safety context for operations involving specific equipment.
 
 **Content Statistics:**
+
 - Average length: ~2,300 characters per document
 - Total asset references: 35 across all documents
 - Regulatory standards: OSHA, NFPA, EPA Safe Drinking Water Act
@@ -92,7 +102,8 @@ npx ts-node cli/ingest-manuals.ts --source seed
 
 ### Production
 
-For production deployment, clients will provide their own asset data in CSV format:
+For production deployment, clients will provide their own asset data in CSV
+format:
 
 ```bash
 # Ingest from client CSV export
@@ -105,27 +116,30 @@ Each asset in `seed-assets.json` conforms to the `Asset` type:
 
 ```typescript
 interface Asset {
-  assetId: string;           // Unique identifier (e.g., "P-104")
-  name: string;              // Human-readable name
-  description: string;       // Detailed description
-  category: AssetCategory;   // Asset type/category
-  location: string;          // Physical location
-  criticality?: AssetCriticality;  // CRITICAL | HIGH | MEDIUM | LOW
-  status?: AssetStatus;      // OPERATIONAL | MAINTENANCE | OFFLINE | DECOMMISSIONED
-  metadata?: Record<string, string>;  // Flexible additional fields
+  assetId: string; // Unique identifier (e.g., "P-104")
+  name: string; // Human-readable name
+  description: string; // Detailed description
+  category: AssetCategory; // Asset type/category
+  location: string; // Physical location
+  criticality?: AssetCriticality; // CRITICAL | HIGH | MEDIUM | LOW
+  status?: AssetStatus; // OPERATIONAL | MAINTENANCE | OFFLINE | DECOMMISSIONED
+  metadata?: Record<string, string>; // Flexible additional fields
 }
 ```
 
 ### Common Metadata Fields
 
-The seed data includes realistic metadata fields that are typical for asset management systems:
+The seed data includes realistic metadata fields that are typical for asset
+management systems:
 
 **Equipment Details:**
+
 - `manufacturer` - Equipment manufacturer
 - `model` - Model number
 - `serialNumber` - Serial number
 
 **Dates:**
+
 - `installDate` - Installation date (ISO 8601 format)
 - `lastMaintenance` - Last maintenance date
 - `nextMaintenance` - Scheduled next maintenance
@@ -133,6 +147,7 @@ The seed data includes realistic metadata fields that are typical for asset mana
 - `nextCalibration` - Next calibration due date
 
 **Technical Specifications:**
+
 - `capacity` - Equipment capacity (GPM, kW, etc.)
 - `pressure` - Pressure rating (PSI)
 - `powerRating` - Power consumption (HP, kW)
@@ -140,13 +155,15 @@ The seed data includes realistic metadata fields that are typical for asset mana
 - `efficiency` - Efficiency rating
 
 **Organizational:**
+
 - `department` - Responsible department
 - `responsible` - Responsible person/team
 - `parentAsset` - Parent asset ID (for hierarchical assets)
 
 ## Expected CSV Format for Production
 
-Clients should provide asset data as CSV exports from their asset management systems (NCE, Maximo, SAP PM, etc.).
+Clients should provide asset data as CSV exports from their asset management
+systems (NCE, Maximo, SAP PM, etc.).
 
 ### Minimum Required Columns
 
@@ -190,6 +207,7 @@ The system automatically normalizes category values:
 - Example: "control panel" → "CONTROL_PANEL"
 
 Standard categories:
+
 - PUMP
 - VALVE
 - GENERATOR
@@ -231,22 +249,27 @@ npx tsx scripts/validate-safety-manuals.ts
 ```
 
 The validation scripts check:
-- **Assets:** Schema compliance, no duplicate IDs, category/criticality/location distributions
-- **Safety Manuals:** Schema compliance, no duplicate IDs, type distribution, content statistics, related asset references
+
+- **Assets:** Schema compliance, no duplicate IDs, category/criticality/location
+  distributions
+- **Safety Manuals:** Schema compliance, no duplicate IDs, type distribution,
+  content statistics, related asset references
 
 ## Data Quality Tips
 
 **For Best Search Results:**
 
 1. **Rich Descriptions** - Include detailed descriptions with relevant keywords
-   - Good: "Main water distribution pump for Riverside district. Primary pump delivering 5000 GPM at 150 PSI."
+   - Good: "Main water distribution pump for Riverside district. Primary pump
+     delivering 5000 GPM at 150 PSI."
    - Poor: "Pump"
 
 2. **Consistent Locations** - Use consistent location naming
    - Good: "Riverside Bridge Station", "North Plant"
    - Poor: "RB Station", "PLANT-NORTH", "plant north"
 
-3. **Complete Metadata** - Include manufacturer, model, install date when available
+3. **Complete Metadata** - Include manufacturer, model, install date when
+   available
    - Helps with maintenance tracking and vendor management
 
 4. **Accurate Criticality** - Properly classify asset criticality
@@ -267,6 +290,8 @@ After validating your seed data:
 ## Support
 
 For questions about asset data format or ingestion, see:
+
 - `packages/intelligence/src/knowledge/asset-types.ts` - Type definitions
-- `packages/intelligence/src/knowledge/supabase-vector-store.ts` - Vector storage
+- `packages/intelligence/src/knowledge/supabase-vector-store.ts` - Vector
+  storage
 - Task 3.18-3.24 for CSV parsing and ingestion implementation

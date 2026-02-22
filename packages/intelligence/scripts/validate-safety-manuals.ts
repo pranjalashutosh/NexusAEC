@@ -25,7 +25,9 @@ function validateSafetyManuals(): void {
     const fileContent = fs.readFileSync(SEED_MANUALS_FILE, 'utf-8');
     documents = JSON.parse(fileContent);
   } catch (error) {
-    console.error(`❌ Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `❌ Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`
+    );
     process.exit(1);
   }
 
@@ -50,9 +52,10 @@ function validateSafetyManuals(): void {
       console.log(`✓ [${index + 1}/${documents.length}] ${d.id} - ${d.title.substring(0, 60)}...`);
     } else {
       invalidCount++;
-      const id = typeof doc === 'object' && doc !== null && 'id' in doc
-        ? String((doc as any).id)
-        : 'UNKNOWN';
+      const id =
+        typeof doc === 'object' && doc !== null && 'id' in doc
+          ? String((doc as any).id)
+          : 'UNKNOWN';
 
       errors.push({
         index: index + 1,

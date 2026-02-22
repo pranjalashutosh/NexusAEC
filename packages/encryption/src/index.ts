@@ -172,7 +172,9 @@ export async function encrypt(
   }
 
   if (!key || key.length !== DEFAULT_KEY_LENGTH) {
-    throw new Error(`Encryption key must be ${DEFAULT_KEY_LENGTH} bytes (${DEFAULT_KEY_LENGTH * 8} bits)`);
+    throw new Error(
+      `Encryption key must be ${DEFAULT_KEY_LENGTH} bytes (${DEFAULT_KEY_LENGTH * 8} bits)`
+    );
   }
 
   const algorithm = options.algorithm ?? DEFAULT_ALGORITHM;
@@ -228,7 +230,9 @@ export async function decrypt(encryptedData: EncryptedData, key: Buffer): Promis
   }
 
   if (!key || key.length !== DEFAULT_KEY_LENGTH) {
-    throw new Error(`Decryption key must be ${DEFAULT_KEY_LENGTH} bytes (${DEFAULT_KEY_LENGTH * 8} bits)`);
+    throw new Error(
+      `Decryption key must be ${DEFAULT_KEY_LENGTH} bytes (${DEFAULT_KEY_LENGTH * 8} bits)`
+    );
   }
 
   const { ciphertext, iv, authTag, algorithm, encoding } = encryptedData;

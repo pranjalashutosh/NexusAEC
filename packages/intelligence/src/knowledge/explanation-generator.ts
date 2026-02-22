@@ -290,9 +290,7 @@ export class ExplanationGenerator {
     }
 
     parts.push('');
-    parts.push(
-      'Then, list 2-4 key factors as bullet points that contributed to this flagging.'
-    );
+    parts.push('Then, list 2-4 key factors as bullet points that contributed to this flagging.');
 
     if (this.includeSuggestedAction) {
       parts.push('');
@@ -322,7 +320,9 @@ export class ExplanationGenerator {
     const explanationLines: string[] = [];
 
     for (const line of lines) {
-      if (!line) {continue;}
+      if (!line) {
+        continue;
+      }
 
       // Detect section headers
       if (
@@ -391,9 +391,7 @@ export class ExplanationGenerator {
     return {
       explanation: explanation || 'This email has been flagged for your attention.',
       keyFactors: keyFactors.slice(0, 4),
-      ...(this.includeSuggestedAction && suggestedAction
-        ? { suggestedAction }
-        : {}),
+      ...(this.includeSuggestedAction && suggestedAction ? { suggestedAction } : {}),
       urgencyLevel: this.getUrgencyLevelDescription(score),
     };
   }
@@ -464,10 +462,7 @@ export class ExplanationGenerator {
   /**
    * Update configuration
    */
-  setConfig(config: {
-    defaultStyle?: ExplanationStyle;
-    includeSuggestedAction?: boolean;
-  }): void {
+  setConfig(config: { defaultStyle?: ExplanationStyle; includeSuggestedAction?: boolean }): void {
     if (config.defaultStyle !== undefined) {
       this.defaultStyle = config.defaultStyle;
     }

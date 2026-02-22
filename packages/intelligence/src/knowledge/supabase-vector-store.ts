@@ -235,10 +235,7 @@ export class SupabaseVectorStore {
         metadata: doc.metadata ?? {},
       }));
 
-      const { data, error } = await this.client
-        .from(this.tableName)
-        .insert(records)
-        .select('id');
+      const { data, error } = await this.client.from(this.tableName).insert(records).select('id');
 
       if (error) {
         throw new Error(`Failed to upsert documents: ${error.message}`);
@@ -394,10 +391,7 @@ export class SupabaseVectorStore {
    */
   async deleteMany(ids: string[]): Promise<number> {
     try {
-      const { error, count } = await this.client
-        .from(this.tableName)
-        .delete()
-        .in('id', ids);
+      const { error, count } = await this.client.from(this.tableName).delete().in('id', ids);
 
       if (error) {
         throw new Error(`Failed to delete documents: ${error.message}`);
@@ -430,9 +424,7 @@ export class SupabaseVectorStore {
       }
 
       if (this.debug) {
-        console.log(
-          `[SupabaseVectorStore] Deleted ${count ?? 0} documents of type ${sourceType}`
-        );
+        console.log(`[SupabaseVectorStore] Deleted ${count ?? 0} documents of type ${sourceType}`);
       }
 
       return count ?? 0;
@@ -471,11 +463,13 @@ export class SupabaseVectorStore {
   /**
    * List all documents with optional filtering
    */
-  async list(options: {
-    sourceType?: SourceType;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<VectorDocument[]> {
+  async list(
+    options: {
+      sourceType?: SourceType;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<VectorDocument[]> {
     try {
       let query = this.client.from(this.tableName).select('*');
 

@@ -9,23 +9,23 @@ export {
   type STTOptions,
   type TranscriptEvent,
   type TranscriptCallback,
-  
+
   // Configuration
   createSTTOptions,
   createSTTOptionsWithVocabulary,
-  
+
   // Vocabulary
   DEFAULT_CUSTOM_VOCABULARY,
   defaultVocabulary,
-  
+
   // Language support
   SUPPORTED_LANGUAGES,
   isLanguageSupported,
   getLanguageDisplayName,
-  
+
   // Interim results
   InterimResultsBuffer,
-  
+
   // Transcript processing
   processTranscript,
   detectCommand,

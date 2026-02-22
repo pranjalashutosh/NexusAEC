@@ -58,13 +58,34 @@ export function PrivacyScreen(): React.ReactElement {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-              <th style={{ textAlign: 'left', padding: '8px 0', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+              <th
+                style={{
+                  textAlign: 'left',
+                  padding: '8px 0',
+                  color: 'var(--color-text-secondary)',
+                  fontWeight: 500,
+                }}
+              >
                 Category
               </th>
-              <th style={{ textAlign: 'right', padding: '8px 0', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+              <th
+                style={{
+                  textAlign: 'right',
+                  padding: '8px 0',
+                  color: 'var(--color-text-secondary)',
+                  fontWeight: 500,
+                }}
+              >
                 Size
               </th>
-              <th style={{ textAlign: 'right', padding: '8px 0', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+              <th
+                style={{
+                  textAlign: 'right',
+                  padding: '8px 0',
+                  color: 'var(--color-text-secondary)',
+                  fontWeight: 500,
+                }}
+              >
                 Retention
               </th>
             </tr>
@@ -73,7 +94,13 @@ export function PrivacyScreen(): React.ReactElement {
             {DATA_USAGE.map((item) => (
               <tr key={item.category} style={{ borderBottom: '1px solid var(--color-border)' }}>
                 <td style={{ padding: '12px 0' }}>{item.category}</td>
-                <td style={{ textAlign: 'right', padding: '12px 0', color: 'var(--color-text-secondary)' }}>
+                <td
+                  style={{
+                    textAlign: 'right',
+                    padding: '12px 0',
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
                   {item.size}
                 </td>
                 <td style={{ textAlign: 'right', padding: '12px 0', color: 'var(--color-muted)' }}>
@@ -88,7 +115,9 @@ export function PrivacyScreen(): React.ReactElement {
       {/* Privacy Info */}
       <div className="card" style={{ marginBottom: '16px' }}>
         <h3 style={{ marginBottom: '12px' }}>How We Handle Your Data</h3>
-        <ul style={{ paddingLeft: '20px', color: 'var(--color-text-secondary)', lineHeight: '1.8' }}>
+        <ul
+          style={{ paddingLeft: '20px', color: 'var(--color-text-secondary)', lineHeight: '1.8' }}
+        >
           <li>Emails are processed in real-time and not stored long-term</li>
           <li>Voice transcripts are processed by Deepgram and not stored</li>
           <li>Draft references are stored locally until you approve or delete them</li>
@@ -107,11 +136,7 @@ export function PrivacyScreen(): React.ReactElement {
           <button className="btn btn-secondary" onClick={handleRevokeAccess}>
             🔗 Revoke Email Access
           </button>
-          <button
-            className="btn btn-danger"
-            onClick={handleClearData}
-            disabled={isClearing}
-          >
+          <button className="btn btn-danger" onClick={handleClearData} disabled={isClearing}>
             {isClearing ? '🗑️ Clearing...' : '🗑️ Clear All Data'}
           </button>
         </div>

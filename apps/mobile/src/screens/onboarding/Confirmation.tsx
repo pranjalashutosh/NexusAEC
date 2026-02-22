@@ -34,9 +34,7 @@ export function ConfirmationScreen({ navigation }: Props): React.JSX.Element {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.successIcon}>✅</Text>
-          <Text style={[styles.title, { color: colors.text }]}>
-            You're All Set!
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>You're All Set!</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Here's a summary of your preferences
           </Text>
@@ -95,9 +93,7 @@ export function ConfirmationScreen({ navigation }: Props): React.JSX.Element {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleEditSettings} activeOpacity={0.8}>
-            <Text style={[styles.editText, { color: colors.primary }]}>
-              Edit Preferences
-            </Text>
+            <Text style={[styles.editText, { color: colors.primary }]}>Edit Preferences</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -126,7 +122,9 @@ function SummaryCard({
   const remaining = items.length - maxDisplay;
 
   return (
-    <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View
+      style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+    >
       <View style={styles.cardHeader}>
         <Text style={styles.cardIcon}>{icon}</Text>
         <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
@@ -149,9 +147,7 @@ function SummaryCard({
               </Text>
             ))}
             {remaining > 0 && (
-              <Text style={[styles.moreText, { color: colors.primary }]}>
-                +{remaining} more
-              </Text>
+              <Text style={[styles.moreText, { color: colors.primary }]}>+{remaining} more</Text>
             )}
           </>
         )}

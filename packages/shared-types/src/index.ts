@@ -286,4 +286,3 @@ export interface PaginationInfo {
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   pagination: PaginationInfo;
 }
-

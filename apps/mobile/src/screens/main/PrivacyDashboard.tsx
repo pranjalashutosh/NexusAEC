@@ -8,7 +8,6 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'rea
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 
-
 export function PrivacyDashboardScreen(): React.JSX.Element {
   const { colors } = useTheme();
   const { logout } = useAuth();
@@ -48,7 +47,12 @@ export function PrivacyDashboardScreen(): React.JSX.Element {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <DataRow label="Sync History" value="45 KB" retention="30 days" colors={colors} />
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <DataRow label="Voice Transcripts" value="0 KB" retention="Not stored" colors={colors} />
+            <DataRow
+              label="Voice Transcripts"
+              value="0 KB"
+              retention="Not stored"
+              colors={colors}
+            />
           </View>
         </View>
 
@@ -57,10 +61,9 @@ export function PrivacyDashboardScreen(): React.JSX.Element {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Privacy Policy</Text>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              • Emails are processed in real-time and not stored long-term{'\n'}
-              • Voice transcripts are processed by Deepgram and not stored{'\n'}
-              • Your preferences are stored locally on your device{'\n'}
-              • We do not sell or share your personal data
+              • Emails are processed in real-time and not stored long-term{'\n'}• Voice transcripts
+              are processed by Deepgram and not stored{'\n'}• Your preferences are stored locally on
+              your device{'\n'}• We do not sell or share your personal data
             </Text>
           </View>
         </View>
@@ -69,19 +72,28 @@ export function PrivacyDashboardScreen(): React.JSX.Element {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Actions</Text>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              styles.actionButton,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
             onPress={() => {}}
           >
             <Text style={[styles.actionText, { color: colors.text }]}>Export My Data</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              styles.actionButton,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
             onPress={handleRevokePermissions}
           >
             <Text style={[styles.actionText, { color: colors.warning }]}>Revoke Permissions</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.error + '10', borderColor: colors.error }]}
+            style={[
+              styles.actionButton,
+              { backgroundColor: colors.error + '10', borderColor: colors.error },
+            ]}
             onPress={handleClearData}
           >
             <Text style={[styles.actionText, { color: colors.error }]}>Clear My Data</Text>
@@ -124,6 +136,12 @@ const styles = StyleSheet.create({
   dataRetention: { fontSize: 12, marginTop: 2 },
   dataValue: { fontSize: 14 },
   infoText: { fontSize: 14, lineHeight: 22 },
-  actionButton: { padding: 16, borderRadius: 12, borderWidth: 1, marginBottom: 12, alignItems: 'center' },
+  actionButton: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
   actionText: { fontSize: 16, fontWeight: '500' },
 });

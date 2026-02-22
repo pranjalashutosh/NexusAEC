@@ -267,9 +267,7 @@ export class FeedbackLearner {
     }
 
     if (this.debug) {
-      console.log(
-        `[FeedbackLearner] Initialized with ${this.feedback.length} feedback records`
-      );
+      console.log(`[FeedbackLearner] Initialized with ${this.feedback.length} feedback records`);
     }
   }
 
@@ -298,9 +296,7 @@ export class FeedbackLearner {
     await this.save();
 
     if (this.debug) {
-      console.log(
-        `[FeedbackLearner] Recorded ${record.type} feedback for email ${record.emailId}`
-      );
+      console.log(`[FeedbackLearner] Recorded ${record.type} feedback for email ${record.emailId}`);
     }
 
     return record;
@@ -309,11 +305,13 @@ export class FeedbackLearner {
   /**
    * Get all feedback records
    */
-  async getFeedback(options: {
-    type?: FeedbackType;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<FeedbackRecord[]> {
+  async getFeedback(
+    options: {
+      type?: FeedbackType;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<FeedbackRecord[]> {
     let filtered = [...this.feedback];
 
     if (options.type) {

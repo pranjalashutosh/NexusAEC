@@ -79,7 +79,16 @@ export interface ElevenLabsConfig {
     useSpeakerBoost: boolean;
   };
   /** Output format (must match TTSEncoding from @livekit/agents-plugin-elevenlabs) */
-  outputFormat: 'pcm_16000' | 'pcm_22050' | 'pcm_44100' | 'mp3_22050_32' | 'mp3_44100_32' | 'mp3_44100_64' | 'mp3_44100_96' | 'mp3_44100_128' | 'mp3_44100_192';
+  outputFormat:
+    | 'pcm_16000'
+    | 'pcm_22050'
+    | 'pcm_44100'
+    | 'mp3_22050_32'
+    | 'mp3_44100_32'
+    | 'mp3_44100_64'
+    | 'mp3_44100_96'
+    | 'mp3_44100_128'
+    | 'mp3_44100_192';
 }
 
 /**
@@ -205,7 +214,10 @@ export function loadElevenLabsConfig(): ElevenLabsConfig {
       style: getNumericEnv('ELEVENLABS_STYLE', 0.0),
       useSpeakerBoost: getBooleanEnv('ELEVENLABS_SPEAKER_BOOST', true),
     },
-    outputFormat: getOptionalEnv('ELEVENLABS_OUTPUT_FORMAT', 'pcm_22050') as ElevenLabsConfig['outputFormat'],
+    outputFormat: getOptionalEnv(
+      'ELEVENLABS_OUTPUT_FORMAT',
+      'pcm_22050'
+    ) as ElevenLabsConfig['outputFormat'],
   };
 }
 

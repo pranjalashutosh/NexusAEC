@@ -30,7 +30,7 @@ export interface EmailSummaryInput {
 /**
  * Topic for briefing
  */
-export interface BriefingTopic {
+export interface BriefingTopicPrompt {
   name: string;
   itemCount: number;
   priority: 'high' | 'medium' | 'low';
@@ -57,7 +57,7 @@ export interface BriefingContext {
  */
 export function generateTopicTransition(
   fromTopic: string | null,
-  toTopic: BriefingTopic,
+  toTopic: BriefingTopicPrompt,
   _context: BriefingContext
 ): string {
   if (!fromTopic) {
@@ -66,9 +66,7 @@ export function generateTopicTransition(
   }
 
   // Transition between topics
-  const urgencyNote = toTopic.priority === 'high' 
-    ? 'This is high priority. ' 
-    : '';
+  const urgencyNote = toTopic.priority === 'high' ? 'This is high priority. ' : '';
 
   return `Moving on to ${toTopic.name}. ${urgencyNote}${toTopic.itemCount} ${toTopic.itemCount === 1 ? 'item' : 'items'} to cover.`;
 }
@@ -78,11 +76,11 @@ export function generateTopicTransition(
  */
 export function generateProgressUpdate(context: BriefingContext): string {
   const remaining = context.totalItems - context.currentPosition;
-  
+
   if (remaining === 0) {
     return "That's everything for now.";
   }
-  
+
   if (remaining <= 3) {
     return `Almost done. ${remaining} more ${remaining === 1 ? 'item' : 'items'}.`;
   }
@@ -104,9 +102,10 @@ export function generateProgressUpdate(context: BriefingContext): string {
 export function generateEmailSummaryPrompt(email: EmailSummaryInput): string {
   const vipNote = email.isFromVip ? '[VIP] ' : '';
   const attachmentNote = email.hasAttachments ? ' (has attachments)' : '';
-  const threadNote = email.threadLength && email.threadLength > 1 
-    ? ` [${email.threadLength} messages in thread]` 
-    : '';
+  const threadNote =
+    email.threadLength && email.threadLength > 1
+      ? ` [${email.threadLength} messages in thread]`
+      : '';
   const timeAgo = getTimeAgo(email.timestamp);
 
   return `Summarize this email for verbal briefing. Be concise (max 2 sentences).
@@ -127,7 +126,7 @@ export function generateRedFlagPrompt(email: EmailSummaryInput): string {
     return '';
   }
 
-  const reasons = email.redFlagReasons?.length 
+  const reasons = email.redFlagReasons?.length
     ? email.redFlagReasons.join(', ')
     : 'requires attention';
 
@@ -171,15 +170,15 @@ Keep it under 3 sentences. Start with the current state, then any action needed.
 export const CONFIRMATION_TEMPLATES = {
   // Low risk - just acknowledge
   low: {
-    markRead: "Marked as read.",
-    skip: "Skipped.",
-    next: "Moving on.",
-    archive: "Archived.",
+    markRead: 'Marked as read.',
+    skip: 'Skipped.',
+    next: 'Moving on.',
+    archive: 'Archived.',
   },
 
   // Medium risk - confirm action taken
   medium: {
-    flag: "Flagged for follow-up.",
+    flag: 'Flagged for follow-up.',
     flagWithContext: (from: string) => `Flagged ${from}'s email for follow-up.`,
     moveToFolder: (folder: string) => `Moved to ${folder}.`,
     addVip: (name: string) => `Added ${name} to your VIP list.`,
@@ -188,9 +187,10 @@ export const CONFIRMATION_TEMPLATES = {
   // High risk - confirm before acting
   high: {
     sendEmail: (to: string) => `I'll send this to ${to}. Should I go ahead?`,
-    deleteEmail: "This will delete the email. Are you sure?",
+    deleteEmail: 'This will delete the email. Are you sure?',
     muteVip: (name: string) => `${name} is a VIP. Still mute them?`,
-    createDraft: (subject: string) => `I've drafted a reply about ${subject}. Want me to read it back?`,
+    createDraft: (subject: string) =>
+      `I've drafted a reply about ${subject}. Want me to read it back?`,
   },
 };
 
@@ -203,13 +203,13 @@ export function generateConfirmation(
   context?: Record<string, string>
 ): string {
   const templates = CONFIRMATION_TEMPLATES[riskLevel];
-  
+
   if (typeof templates[action as keyof typeof templates] === 'function') {
     const template = templates[action as keyof typeof templates] as (arg: string) => string;
     return template(context?.['arg'] ?? '');
   }
 
-  return templates[action as keyof typeof templates] as string ?? "Done.";
+  return (templates[action as keyof typeof templates] as string) ?? 'Done.';
 }
 
 // =============================================================================
@@ -232,9 +232,7 @@ export function generateDisambiguationPrompt(
     return `Did you mean ${firstOption.label}?`;
   }
 
-  const optionText = options
-    .map((opt, i) => `${i + 1}. ${opt.label}`)
-    .join(', or ');
+  const optionText = options.map((opt, i) => `${i + 1}. ${opt.label}`).join(', or ');
 
   const contextNote = context ? `For "${context}": ` : '';
 
@@ -248,15 +246,13 @@ export function generateDisambiguationPrompt(
 /**
  * Opening briefing prompt
  */
-export function generateBriefingOpening(
-  context: BriefingContext,
-  userName?: string
-): string {
+export function generateBriefingOpening(context: BriefingContext, userName?: string): string {
   const name = userName ? `${userName}, ` : '';
   const topicList = context.remainingTopics.slice(0, 3).join(', ');
-  const moreNote = context.remainingTopics.length > 3 
-    ? ` and ${context.remainingTopics.length - 3} more topics` 
-    : '';
+  const moreNote =
+    context.remainingTopics.length > 3
+      ? ` and ${context.remainingTopics.length - 3} more topics`
+      : '';
 
   return `${name}you have ${context.totalItems} items to catch up on. Topics include: ${topicList}${moreNote}. Let's dive in.`;
 }
@@ -264,20 +260,19 @@ export function generateBriefingOpening(
 /**
  * Closing briefing prompt
  */
-export function generateBriefingClosing(
-  actionsCount: number,
-  flaggedCount: number
-): string {
+export function generateBriefingClosing(actionsCount: number, flaggedCount: number): string {
   if (actionsCount === 0 && flaggedCount === 0) {
     return "That's your inbox for now. Nothing needed from you.";
   }
 
-  const actionNote = actionsCount > 0 
-    ? `You took ${actionsCount} ${actionsCount === 1 ? 'action' : 'actions'}. ` 
-    : '';
-  const flagNote = flaggedCount > 0 
-    ? `${flaggedCount} ${flaggedCount === 1 ? 'item' : 'items'} flagged for follow-up.` 
-    : '';
+  const actionNote =
+    actionsCount > 0
+      ? `You took ${actionsCount} ${actionsCount === 1 ? 'action' : 'actions'}. `
+      : '';
+  const flagNote =
+    flaggedCount > 0
+      ? `${flaggedCount} ${flaggedCount === 1 ? 'item' : 'items'} flagged for follow-up.`
+      : '';
 
   return `That's your briefing. ${actionNote}${flagNote} I'll update you if anything urgent comes in.`;
 }
@@ -325,6 +320,4 @@ function getTimeAgo(date: Date): string {
 // Exports
 // =============================================================================
 
-export {
-  getTimeAgo,
-};
+export { getTimeAgo };

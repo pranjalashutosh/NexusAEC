@@ -1,7 +1,7 @@
 # Nexus AEC - Project Context Document
 
-**Generated:** 2026-01-09
-**Status:** Phase 1 Complete (Foundation), Phase 2 In Progress
+**Generated:** 2026-01-09 **Status:** Phase 1 Complete (Foundation), Phase 2 In
+Progress
 
 ---
 
@@ -9,16 +9,23 @@
 
 ### 1.1 Vision & Goals
 
-**Nexus AEC** is a voice-driven AI executive assistant designed for professionals who need to stay on top of critical communications while on the go (e.g., driving, commuting, exercising). The system provides:
+**Nexus AEC** is a voice-driven AI executive assistant designed for
+professionals who need to stay on top of critical communications while on the go
+(e.g., driving, commuting, exercising). The system provides:
 
-- **Unified Inbox Management**: Aggregates emails from both Outlook and Gmail into a single timeline
-- **Intelligent Prioritization**: Uses AI to detect "red flags" (urgent emails, VIP senders, time-sensitive threads)
-- **Voice-First Interface**: Enables hands-free email management through natural voice commands
-- **Safety & Privacy**: Built with enterprise-grade encryption, secure storage, and transparent audit trails
+- **Unified Inbox Management**: Aggregates emails from both Outlook and Gmail
+  into a single timeline
+- **Intelligent Prioritization**: Uses AI to detect "red flags" (urgent emails,
+  VIP senders, time-sensitive threads)
+- **Voice-First Interface**: Enables hands-free email management through natural
+  voice commands
+- **Safety & Privacy**: Built with enterprise-grade encryption, secure storage,
+  and transparent audit trails
 
 ### 1.2 Core Architecture: Unified LiveKit Voice Stack
 
-The system uses **LiveKit Cloud** as the central hub for all voice interactions, eliminating the need for custom audio processing:
+The system uses **LiveKit Cloud** as the central hub for all voice interactions,
+eliminating the need for custom audio processing:
 
 ```
 ┌─────────────┐     LiveKit      ┌──────────────────┐
@@ -35,6 +42,7 @@ The system uses **LiveKit Cloud** as the central hub for all voice interactions,
 ```
 
 **Key Components:**
+
 - **Mobile App**: React Native with `@livekit/react-native` SDK
 - **Backend Agent**: LiveKit Agents framework (Node.js/Python)
 - **Speech-to-Text**: Deepgram Nova-2 via LiveKit STT plugin
@@ -72,20 +80,20 @@ The system uses **LiveKit Cloud** as the central hub for all voice interactions,
 
 ### 2.2 Key Technologies
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Voice** | LiveKit Cloud | Real-time audio/video infrastructure |
-| **STT** | Deepgram Nova-2 | Speech recognition with custom vocabulary |
-| **TTS** | ElevenLabs Turbo v2.5 | Natural voice synthesis |
-| **AI** | OpenAI GPT-4o | Reasoning, intent parsing, function calling |
-| **Email** | Microsoft Graph API | Outlook integration |
-| **Email** | Google Gmail API | Gmail integration |
-| **Session State** | Redis 7 | In-memory session tracking |
-| **Vector Store** | Supabase (pgvector) | Knowledge base embeddings |
-| **Mobile** | React Native | Cross-platform mobile app |
-| **Desktop** | Electron + React | Desktop app for draft review |
-| **Backend** | Express/Fastify | API server |
-| **Infrastructure** | Docker Compose, Kubernetes | Local dev + production deployment |
+| Layer              | Technology                 | Purpose                                     |
+| ------------------ | -------------------------- | ------------------------------------------- |
+| **Voice**          | LiveKit Cloud              | Real-time audio/video infrastructure        |
+| **STT**            | Deepgram Nova-2            | Speech recognition with custom vocabulary   |
+| **TTS**            | ElevenLabs Turbo v2.5      | Natural voice synthesis                     |
+| **AI**             | OpenAI GPT-4o              | Reasoning, intent parsing, function calling |
+| **Email**          | Microsoft Graph API        | Outlook integration                         |
+| **Email**          | Google Gmail API           | Gmail integration                           |
+| **Session State**  | Redis 7                    | In-memory session tracking                  |
+| **Vector Store**   | Supabase (pgvector)        | Knowledge base embeddings                   |
+| **Mobile**         | React Native               | Cross-platform mobile app                   |
+| **Desktop**        | Electron + React           | Desktop app for draft review                |
+| **Backend**        | Express/Fastify            | API server                                  |
+| **Infrastructure** | Docker Compose, Kubernetes | Local dev + production deployment           |
 
 ### 2.3 Development Environment
 
@@ -124,7 +132,9 @@ pnpm type-check   # TypeScript type checking
 
    **`@nexus-aec/shared-types`**
    - ✅ Comprehensive type definitions (290 lines)
-   - ✅ Types: `StandardEmail`, `StandardThread`, `StandardDraft`, `CalendarEvent`, `Contact`, `RedFlag`, `VIP`, `Topic`, `DriveState`, `AuditEntry`, `UserPreferences`, `Asset`, `VectorDocument`
+   - ✅ Types: `StandardEmail`, `StandardThread`, `StandardDraft`,
+     `CalendarEvent`, `Contact`, `RedFlag`, `VIP`, `Topic`, `DriveState`,
+     `AuditEntry`, `UserPreferences`, `Asset`, `VectorDocument`
    - ✅ Full coverage of domain models
 
    **`@nexus-aec/encryption`**
@@ -134,7 +144,8 @@ pnpm type-check   # TypeScript type checking
 
    **`@nexus-aec/secure-storage`**
    - ✅ Platform-agnostic abstraction
-   - ✅ Support for Keychain (iOS/macOS), EncryptedSharedPreferences (Android), Credential Manager (Windows)
+   - ✅ Support for Keychain (iOS/macOS), EncryptedSharedPreferences (Android),
+     Credential Manager (Windows)
    - ✅ Unit tests
 
    **`@nexus-aec/logger`**
@@ -174,8 +185,11 @@ pnpm type-check   # TypeScript type checking
 
 1. **Interfaces & Types** (`src/interfaces/`)
    - ✅ `EmailProvider` interface (477 lines of comprehensive types)
-   - ✅ Common methods: `fetchThreads()`, `fetchUnread()`, `createDraft()`, `sendDraft()`, `markRead()`, `markUnread()`, `moveToFolder()`, `applyLabel()`, `getContacts()`, `getCalendarEvents()`
-   - ✅ `StandardEmail`, `StandardThread`, `StandardDraft`, `CalendarEvent`, `Contact` types
+   - ✅ Common methods: `fetchThreads()`, `fetchUnread()`, `createDraft()`,
+     `sendDraft()`, `markRead()`, `markUnread()`, `moveToFolder()`,
+     `applyLabel()`, `getContacts()`, `getCalendarEvents()`
+   - ✅ `StandardEmail`, `StandardThread`, `StandardDraft`, `CalendarEvent`,
+     `Contact` types
    - ✅ `EmailSource` discriminator (`'OUTLOOK' | 'GMAIL'`)
    - ✅ Pagination, filtering, and sync status types
    - ✅ Unit tests for interface compliance
@@ -183,7 +197,8 @@ pnpm type-check   # TypeScript type checking
 2. **OAuth Implementation** (`src/oauth/`)
    - ✅ `microsoft.ts`: OAuth 2.0 with PKCE for Microsoft Graph
    - ✅ `google.ts`: OAuth 2.0 with PKCE for Google APIs
-   - ✅ `token-manager.ts`: Secure token storage, automatic refresh, expiration handling
+   - ✅ `token-manager.ts`: Secure token storage, automatic refresh, expiration
+     handling
    - ✅ Comprehensive unit tests for all OAuth flows
 
 3. **Provider Adapters** (`src/adapters/`)
@@ -193,8 +208,10 @@ pnpm type-check   # TypeScript type checking
    - ✅ Comprehensive unit tests
 
 4. **Services** (`src/services/`)
-   - ✅ `UnifiedInboxService`: Polls all adapters, normalizes, merges by timestamp
-   - ✅ `SmartDraftService`: Routes replies to original source, defaults to Outlook
+   - ✅ `UnifiedInboxService`: Polls all adapters, normalizes, merges by
+     timestamp
+   - ✅ `SmartDraftService`: Routes replies to original source, defaults to
+     Outlook
    - ✅ `calendar-sync.ts`: Fetches events from both providers
    - ✅ `contacts-sync.ts`: Fetches contacts for VIP suggestions
    - ✅ Unit tests for all services
@@ -213,6 +230,7 @@ pnpm type-check   # TypeScript type checking
 **Tasks 3.1 - 3.31**
 
 #### Tier 1: Ephemeral Processing (Not Started)
+
 - ⬜ 3.1-3.5: Red flag detection components
   - `keyword-matcher.ts`
   - `vip-detector.ts`
@@ -223,11 +241,13 @@ pnpm type-check   # TypeScript type checking
 - ⬜ 3.7: `topic-clusterer.ts` - Email clustering
 
 #### Tier 2: Session State (Not Started)
+
 - ⬜ 3.8-3.9: Redis setup and `DriveState` schema
 - ⬜ 3.10: `RedisSessionStore` implementation
 - ⬜ 3.11: `ShadowProcessor` - Real-time transcript → state updates
 
 #### Tier 3: Knowledge Base (Not Started)
+
 - ⬜ 3.12-3.14: Supabase vector store setup and implementation
 - ⬜ 3.15-3.24: Asset data ingestion system
   - Seed data files (MVP: hardcoded 20-50 assets)
@@ -237,6 +257,7 @@ pnpm type-check   # TypeScript type checking
 - ⬜ 3.25: RAG retrieval implementation
 
 #### Briefing & Summarization (Not Started)
+
 - ⬜ 3.26-3.29: LLM integration for briefings
   - `llm-client.ts`
   - `email-summarizer.ts`
@@ -244,6 +265,7 @@ pnpm type-check   # TypeScript type checking
   - `explanation-generator.ts`
 
 #### Personalization (Not Started)
+
 - ⬜ 3.30-3.31: User preferences and learning
   - `preferences-store.ts`
   - `feedback-learner.ts`
@@ -253,21 +275,25 @@ pnpm type-check   # TypeScript type checking
 **Tasks 4.1 - 4.24**
 
 #### LiveKit Setup (Not Started)
+
 - ⬜ 4.1-4.3: LiveKit Cloud project provisioning
 - ⬜ 4.4-4.7: Backend agent implementation
 
 #### STT Configuration (Not Started)
+
 - ⬜ 4.8-4.11: Deepgram Nova-2 integration
   - Custom vocabulary (Asset IDs, project names)
   - Accent/language support
   - Interim results handling
 
 #### TTS Configuration (Not Started)
+
 - ⬜ 4.12-4.14: ElevenLabs Turbo v2.5 integration
   - Voice selection
   - Streaming TTS
 
 #### GPT-4o Reasoning Loop (Not Started)
+
 - ⬜ 4.15-4.22: Reasoning loop and tool definitions
   - System prompts
   - Email action tools
@@ -276,6 +302,7 @@ pnpm type-check   # TypeScript type checking
   - Disambiguation handling
 
 #### Barge-in & Interruption (Not Started)
+
 - ⬜ 4.23-4.24: LiveKit native barge-in handling
 
 ### 🔨 Phase 5: Mobile App (0% Complete)
@@ -285,18 +312,23 @@ pnpm type-check   # TypeScript type checking
 **Status**: `apps/mobile/` directory is empty
 
 #### Project Setup (Not Started)
+
 - ⬜ 5.1-5.3: React Native initialization + LiveKit SDK
 
 #### Onboarding Screens (Not Started)
+
 - ⬜ 5.4-5.9: Welcome, OAuth, VIP/Topic/Keyword selection, Confirmation
 
 #### Briefing Room (Not Started)
+
 - ⬜ 5.10-5.14: LiveKit room integration, PTT button, state management
 
 #### Dead Zone Handling (Not Started)
+
 - ⬜ 5.15-5.18: Connection quality monitoring, auto-resume
 
 #### Settings & Utilities (Not Started)
+
 - ⬜ 5.19-5.27: Settings, privacy dashboard, offline queue, quiet mode
 
 ### 🔨 Phase 6: Desktop App (0% Complete)
@@ -306,12 +338,15 @@ pnpm type-check   # TypeScript type checking
 **Status**: `apps/desktop/` directory is empty
 
 #### Draft Review (Not Started)
+
 - ⬜ 6.1-6.7: Electron setup, draft list/detail views, approve & send
 
 #### Audit Trail (Not Started)
+
 - ⬜ 6.8-6.14: Session activity, all activity, undo, export
 
 #### Settings & Sync (Not Started)
+
 - ⬜ 6.15-6.18: Settings, privacy dashboard, draft sync, preferences sync
 
 ### 🔨 Phase 7: Backend API (0% Complete)
@@ -321,7 +356,9 @@ pnpm type-check   # TypeScript type checking
 **Status**: `apps/api/` directory is empty
 
 #### Implementation (Not Started)
-- ⬜ 7.1-7.8: Express/Fastify setup, OAuth callbacks, LiveKit token generation, sync endpoints, webhooks, JWT auth, Docker image
+
+- ⬜ 7.1-7.8: Express/Fastify setup, OAuth callbacks, LiveKit token generation,
+  sync endpoints, webhooks, JWT auth, Docker image
 
 ---
 
@@ -329,40 +366,45 @@ pnpm type-check   # TypeScript type checking
 
 ### 5.1 External Services
 
-| Service | Purpose | Status | Priority |
-|---------|---------|--------|----------|
-| **LiveKit Cloud** | Real-time voice communication | Not configured | **Critical** |
-| **Deepgram** | Speech-to-text (Nova-2) | Not configured | **Critical** |
-| **ElevenLabs** | Text-to-speech (Turbo v2.5) | Not configured | **Critical** |
-| **OpenAI** | GPT-4o reasoning + embeddings | Not configured | **Critical** |
-| **Microsoft Azure** | Outlook OAuth + Graph API | Not configured | **Critical** |
-| **Google Cloud** | Gmail OAuth + APIs | Not configured | **Critical** |
-| **Supabase** | PostgreSQL + pgvector | Local only | High |
-| **Redis** | Session state storage | Local only | High |
+| Service             | Purpose                       | Status         | Priority     |
+| ------------------- | ----------------------------- | -------------- | ------------ |
+| **LiveKit Cloud**   | Real-time voice communication | Not configured | **Critical** |
+| **Deepgram**        | Speech-to-text (Nova-2)       | Not configured | **Critical** |
+| **ElevenLabs**      | Text-to-speech (Turbo v2.5)   | Not configured | **Critical** |
+| **OpenAI**          | GPT-4o reasoning + embeddings | Not configured | **Critical** |
+| **Microsoft Azure** | Outlook OAuth + Graph API     | Not configured | **Critical** |
+| **Google Cloud**    | Gmail OAuth + APIs            | Not configured | **Critical** |
+| **Supabase**        | PostgreSQL + pgvector         | Local only     | High         |
+| **Redis**           | Session state storage         | Local only     | High         |
 
 ### 5.2 Critical Integration Points
 
 #### A. Email Provider ↔ Intelligence Layer
+
 - **Input**: `StandardEmail[]` from `UnifiedInboxService`
 - **Output**: `RedFlag[]` from scoring system
 - **Status**: ✅ Email providers ready, ⬜ Intelligence layer not started
 
 #### B. Intelligence Layer ↔ LiveKit Agent
+
 - **Input**: Red flags + clustered topics
 - **Output**: Briefing script for TTS
 - **Status**: ⬜ Not implemented
 
 #### C. LiveKit Agent ↔ Mobile App
+
 - **Transport**: WebRTC via LiveKit SDK
 - **Auth**: Room tokens from backend API
 - **Status**: ⬜ Not implemented
 
 #### D. Mobile App ↔ Backend API
+
 - **Endpoints**: OAuth callbacks, token generation, sync
 - **Auth**: JWT tokens
 - **Status**: ⬜ Not implemented
 
 #### E. Desktop App ↔ Backend API
+
 - **Purpose**: Draft sync, preferences sync
 - **Status**: ⬜ Not implemented
 
@@ -471,12 +513,14 @@ User Voice Input
 ### 7.1 Current Test Coverage
 
 **Packages with Tests:**
+
 - ✅ `@nexus-aec/encryption` - Unit tests present
 - ✅ `@nexus-aec/logger` - Unit tests present
 - ✅ `@nexus-aec/secure-storage` - Unit tests present
 - ✅ `@nexus-aec/email-providers` - Comprehensive unit tests for all components
 
 **Coverage Standards:**
+
 - Target: >80% for critical paths
 - Current: Foundation packages have basic tests
 - TODO: Add integration tests for email providers
@@ -484,6 +528,7 @@ User Voice Input
 ### 7.2 CI/CD Pipeline
 
 **Current Setup** (`.github/workflows/ci.yml`):
+
 - ✅ Lint (ESLint + Prettier)
 - ✅ Type check (TypeScript)
 - ✅ Unit tests (Jest)
@@ -491,6 +536,7 @@ User Voice Input
 - ⬜ LiveKit Agent deployment (placeholder)
 
 **Future Enhancements:**
+
 - End-to-end tests (Playwright/Detox)
 - Load testing for LiveKit Agent
 - Security scanning (Snyk, Dependabot)
@@ -517,12 +563,14 @@ User Voice Input
 ### 8.3 Privacy Considerations
 
 **Transparency Requirements:**
+
 - Privacy dashboard showing stored data
 - Audit trail export (CSV, JSON)
 - Explicit user consent for data collection
 - Clear retention period communication
 
 **Data Minimization:**
+
 - Email content processed ephemerally (Tier 1)
 - Session state expires after 24 hours (Tier 2)
 - Knowledge base only stores asset metadata (Tier 3)
@@ -548,6 +596,7 @@ pnpm infra:up
 ### 9.2 Production (Planned)
 
 **Infrastructure:**
+
 - LiveKit Cloud (managed service)
 - Supabase Cloud (PostgreSQL + pgvector)
 - Redis Cloud or ElastiCache
@@ -555,6 +604,7 @@ pnpm infra:up
 - Docker containers for agent deployment
 
 **Environments:**
+
 - Development: Local Docker Compose
 - Staging: Kubernetes cluster (cloud)
 - Production: Kubernetes cluster (cloud)
@@ -565,34 +615,34 @@ pnpm infra:up
 
 ### 10.1 Configuration Files
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `package.json` | Root workspace config | ✅ Complete |
-| `turbo.json` | Turborepo build config | ✅ Complete |
-| `tsconfig.base.json` | Shared TypeScript config | ✅ Complete |
-| `.eslintrc.js` | ESLint rules | ✅ Complete |
-| `.prettierrc` | Code formatting | ✅ Complete |
-| `.env.example` | Environment variables | ✅ Complete |
-| `.github/workflows/ci.yml` | CI/CD pipeline | ✅ Complete |
+| File                       | Purpose                  | Status      |
+| -------------------------- | ------------------------ | ----------- |
+| `package.json`             | Root workspace config    | ✅ Complete |
+| `turbo.json`               | Turborepo build config   | ✅ Complete |
+| `tsconfig.base.json`       | Shared TypeScript config | ✅ Complete |
+| `.eslintrc.js`             | ESLint rules             | ✅ Complete |
+| `.prettierrc`              | Code formatting          | ✅ Complete |
+| `.env.example`             | Environment variables    | ✅ Complete |
+| `.github/workflows/ci.yml` | CI/CD pipeline           | ✅ Complete |
 
 ### 10.2 Key Package Files
 
-| Package | Key Files | Status |
-|---------|-----------|--------|
-| `shared-types` | `src/index.ts` (290 lines) | ✅ Complete |
-| `encryption` | `src/index.ts`, `src/index.test.ts` | ✅ Complete |
-| `logger` | `src/index.ts`, `src/index.test.ts` | ✅ Complete |
-| `secure-storage` | `src/index.ts`, `src/index.test.ts` | ✅ Complete |
-| `email-providers` | All files (24 TypeScript files) | ✅ Complete |
+| Package           | Key Files                           | Status      |
+| ----------------- | ----------------------------------- | ----------- |
+| `shared-types`    | `src/index.ts` (290 lines)          | ✅ Complete |
+| `encryption`      | `src/index.ts`, `src/index.test.ts` | ✅ Complete |
+| `logger`          | `src/index.ts`, `src/index.test.ts` | ✅ Complete |
+| `secure-storage`  | `src/index.ts`, `src/index.test.ts` | ✅ Complete |
+| `email-providers` | All files (24 TypeScript files)     | ✅ Complete |
 
 ### 10.3 Infrastructure Files
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `infra/docker-compose.yml` | Local dev environment | ✅ Complete |
-| `infra/init-db.sql` | PostgreSQL schema | ✅ Complete |
-| `infra/README.md` | Infrastructure docs | ✅ Complete |
-| `infra/k8s/` | Kubernetes manifests | ⬜ Not started |
+| File                       | Purpose               | Status         |
+| -------------------------- | --------------------- | -------------- |
+| `infra/docker-compose.yml` | Local dev environment | ✅ Complete    |
+| `infra/init-db.sql`        | PostgreSQL schema     | ✅ Complete    |
+| `infra/README.md`          | Infrastructure docs   | ✅ Complete    |
+| `infra/k8s/`               | Kubernetes manifests  | ⬜ Not started |
 
 ---
 
@@ -642,18 +692,21 @@ pnpm infra:up
 ## 12. Success Metrics (Future)
 
 ### 12.1 User Engagement
+
 - Daily active users (DAU)
 - Briefing completion rate
 - Average briefing duration
 - Commands per session
 
 ### 12.2 AI Performance
+
 - Red flag detection accuracy (precision/recall)
 - Draft quality (user edit rate before send)
 - Voice command success rate
 - Barge-in/interruption handling quality
 
 ### 12.3 System Performance
+
 - End-to-end latency (voice input → response)
 - LiveKit connection quality (uptime, packet loss)
 - Email sync reliability (success rate, error rate)
@@ -673,7 +726,8 @@ pnpm infra:up
 - **Google Gmail API**: https://developers.google.com/gmail
 - **Supabase**: https://supabase.com/docs
 - **React Native**: https://reactnative.dev
-- **LiveKit React Native SDK**: https://github.com/livekit/client-sdk-react-native
+- **LiveKit React Native SDK**:
+  https://github.com/livekit/client-sdk-react-native
 
 ### 13.2 Project Files
 
@@ -686,6 +740,7 @@ pnpm infra:up
 ## 14. Summary
 
 ### Current State
+
 - ✅ **Foundation Complete**: Monorepo, shared packages, infrastructure
 - ✅ **Email Integration Complete**: Unified adapter pattern for Outlook + Gmail
 - ⬜ **Voice Interface**: Not started (critical path)
@@ -693,12 +748,14 @@ pnpm infra:up
 - ⬜ **Intelligence Layer**: Not started
 
 ### Critical Path to MVP
+
 1. Intelligence Layer (Red Flag Detection)
 2. LiveKit Backend Agent + GPT-4o Reasoning Loop
 3. Mobile App + Backend API
 4. Desktop App (Draft Review)
 
 ### Estimated Completion
+
 - **Phase 3 (Intelligence)**: ~2-3 weeks
 - **Phase 4 (Voice)**: ~2-3 weeks
 - **Phase 5 (Mobile)**: ~3-4 weeks
@@ -709,5 +766,4 @@ pnpm infra:up
 
 ---
 
-*Last Updated: 2026-01-09*
-*Next Review: After Phase 3 completion*
+_Last Updated: 2026-01-09_ _Next Review: After Phase 3 completion_

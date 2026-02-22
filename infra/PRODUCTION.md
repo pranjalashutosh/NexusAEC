@@ -1,10 +1,12 @@
 # Production Deployment Guide
 
-This guide covers deploying the NexusAEC infrastructure components to production environments.
+This guide covers deploying the NexusAEC infrastructure components to production
+environments.
 
 ## Redis - Session State (Tier 2)
 
-Redis stores ephemeral session state (DriveState) for active briefing sessions. Sessions have a 24-hour TTL.
+Redis stores ephemeral session state (DriveState) for active briefing sessions.
+Sessions have a 24-hour TTL.
 
 ### Option 1: Managed Redis (Recommended)
 
@@ -33,9 +35,11 @@ aws elasticache describe-cache-clusters \
 ```
 
 **Configuration:**
+
 - **Instance Type:** `cache.t3.micro` (sufficient for MVP, ~500 active sessions)
 - **Version:** Redis 7.0+
-- **Replication:** Single node (session data is ephemeral, tolerate short outages)
+- **Replication:** Single node (session data is ephemeral, tolerate short
+  outages)
 - **Encryption:** Enable at-rest and in-transit encryption
 - **Backup:** Not required (ephemeral data with 24h TTL)
 - **Maintenance Window:** Off-peak hours
@@ -55,12 +59,14 @@ aws elasticache describe-cache-clusters \
 ```
 
 **Configuration:**
+
 - **Region:** Select closest to majority of users
 - **Type:** Pay-as-you-go (suitable for MVP)
 - **TLS:** Always enabled
 - **Max Commands:** 10,000/day free tier, then pay-per-use
 
-**Cost Estimate:** Free tier covers ~500-1000 sessions/day, then ~$0.20 per 10K commands
+**Cost Estimate:** Free tier covers ~500-1000 sessions/day, then ~$0.20 per 10K
+commands
 
 #### Redis Cloud
 
@@ -76,6 +82,7 @@ aws elasticache describe-cache-clusters \
 ```
 
 **Configuration:**
+
 - **Memory:** 256 MB (handles ~2000+ active sessions)
 - **Dataset Size:** 256 MB
 - **Replication:** Not required (ephemeral data)
@@ -95,21 +102,18 @@ services:
     image: redis:7-alpine
     container_name: nexus-redis-prod
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis-data:/data
     command: >
-      redis-server
-      --appendonly yes
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
-      --requirepass ${REDIS_PASSWORD}
+      redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy
+      allkeys-lru --requirepass ${REDIS_PASSWORD}
     restart: unless-stopped
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: '10m'
+        max-file: '3'
 
 volumes:
   redis-data:
@@ -117,6 +121,7 @@ volumes:
 ```
 
 **Environment:**
+
 ```bash
 # .env.production
 REDIS_URL=redis://:${REDIS_PASSWORD}@localhost:6379
@@ -143,36 +148,36 @@ spec:
         app: redis
     spec:
       containers:
-      - name: redis
-        image: redis:7-alpine
-        ports:
-        - containerPort: 6379
-        args:
-        - redis-server
-        - --appendonly yes
-        - --maxmemory 512mb
-        - --maxmemory-policy allkeys-lru
-        - --requirepass $(REDIS_PASSWORD)
-        env:
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: redis-secret
-              key: password
-        volumeMounts:
-        - name: redis-storage
-          mountPath: /data
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          args:
+            - redis-server
+            - --appendonly yes
+            - --maxmemory 512mb
+            - --maxmemory-policy allkeys-lru
+            - --requirepass $(REDIS_PASSWORD)
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+          volumeMounts:
+            - name: redis-storage
+              mountPath: /data
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '100m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
       volumes:
-      - name: redis-storage
-        persistentVolumeClaim:
-          claimName: redis-pvc
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: redis-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -183,8 +188,8 @@ spec:
   selector:
     app: redis
   ports:
-  - port: 6379
-    targetPort: 6379
+    - port: 6379
+      targetPort: 6379
   type: ClusterIP
 ---
 apiVersion: v1
@@ -194,13 +199,14 @@ metadata:
   namespace: nexus-aec
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
 ```
 
 **Create secret:**
+
 ```bash
 kubectl create secret generic redis-secret \
   --from-literal=password=$(openssl rand -base64 32) \
@@ -208,6 +214,7 @@ kubectl create secret generic redis-secret \
 ```
 
 **Environment variable:**
+
 ```bash
 # For applications running in the same namespace
 REDIS_URL=redis://:${REDIS_PASSWORD}@redis.nexus-aec.svc.cluster.local:6379
@@ -232,6 +239,7 @@ appendfsync everysec               # Fsync every second (good balance)
 ```
 
 For purely ephemeral session state with TTLs, you can disable persistence:
+
 ```bash
 appendonly no                      # No persistence needed
 save ""                            # Disable RDB snapshots
@@ -273,13 +281,13 @@ redis-cli -h <host> -p 6379 -a <password> CLIENT LIST
 
 #### Key Metrics to Monitor
 
-| Metric | Threshold | Description |
-|--------|-----------|-------------|
-| Memory Usage | < 80% | Available memory utilization |
-| Connected Clients | < 80% max | Number of concurrent connections |
-| Evicted Keys | Low | Keys removed due to memory pressure |
-| Keyspace Hits Ratio | > 90% | Cache hit rate (hits / (hits + misses)) |
-| Network I/O | < 80% limit | Throughput in/out |
+| Metric              | Threshold   | Description                             |
+| ------------------- | ----------- | --------------------------------------- |
+| Memory Usage        | < 80%       | Available memory utilization            |
+| Connected Clients   | < 80% max   | Number of concurrent connections        |
+| Evicted Keys        | Low         | Keys removed due to memory pressure     |
+| Keyspace Hits Ratio | > 90%       | Cache hit rate (hits / (hits + misses)) |
+| Network I/O         | < 80% limit | Throughput in/out                       |
 
 #### CloudWatch Alarms (AWS ElastiCache)
 
@@ -346,11 +354,13 @@ aws elasticache create-replication-group \
 #### Backup Strategy
 
 Since session data is ephemeral with 24h TTL:
+
 - **Backups:** Not required (data regenerates from email sources)
 - **RTO:** Immediate (sessions recreate on reconnect)
 - **RPO:** Acceptable data loss = full cache (users restart briefing)
 
 If you want to preserve session state:
+
 ```bash
 # Enable automatic snapshots (AWS ElastiCache)
 aws elasticache modify-cache-cluster \
@@ -392,27 +402,27 @@ See Supabase deployment documentation in task 3.12.
 
 ### MVP/Startup (< 100 users)
 
-| Component | Provider | Cost |
-|-----------|----------|------|
-| Redis | Upstash Free Tier or Redis Cloud Free | $0-5/month |
-| PostgreSQL | Supabase Free Tier | $0/month |
-| **Total** | | **$0-5/month** |
+| Component  | Provider                              | Cost           |
+| ---------- | ------------------------------------- | -------------- |
+| Redis      | Upstash Free Tier or Redis Cloud Free | $0-5/month     |
+| PostgreSQL | Supabase Free Tier                    | $0/month       |
+| **Total**  |                                       | **$0-5/month** |
 
 ### Growth (100-1000 users)
 
-| Component | Provider | Cost |
-|-----------|----------|------|
-| Redis | AWS ElastiCache t3.micro or Upstash Paid | $15-30/month |
-| PostgreSQL | Supabase Pro | $25/month |
-| **Total** | | **$40-55/month** |
+| Component  | Provider                                 | Cost             |
+| ---------- | ---------------------------------------- | ---------------- |
+| Redis      | AWS ElastiCache t3.micro or Upstash Paid | $15-30/month     |
+| PostgreSQL | Supabase Pro                             | $25/month        |
+| **Total**  |                                          | **$40-55/month** |
 
 ### Scale (1000+ users)
 
-| Component | Provider | Cost |
-|-----------|----------|------|
-| Redis | AWS ElastiCache t3.small cluster | $60-100/month |
-| PostgreSQL | Supabase Team or Self-hosted RDS | $100-200/month |
-| **Total** | | **$160-300/month** |
+| Component  | Provider                         | Cost               |
+| ---------- | -------------------------------- | ------------------ |
+| Redis      | AWS ElastiCache t3.small cluster | $60-100/month      |
+| PostgreSQL | Supabase Team or Self-hosted RDS | $100-200/month     |
+| **Total**  |                                  | **$160-300/month** |
 
 ## Next Steps
 

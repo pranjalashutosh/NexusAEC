@@ -26,7 +26,8 @@ cd supabase
 supabase db push
 ```
 
-This creates the `documents` table and `match_documents` function required for vector search.
+This creates the `documents` table and `match_documents` function required for
+vector search.
 
 ## Available Commands
 
@@ -53,31 +54,32 @@ npx tsx cli/ingest-manuals.ts pdf \
 
 **JSON Mode Options:**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-f, --file <path>` | Path to JSON file (required) | - |
-| `-c, --clear` | Clear existing safety manuals before ingestion | `false` |
-| `-b, --batch-size <number>` | Batch size for processing | `10` |
-| `--skip-validation` | Skip document validation | `false` |
-| `--max-concurrency <number>` | Max concurrent embedding requests | `5` |
-| `--embedding-model <model>` | OpenAI embedding model | `text-embedding-3-small` |
-| `--no-progress` | Disable progress reporting | `false` |
+| Option                       | Description                                    | Default                  |
+| ---------------------------- | ---------------------------------------------- | ------------------------ |
+| `-f, --file <path>`          | Path to JSON file (required)                   | -                        |
+| `-c, --clear`                | Clear existing safety manuals before ingestion | `false`                  |
+| `-b, --batch-size <number>`  | Batch size for processing                      | `10`                     |
+| `--skip-validation`          | Skip document validation                       | `false`                  |
+| `--max-concurrency <number>` | Max concurrent embedding requests              | `5`                      |
+| `--embedding-model <model>`  | OpenAI embedding model                         | `text-embedding-3-small` |
+| `--no-progress`              | Disable progress reporting                     | `false`                  |
 
 **PDF Mode Options:**
 
-| Option | Description | Required |
-|--------|-------------|----------|
-| `-f, --file <path>` | Path to PDF file | Yes |
-| `-i, --id <id>` | Document ID (e.g., PROC-001) | Yes |
-| `-t, --title <title>` | Document title | Yes |
-| `--type <type>` | Document type | Yes |
-| `-a, --assets <assets>` | Comma-separated related asset IDs | No |
-| `-m, --metadata <json>` | Additional metadata as JSON string | No |
-| `--max-concurrency <number>` | Max concurrent embedding requests | `5` |
-| `--embedding-model <model>` | OpenAI embedding model | `text-embedding-3-small` |
-| `--no-progress` | Disable progress reporting | `false` |
+| Option                       | Description                        | Required                 |
+| ---------------------------- | ---------------------------------- | ------------------------ |
+| `-f, --file <path>`          | Path to PDF file                   | Yes                      |
+| `-i, --id <id>`              | Document ID (e.g., PROC-001)       | Yes                      |
+| `-t, --title <title>`        | Document title                     | Yes                      |
+| `--type <type>`              | Document type                      | Yes                      |
+| `-a, --assets <assets>`      | Comma-separated related asset IDs  | No                       |
+| `-m, --metadata <json>`      | Additional metadata as JSON string | No                       |
+| `--max-concurrency <number>` | Max concurrent embedding requests  | `5`                      |
+| `--embedding-model <model>`  | OpenAI embedding model             | `text-embedding-3-small` |
+| `--no-progress`              | Disable progress reporting         | `false`                  |
 
 **Document Types:**
+
 - `SAFETY_MANUAL` - Safety manuals and handbooks
 - `PROCEDURE` - Operating procedures and work instructions
 - `POLICY` - Safety policies and guidelines
@@ -155,15 +157,15 @@ npx tsx cli/list-assets.ts --search "pump station maintenance"
 
 **Options:**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-t, --type <type>` | Filter by type: asset, manual, or all | `all` |
-| `-l, --limit <number>` | Maximum number of items to display | `20` |
-| `-o, --offset <number>` | Number of items to skip (pagination) | `0` |
-| `-s, --search <query>` | Semantic search query | - |
-| `-c, --count` | Only display counts, not items | `false` |
-| `--similarity <threshold>` | Minimum similarity threshold for search (0-1) | `0.7` |
-| `--no-color` | Disable colored output | `false` |
+| Option                     | Description                                   | Default |
+| -------------------------- | --------------------------------------------- | ------- |
+| `-t, --type <type>`        | Filter by type: asset, manual, or all         | `all`   |
+| `-l, --limit <number>`     | Maximum number of items to display            | `20`    |
+| `-o, --offset <number>`    | Number of items to skip (pagination)          | `0`     |
+| `-s, --search <query>`     | Semantic search query                         | -       |
+| `-c, --count`              | Only display counts, not items                | `false` |
+| `--similarity <threshold>` | Minimum similarity threshold for search (0-1) | `0.7`   |
+| `--no-color`               | Disable colored output                        | `false` |
 
 **Examples:**
 
@@ -228,7 +230,8 @@ Displayed Manuals: 5 of 7
 
 **Semantic Search:**
 
-The `--search` option performs semantic search using OpenAI embeddings. This finds documents based on meaning, not just keyword matching:
+The `--search` option performs semantic search using OpenAI embeddings. This
+finds documents based on meaning, not just keyword matching:
 
 ```bash
 # Find documents about electrical safety
@@ -242,6 +245,7 @@ npx tsx cli/list-assets.ts --search "confined space entry" --similarity 0.8
 ```
 
 The similarity threshold (0-1) controls how closely results must match:
+
 - `0.9-1.0` - Very similar (strict matching)
 - `0.7-0.8` - Moderately similar (default, balanced)
 - `0.5-0.6` - Loosely similar (broad matching)
@@ -262,15 +266,15 @@ npx tsx cli/ingest-assets.ts --file ./data/seed-assets.json
 
 **Options:**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-f, --file <path>` | Path to CSV or JSON file (required) | - |
-| `-c, --clear` | Clear existing assets before ingestion | `false` |
-| `-b, --batch-size <number>` | Batch size for processing | `10` |
-| `--skip-validation` | Skip asset validation | `false` |
-| `--max-concurrency <number>` | Max concurrent embedding requests | `5` |
-| `--embedding-model <model>` | OpenAI embedding model | `text-embedding-3-small` |
-| `--no-progress` | Disable progress reporting | `false` |
+| Option                       | Description                            | Default                  |
+| ---------------------------- | -------------------------------------- | ------------------------ |
+| `-f, --file <path>`          | Path to CSV or JSON file (required)    | -                        |
+| `-c, --clear`                | Clear existing assets before ingestion | `false`                  |
+| `-b, --batch-size <number>`  | Batch size for processing              | `10`                     |
+| `--skip-validation`          | Skip asset validation                  | `false`                  |
+| `--max-concurrency <number>` | Max concurrent embedding requests      | `5`                      |
+| `--embedding-model <model>`  | OpenAI embedding model                 | `text-embedding-3-small` |
+| `--no-progress`              | Disable progress reporting             | `false`                  |
 
 **Examples:**
 
@@ -294,6 +298,7 @@ npx tsx cli/ingest-assets.ts --file ./data/assets.csv --embedding-model text-emb
 **CSV Format:**
 
 The CSV file should have the following required columns:
+
 - `AssetID` (or `assetId`, `asset_id`, `id`, etc.)
 - `Name` (or `name`, `asset name`, etc.)
 - `Description`
@@ -301,6 +306,7 @@ The CSV file should have the following required columns:
 - `Location` (or `site`, `facility`, etc.)
 
 Optional columns:
+
 - `Criticality` - CRITICAL, HIGH, MEDIUM, LOW
 - `Status` - OPERATIONAL, MAINTENANCE, OFFLINE, DECOMMISSIONED
 - Any additional columns are stored as metadata
@@ -374,20 +380,26 @@ The CLI reports errors encountered during ingestion:
   - Failed to generate embedding: API error [P-BAD-002] (row 8)
 ```
 
-By default, the CLI continues processing when errors occur. To stop on the first error, the code would need to be modified to pass `continueOnError: false` to the AssetIngestion constructor.
+By default, the CLI continues processing when errors occur. To stop on the first
+error, the code would need to be modified to pass `continueOnError: false` to
+the AssetIngestion constructor.
 
 ## Performance Tips
 
-1. **Batch Size**: Increase `--batch-size` for large datasets (e.g., `--batch-size 50`)
+1. **Batch Size**: Increase `--batch-size` for large datasets (e.g.,
+   `--batch-size 50`)
 2. **Concurrency**: Adjust `--max-concurrency` based on your OpenAI rate limits
-3. **Skip Validation**: Use `--skip-validation` if you've already validated your data
-4. **Embedding Model**: Use `text-embedding-3-small` for cost-effective embeddings (1536 dimensions)
+3. **Skip Validation**: Use `--skip-validation` if you've already validated your
+   data
+4. **Embedding Model**: Use `text-embedding-3-small` for cost-effective
+   embeddings (1536 dimensions)
 
 ## Troubleshooting
 
 ### "OPENAI_API_KEY environment variable is required"
 
-Make sure you have a `.env` file in `packages/intelligence/` with your OpenAI API key:
+Make sure you have a `.env` file in `packages/intelligence/` with your OpenAI
+API key:
 
 ```bash
 OPENAI_API_KEY=sk-...
@@ -404,7 +416,9 @@ SUPABASE_ANON_KEY=eyJ...
 
 ### "Missing required columns"
 
-Ensure your CSV has all required columns. The CLI supports various column name formats (case-insensitive):
+Ensure your CSV has all required columns. The CLI supports various column name
+formats (case-insensitive):
+
 - Asset ID: `AssetID`, `assetId`, `asset_id`, `id`, etc.
 - Name: `Name`, `name`, `Asset Name`, etc.
 - Description: `Description`, `desc`, `details`, etc.
@@ -438,6 +452,7 @@ After ingesting assets:
 ## Support
 
 For issues or questions:
+
 - Review the main README at `packages/intelligence/README.md`
 - Check the data format documentation at `packages/intelligence/data/README.md`
 - See type definitions in `src/knowledge/asset-types.ts`

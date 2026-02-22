@@ -562,9 +562,7 @@ Factors:
     it('should propagate LLM errors', async () => {
       mockLLMClient.complete.mockRejectedValue(new Error('LLM API error'));
 
-      await expect(generator.explain(mockRedFlagScore, mockEmail)).rejects.toThrow(
-        'LLM API error'
-      );
+      await expect(generator.explain(mockRedFlagScore, mockEmail)).rejects.toThrow('LLM API error');
     });
   });
 

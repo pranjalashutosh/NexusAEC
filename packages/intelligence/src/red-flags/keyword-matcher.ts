@@ -1,11 +1,7 @@
 import { PatternType } from '../types';
 import { DEFAULT_RED_FLAG_PATTERNS } from './default-patterns';
 
-import type {
-  RedFlagPattern,
-  PatternMatch,
-  ContextField,
-} from '../types';
+import type { RedFlagPattern, PatternMatch, ContextField } from '../types';
 import type { StandardEmail } from '@nexus-aec/shared-types';
 
 /**
@@ -69,9 +65,7 @@ function levenshteinDistance(str1: string, str2: string): number {
   const len2 = str2.length;
 
   // Create a 2D array to store distances
-  const matrix = Array.from({ length: len1 + 1 }, () =>
-    Array.from({ length: len2 + 1 }, () => 0)
-  );
+  const matrix = Array.from({ length: len1 + 1 }, () => Array.from({ length: len2 + 1 }, () => 0));
 
   // Initialize first column and row
   for (let i = 0; i <= len1; i++) {
@@ -112,7 +106,9 @@ function levenshteinDistance(str1: string, str2: string): number {
 function similarityRatio(str1: string, str2: string): number {
   const distance = levenshteinDistance(str1, str2);
   const maxLength = Math.max(str1.length, str2.length);
-  if (maxLength === 0) {return 1.0;}
+  if (maxLength === 0) {
+    return 1.0;
+  }
   return 1 - distance / maxLength;
 }
 
@@ -144,7 +140,9 @@ function fuzzyMatch(
 
   for (let i = 0; i < words.length; i++) {
     const word = words[i];
-    if (!word) {continue;}
+    if (!word) {
+      continue;
+    }
 
     // Check single word
     const distance = levenshteinDistance(word, searchPattern);
@@ -247,7 +245,9 @@ function matchPattern(
   // Check each context field
   for (const field of pattern.contextFields) {
     const fieldValue = extractFieldValue(email, field);
-    if (!fieldValue) {continue;}
+    if (!fieldValue) {
+      continue;
+    }
 
     if (pattern.type === PatternType.KEYWORD) {
       // Keyword matching
@@ -369,10 +369,7 @@ export class KeywordMatcher {
   /**
    * Match an email against specific patterns
    */
-  matchEmailWithPatterns(
-    email: StandardEmail,
-    patterns: RedFlagPattern[]
-  ): KeywordMatchResult {
+  matchEmailWithPatterns(email: StandardEmail, patterns: RedFlagPattern[]): KeywordMatchResult {
     const allMatches: PatternMatch[] = [];
 
     for (const pattern of patterns) {

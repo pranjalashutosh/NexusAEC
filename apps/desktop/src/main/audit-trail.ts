@@ -64,9 +64,7 @@ export function addAuditEntry(entry: Omit<AuditEntry, 'id' | 'timestamp'>): Audi
   // Clean up old entries
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
-  const filteredEntries = entries.filter(
-    (e) => new Date(e.timestamp) > cutoffDate
-  );
+  const filteredEntries = entries.filter((e) => new Date(e.timestamp) > cutoffDate);
 
   store.set('entries', filteredEntries);
 
@@ -154,10 +152,7 @@ export async function exportAuditTrail(
   try {
     const { entries } = getAuditTrail(options);
 
-    const defaultPath = path.join(
-      app.getPath('downloads'),
-      `nexus-audit-${Date.now()}.${format}`
-    );
+    const defaultPath = path.join(app.getPath('downloads'), `nexus-audit-${Date.now()}.${format}`);
 
     const { filePath, canceled } = await dialog.showSaveDialog({
       defaultPath,

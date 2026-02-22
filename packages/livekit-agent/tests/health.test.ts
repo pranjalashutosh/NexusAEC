@@ -2,11 +2,7 @@
  * Tests for livekit-agent health server
  */
 
-import {
-  startHealthServer,
-  stopHealthServer,
-  isHealthServerRunning,
-} from '../src/health';
+import { startHealthServer, stopHealthServer, isHealthServerRunning } from '../src/health';
 
 describe('livekit-agent/health', () => {
   // Store original env
@@ -34,22 +30,22 @@ describe('livekit-agent/health', () => {
   describe('startHealthServer', () => {
     it('starts the health server', async () => {
       expect(isHealthServerRunning()).toBe(false);
-      
+
       startHealthServer(9999);
-      
+
       // Give the server time to start
       await new Promise((resolve) => setTimeout(resolve, 100));
-      
+
       expect(isHealthServerRunning()).toBe(true);
     });
 
     it('does not start duplicate servers', async () => {
       startHealthServer(9998);
       await new Promise((resolve) => setTimeout(resolve, 100));
-      
+
       // Try to start again - should log warning but not crash
       startHealthServer(9998);
-      
+
       expect(isHealthServerRunning()).toBe(true);
     });
   });
@@ -59,15 +55,15 @@ describe('livekit-agent/health', () => {
       startHealthServer(9997);
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(isHealthServerRunning()).toBe(true);
-      
+
       await stopHealthServer();
-      
+
       expect(isHealthServerRunning()).toBe(false);
     });
 
     it('resolves if server is not running', async () => {
       expect(isHealthServerRunning()).toBe(false);
-      
+
       // Should not throw
       await expect(stopHealthServer()).resolves.toBeUndefined();
     });
@@ -81,7 +77,7 @@ describe('livekit-agent/health', () => {
     it('returns true when server is running', async () => {
       startHealthServer(9996);
       await new Promise((resolve) => setTimeout(resolve, 100));
-      
+
       expect(isHealthServerRunning()).toBe(true);
     });
   });
@@ -129,7 +125,7 @@ describe('livekit-agent/health', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const response = await fetch('http://localhost:9992/unknown');
-      
+
       expect(response.status).toBe(404);
     });
   });

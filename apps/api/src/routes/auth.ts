@@ -132,9 +132,12 @@ function storePendingState(oauthState: OAuthState): void {
   pendingOAuthStates.set(oauthState.state, oauthState);
 
   // Auto-expire after 10 minutes
-  setTimeout(() => {
-    pendingOAuthStates.delete(oauthState.state);
-  }, 10 * 60 * 1000);
+  setTimeout(
+    () => {
+      pendingOAuthStates.delete(oauthState.state);
+    },
+    10 * 60 * 1000
+  );
 }
 
 /**
@@ -154,12 +157,15 @@ function consumePendingState(state: string): OAuthState | undefined {
  */
 function storeCompletedResult(
   state: string,
-  result: AuthSuccessResponse | AuthErrorResponse,
+  result: AuthSuccessResponse | AuthErrorResponse
 ): void {
   completedOAuthResults.set(state, result);
-  setTimeout(() => {
-    completedOAuthResults.delete(state);
-  }, 5 * 60 * 1000);
+  setTimeout(
+    () => {
+      completedOAuthResults.delete(state);
+    },
+    5 * 60 * 1000
+  );
 }
 
 // =============================================================================
@@ -320,12 +326,9 @@ export function registerAuthRoutes(app: FastifyInstance): void {
    * Google OAuth callback
    * GET /auth/google/callback
    */
-  app.get<{ Querystring: OAuthCallbackQuery }>(
-    '/auth/google/callback',
-    async (request, reply) => {
-      return handleOAuthCallback(request, reply, 'GMAIL');
-    }
-  );
+  app.get<{ Querystring: OAuthCallbackQuery }>('/auth/google/callback', async (request, reply) => {
+    return handleOAuthCallback(request, reply, 'GMAIL');
+  });
 
   // ---------------------------------------------------------------------------
   // Token Status Check (for mobile clients to verify backend has valid tokens)
@@ -363,7 +366,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       }
 
       return reply.send({ success: true, statuses });
-    },
+    }
   );
 
   // ---------------------------------------------------------------------------
@@ -377,32 +380,29 @@ export function registerAuthRoutes(app: FastifyInstance): void {
    * Mobile clients call this after opening the authorization URL in a browser.
    * Returns 202 (pending) while waiting, 200 with result when complete.
    */
-  app.get<{ Params: { state: string } }>(
-    '/auth/result/:state',
-    async (request, reply) => {
-      const { state } = request.params;
+  app.get<{ Params: { state: string } }>('/auth/result/:state', async (request, reply) => {
+    const { state } = request.params;
 
-      // Check if the result is ready
-      const result = completedOAuthResults.get(state);
-      if (result) {
-        // Consume the result (one-time read)
-        completedOAuthResults.delete(state);
-        return reply.send(result);
-      }
-
-      // Check if the state is still pending (flow in progress)
-      if (pendingOAuthStates.has(state)) {
-        return reply.status(202).send({ status: 'pending' });
-      }
-
-      // State not found — expired or never existed
-      return reply.status(404).send({
-        success: false,
-        error: 'OAuth state not found or expired',
-        code: 'STATE_NOT_FOUND',
-      } satisfies AuthErrorResponse);
+    // Check if the result is ready
+    const result = completedOAuthResults.get(state);
+    if (result) {
+      // Consume the result (one-time read)
+      completedOAuthResults.delete(state);
+      return reply.send(result);
     }
-  );
+
+    // Check if the state is still pending (flow in progress)
+    if (pendingOAuthStates.has(state)) {
+      return reply.status(202).send({ status: 'pending' });
+    }
+
+    // State not found — expired or never existed
+    return reply.status(404).send({
+      success: false,
+      error: 'OAuth state not found or expired',
+      code: 'STATE_NOT_FOUND',
+    } satisfies AuthErrorResponse);
+  });
 }
 
 // =============================================================================

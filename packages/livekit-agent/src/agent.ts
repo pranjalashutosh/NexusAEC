@@ -16,23 +16,29 @@ import { defineAgent, voice, cli, WorkerOptions } from '@livekit/agents';
 import * as deepgram from '@livekit/agents-plugin-deepgram';
 import * as elevenlabs from '@livekit/agents-plugin-elevenlabs';
 import * as silero from '@livekit/agents-plugin-silero';
+import {
+  SenderProfileStore,
+  preprocessBatch,
+  type PreprocessedEmail,
+  EmailMetadata,
+} from '@nexus-aec/intelligence';
 import { createLogger } from '@nexus-aec/logger';
 
-import { loadAgentConfig, validateEnvironment, type AgentConfig } from './config.js';
 import { BriefedEmailStore } from './briefing/briefed-email-store.js';
 import { BriefingSessionTracker } from './briefing/briefing-session-tracker.js';
 import { runBriefingPipeline } from './briefing-pipeline.js';
+import { loadAgentConfig, validateEnvironment, type AgentConfig } from './config.js';
 import { bootstrapFromMetadata, teardownEmailServices } from './email-bootstrap.js';
 import { startHealthServer } from './health.js';
-import { UserKnowledgeStore } from './knowledge/user-knowledge-store.js';
 import { summarizeKnowledge } from './knowledge/summarize-knowledge.js';
+import { UserKnowledgeStore } from './knowledge/user-knowledge-store.js';
 import { ReasoningLLM } from './llm/reasoning-llm.js';
 import { removeSession, setSession } from './session-store.js';
+import { initializeFromPreferences } from './tools/email-tools.js';
 import { setKnowledgeStore, clearKnowledgeStore } from './tools/knowledge-tools.js';
-import { buildSystemPrompt, DEFAULT_SYSTEM_PROMPT_CONTEXT } from './prompts/system-prompt.js';
 
 import type { BriefingData } from './briefing-pipeline.js';
-import type { BriefingTopicRef } from './reasoning/reasoning-loop.js';
+import type { BriefingTopicRef, ReasoningLoop } from './reasoning/reasoning-loop.js';
 import type { AgentSession } from './session-store.js';
 import type { JobContext, JobProcess } from '@livekit/agents';
 import type { UnifiedInboxService } from '@nexus-aec/email-providers';
@@ -65,7 +71,10 @@ export function createVoiceAgent(config: AgentConfig) {
         loadAgentConfig();
         logger.info('Configuration loaded successfully');
       } catch (error) {
-        logger.error('Failed to load configuration during prewarm', error instanceof Error ? error : null);
+        logger.error(
+          'Failed to load configuration during prewarm',
+          error instanceof Error ? error : null
+        );
       }
     },
 
@@ -101,6 +110,9 @@ export function createVoiceAgent(config: AgentConfig) {
       // Wait for a user to join
       const participant = await ctx.waitForParticipant();
       session.userIdentity = participant.identity;
+      if (participant.name) {
+        session.displayName = participant.name;
+      }
 
       logger.info('User joined, starting voice assistant', {
         roomName,
@@ -123,11 +135,68 @@ export function createVoiceAgent(config: AgentConfig) {
         });
       }
 
+      // Initialize SenderProfileStore for personalization tracking
+      let senderProfileStore: SenderProfileStore | null = null;
+      try {
+        senderProfileStore = new SenderProfileStore({
+          redisUrl: process.env['REDIS_URL'] ?? 'redis://localhost:6379',
+        });
+        logger.info('SenderProfileStore initialized', { sessionId });
+      } catch (error) {
+        logger.warn('Failed to init SenderProfileStore, continuing without personalization', {
+          error: error instanceof Error ? error.message : String(error),
+          sessionId,
+        });
+      }
+
+      // Load persistent VIP/mute preferences (needed before pipeline)
+      let vipEmails: string[] = [];
+      let mutedEmails: Array<{ email: string; expiresAt?: Date | null }> = [];
+
+      try {
+        const storagePath = process.env['NEXUS_PREFERENCES_PATH'] ?? '.nexus-data/preferences';
+        const encryptionKey = process.env['NEXUS_PREFERENCES_KEY'];
+
+        if (encryptionKey) {
+          const { PreferencesStore } = await import('@nexus-aec/intelligence');
+          const prefStore = new PreferencesStore({
+            storagePath,
+            encryptionKey,
+          });
+          await prefStore.initialize();
+
+          const vips = await prefStore.getVips();
+          vipEmails = vips.map((v) => v.identifier);
+          const muted = await prefStore.getMutedSenders();
+          mutedEmails = muted.map((m) => ({
+            email: m.identifier,
+            expiresAt: m.expiresAt ?? null,
+          }));
+
+          // Pre-populate in-memory VIP/mute lists in email tools
+          initializeFromPreferences(vipEmails, mutedEmails);
+
+          logger.info('Loaded user preferences', {
+            vipCount: vipEmails.length,
+            mutedCount: mutedEmails.length,
+            sessionId,
+          });
+        } else {
+          logger.info('No NEXUS_PREFERENCES_KEY set, skipping preferences load', { sessionId });
+        }
+      } catch (error) {
+        logger.warn('Failed to load preferences, continuing without', {
+          error: error instanceof Error ? error.message : String(error),
+          sessionId,
+        });
+      }
+
       // Bootstrap email services from participant metadata
       // The backend API places OAuth tokens in metadata when issuing join tokens
       const emailResult = bootstrapFromMetadata(participant.metadata);
       let briefingData: BriefingData | null = null;
       let sessionHistoryId: string | null = null;
+      let remainingBatches: EmailMetadata[][] = [];
 
       if (emailResult?.success && emailResult.inboxService) {
         logger.info('Email services available', {
@@ -139,6 +208,8 @@ export function createVoiceAgent(config: AgentConfig) {
         let excludeEmailIds: Set<string> | undefined;
         if (briefedEmailStore) {
           try {
+            // Wait for Redis to be connected before reading
+            await briefedEmailStore.waitForReady();
             excludeEmailIds = await briefedEmailStore.getBriefedIds(participant.identity);
             logger.info('Loaded briefed email history', {
               briefedCount: excludeEmailIds.size,
@@ -153,20 +224,48 @@ export function createVoiceAgent(config: AgentConfig) {
           }
         }
 
-        // Run the briefing pipeline to score and cluster emails
+        // Synthesize learned preferences from past sessions.
+        // We pass VIP emails as a proxy; the pipeline will inject them
+        // into the LLM prompt along with any cached sender knowledge.
+        let senderPreferences: string | undefined;
+        if (senderProfileStore) {
+          try {
+            senderPreferences = await senderProfileStore.synthesizePreferences(
+              participant.identity,
+              vipEmails
+            );
+          } catch (error) {
+            logger.warn('Failed to synthesize sender preferences', {
+              error: error instanceof Error ? error.message : String(error),
+              sessionId,
+            });
+          }
+        }
+
+        // Run the briefing pipeline (LLM batched when apiKey available)
         try {
-          briefingData = await runBriefingPipeline(emailResult.inboxService, {
-            excludeEmailIds,
+          const pipelineResult = await runBriefingPipeline(emailResult.inboxService, {
+            ...(excludeEmailIds ? { excludeEmailIds } : {}),
+            ...(vipEmails.length > 0 ? { vipEmails } : {}),
+            mutedSenderEmails: mutedEmails.map((m) => m.email),
+            apiKey: config.openai.apiKey,
+            ...(senderPreferences ? { senderPreferences } : {}),
           });
+          briefingData = pipelineResult.briefingData;
+          remainingBatches = pipelineResult.remainingBatches;
           logger.info('Briefing pipeline completed', {
             topicCount: briefingData.topics.length,
             totalEmails: briefingData.totalEmails,
             totalFlagged: briefingData.totalFlagged,
             durationMs: briefingData.pipelineDurationMs,
+            remainingBatches: remainingBatches.length,
             sessionId,
           });
         } catch (error) {
-          logger.error('Briefing pipeline failed, falling back to defaults', error instanceof Error ? error : null);
+          logger.error(
+            'Briefing pipeline failed, falling back to defaults',
+            error instanceof Error ? error : null
+          );
         }
 
         // Capture Gmail historyId for mid-session new-email detection
@@ -203,8 +302,12 @@ export function createVoiceAgent(config: AgentConfig) {
         };
         const sbUrl = process.env['SUPABASE_URL'];
         const sbKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
-        if (sbUrl) storeOpts.supabaseUrl = sbUrl;
-        if (sbKey) storeOpts.supabaseKey = sbKey;
+        if (sbUrl) {
+          storeOpts.supabaseUrl = sbUrl;
+        }
+        if (sbKey) {
+          storeOpts.supabaseKey = sbKey;
+        }
 
         knowledgeStore = new UserKnowledgeStore(storeOpts);
 
@@ -222,9 +325,7 @@ export function createVoiceAgent(config: AgentConfig) {
           knowledgeDoc = await knowledgeStore.get(userId);
         }
 
-        knowledgeEntries = knowledgeDoc.entries.map(
-          (e) => `[${e.category}] ${e.content}`,
-        );
+        knowledgeEntries = knowledgeDoc.entries.map((e) => `[${e.category}] ${e.content}`);
 
         // Register the store so knowledge tools can use it
         setKnowledgeStore(knowledgeStore, userId);
@@ -243,7 +344,35 @@ export function createVoiceAgent(config: AgentConfig) {
 
       // Start the voice assistant pipeline with real or fallback briefing data
       const inboxService = emailResult?.inboxService ?? null;
-      const sessionTracker = await startVoiceAssistant(ctx, session, config, briefingData, knowledgeEntries, briefedEmailStore, sessionHistoryId, inboxService);
+      const sessionTracker = await startVoiceAssistant(
+        ctx,
+        session,
+        config,
+        briefingData,
+        knowledgeEntries,
+        briefedEmailStore,
+        sessionHistoryId,
+        inboxService,
+        vipEmails,
+        mutedEmails.map((m) => m.email),
+        senderProfileStore
+      );
+
+      // Process remaining batches in background (if LLM pipeline was used)
+      if (remainingBatches.length > 0 && sessionTracker) {
+        processRemainingBatches(
+          remainingBatches,
+          config.openai.apiKey,
+          vipEmails,
+          sessionTracker,
+          null // ReasoningLoop not directly accessible here; alerts via tracker
+        ).catch((err) => {
+          logger.warn('Background batch processing failed', {
+            error: err instanceof Error ? err.message : String(err),
+            sessionId,
+          });
+        });
+      }
 
       // Clean up when the context shuts down
       ctx.addShutdownCallback(async () => {
@@ -262,6 +391,9 @@ export function createVoiceAgent(config: AgentConfig) {
         }
         if (briefedEmailStore) {
           await briefedEmailStore.disconnect();
+        }
+        if (senderProfileStore) {
+          await senderProfileStore.disconnect();
         }
         handleDisconnect(session);
       });
@@ -284,24 +416,58 @@ async function startVoiceAssistant(
   briefedEmailStore?: BriefedEmailStore | null,
   sessionHistoryId?: string | null,
   inboxService?: UnifiedInboxService | null,
+  vipEmails?: string[],
+  mutedSenderEmails?: string[],
+  senderProfileStore?: SenderProfileStore | null
 ): Promise<BriefingSessionTracker | undefined> {
   // Use real briefing data when available, fall back to defaults
-  const topicItems = briefingData?.topicItems.length
-    ? briefingData.topicItems
-    : [5, 3, 2];
+  const topicItems = briefingData?.topicItems.length ? briefingData.topicItems : [5, 3, 2];
   const topicLabels = briefingData?.topicLabels ?? ['Inbox', 'VIP', 'Flagged'];
 
-  // Build lightweight topic references with email IDs for GPT-4o context
-  const topicRefs: BriefingTopicRef[] = briefingData?.topics.map((topic) => ({
-    label: topic.label,
-    emails: topic.emails.map((se) => ({
-      emailId: se.email.id,
-      subject: se.email.subject,
-      from: se.email.from?.email ?? se.email.from?.name ?? 'unknown',
-      threadId: se.email.threadId,
-      isFlagged: se.score.isFlagged,
-    })),
-  })) ?? [];
+  // Build lightweight topic references with email IDs for GPT-4o context.
+  // When LLM preprocessing was used, each email has a priority and summary
+  // from the BatchResult. We look up by emailId to attach them.
+  const preprocessedMap = new Map<
+    string,
+    { priority: 'high' | 'medium' | 'low'; summary: string }
+  >();
+  if (briefingData?.topics) {
+    for (const topic of briefingData.topics) {
+      // The topic.priority from LLM pipeline is the cluster-level priority
+      for (const se of topic.emails) {
+        const score = briefingData.scoreMap.get(se.email.id);
+        if (score && score.reasons.length > 0) {
+          const priority: 'high' | 'medium' | 'low' = score.isFlagged
+            ? 'high'
+            : score.score >= 0.5
+              ? 'medium'
+              : 'low';
+          preprocessedMap.set(se.email.id, {
+            priority,
+            summary: score.reasons[0]?.description ?? '',
+          });
+        }
+      }
+    }
+  }
+
+  const topicRefs: BriefingTopicRef[] =
+    briefingData?.topics.map((topic) => ({
+      label: topic.label,
+      emails: topic.emails.map((se) => {
+        const preprocessed = preprocessedMap.get(se.email.id);
+        return {
+          emailId: se.email.id,
+          subject: se.email.subject,
+          from: se.email.from?.email ?? se.email.from?.name ?? 'unknown',
+          threadId: se.email.threadId,
+          isFlagged: se.score.isFlagged,
+          ...(preprocessed
+            ? { priority: preprocessed.priority, summary: preprocessed.summary }
+            : {}),
+        };
+      }),
+    })) ?? [];
 
   logger.info('Starting voice assistant pipeline', {
     roomName: session.roomName,
@@ -354,6 +520,7 @@ async function startVoiceAssistant(
       topicRefs,
       briefedEmailStore ?? undefined,
       session.userIdentity || undefined,
+      senderProfileStore ?? undefined
     );
     logger.info('[pipeline] BriefingSessionTracker created', {
       topicCount: topicRefs.length,
@@ -363,11 +530,27 @@ async function startVoiceAssistant(
   }
 
   // 4. Create ReasoningLLM with real topic data, email references, tracker, and knowledge entries
+  // Use participant display name (from JWT) instead of identity (numeric OAuth ID)
+  const displayName =
+    session.displayName && session.displayName !== session.userIdentity
+      ? session.displayName
+      : undefined;
+
   logger.info('[pipeline] Creating ReasoningLLM...');
-  const reasoningLLM = new ReasoningLLM(config.openai, topicItems, {
-    userName: session.userIdentity,
-    ...(knowledgeEntries && knowledgeEntries.length > 0 ? { knowledgeEntries } : {}),
-  }, topicRefs, tracker);
+  const reasoningLLM = new ReasoningLLM(
+    config.openai,
+    topicItems,
+    {
+      userName: displayName ?? session.userIdentity,
+      ...(knowledgeEntries && knowledgeEntries.length > 0 ? { knowledgeEntries } : {}),
+      ...(vipEmails && vipEmails.length > 0 ? { vipNames: vipEmails } : {}),
+      ...(mutedSenderEmails && mutedSenderEmails.length > 0
+        ? { mutedSenders: mutedSenderEmails }
+        : {}),
+    },
+    topicRefs,
+    tracker
+  );
   logger.info('[pipeline] ReasoningLLM created');
 
   // 4b. Configure real-time inbox awareness (Gmail History API)
@@ -377,19 +560,14 @@ async function startVoiceAssistant(
 
   // 5. Get VAD from prewarm, or load if not available
   logger.info('[pipeline] Loading VAD model...');
-  const vad = (ctx.proc.userData['vad'] as silero.VAD) ?? await silero.VAD.load();
+  const vad = (ctx.proc.userData['vad'] as silero.VAD) ?? (await silero.VAD.load());
   logger.info('[pipeline] VAD model loaded');
 
-  // 6. Build the system prompt (with user's persistent knowledge if available)
-  const systemPrompt = buildSystemPrompt({
-    ...DEFAULT_SYSTEM_PROMPT_CONTEXT,
-    userName: session.userIdentity,
-    ...(knowledgeEntries && knowledgeEntries.length > 0 ? { knowledgeEntries } : {}),
-  });
-
-  // 7. Create the voice Agent with instructions only
+  // 6. Create the voice Agent
+  // Note: ReasoningLLM manages its own system prompt internally, so the
+  // instructions here are not sent to GPT-4o. Kept empty intentionally.
   const agent = new voice.Agent({
-    instructions: systemPrompt,
+    instructions: '',
   });
 
   // 8. Create the AgentSession with the pipeline components
@@ -479,17 +657,20 @@ async function startVoiceAssistant(
   let greetingContext: string;
   if (tracker && briefingData && briefingData.totalEmails > 0) {
     const progress = tracker.getProgress();
-    greetingContext = `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. `
-      + `You have ${progress.totalEmails} new emails across ${progress.totalTopics} topics. `
-      + `${briefingData.totalFlagged} are flagged as important. `
-      + `Start with the first email shown in your CURRENT BRIEFING POSITION.`;
+    greetingContext =
+      `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. ` +
+      `You have ${progress.totalEmails} new emails across ${progress.totalTopics} topics. ` +
+      `${briefingData.totalFlagged} are flagged as important. ` +
+      `Start with the first email shown in your CURRENT BRIEFING POSITION.`;
   } else if (briefingData && briefingData.totalEmails > 0) {
-    greetingContext = `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. `
-      + `You have ${briefingData.totalEmails} new emails across ${briefingData.topics.length} topics. `
-      + `${briefingData.totalFlagged} are flagged as important. `
-      + `Topics to cover: ${topicLabels.join(', ')}.`;
+    greetingContext =
+      `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. ` +
+      `You have ${briefingData.totalEmails} new emails across ${briefingData.topics.length} topics. ` +
+      `${briefingData.totalFlagged} are flagged as important. ` +
+      `Topics to cover: ${topicLabels.join(', ')}.`;
   } else {
-    greetingContext = 'Greet the user and start the morning briefing. Introduce yourself as their NexusAEC executive assistant.';
+    greetingContext =
+      'Greet the user and start the morning briefing. Introduce yourself as their NexusAEC executive assistant.';
   }
 
   logger.info('Generating initial greeting...');
@@ -501,11 +682,14 @@ async function startVoiceAssistant(
   if (sessionHistoryId && inboxService) {
     const NEW_EMAIL_CHECK_INTERVAL_MS = 60_000;
     const checkInterval = setInterval(() => {
-      reasoningLLM.getReasoningLoop().checkForNewEmails().catch((err) => {
-        logger.warn('Periodic new-email check failed', {
-          error: err instanceof Error ? err.message : String(err),
+      reasoningLLM
+        .getReasoningLoop()
+        .checkForNewEmails()
+        .catch((err) => {
+          logger.warn('Periodic new-email check failed', {
+            error: err instanceof Error ? err.message : String(err),
+          });
         });
-      });
     }, NEW_EMAIL_CHECK_INTERVAL_MS);
 
     // Clean up interval when session closes
@@ -520,6 +704,58 @@ async function startVoiceAssistant(
   }
 
   return tracker;
+}
+
+// =============================================================================
+// Background Batch Processing
+// =============================================================================
+
+/**
+ * Process remaining email batches in the background.
+ * Converts each batch result into BriefingTopicRefs and adds them to the tracker.
+ * If high-priority emails are found, logs an alert (injected via tracker addTopics).
+ */
+async function processRemainingBatches(
+  batches: EmailMetadata[][],
+  apiKey: string,
+  vipEmails: string[],
+  tracker: BriefingSessionTracker,
+  _reasoningLoop: ReasoningLoop | null
+): Promise<void> {
+  for (let i = 0; i < batches.length; i++) {
+    const batch = batches[i]!;
+    const result = await preprocessBatch(batch, {
+      apiKey,
+      vipEmails,
+      batchIndex: i + 1,
+    });
+
+    // Convert to BriefingTopicRef[] and add to tracker
+    const newTopicRefs: BriefingTopicRef[] = result.clusters.map(
+      (cluster: { label: string; priority: string; emails: PreprocessedEmail[] }) => ({
+        label: cluster.label,
+        emails: cluster.emails.map((pe: PreprocessedEmail) => ({
+          emailId: pe.emailId,
+          subject: pe.summary,
+          from: batch.find((b: EmailMetadata) => b.id === pe.emailId)?.from ?? 'unknown',
+          isFlagged: pe.priority === 'high',
+          priority: pe.priority,
+          summary: pe.summary,
+        })),
+      })
+    );
+    tracker.addTopics(newTopicRefs);
+
+    const highPriorityCount = result.emails.filter(
+      (e: PreprocessedEmail) => e.priority === 'high'
+    ).length;
+
+    logger.info('Background batch processed', {
+      batchIndex: i + 1,
+      emailCount: batch.length,
+      highPriority: highPriorityCount,
+    });
+  }
 }
 
 // =============================================================================
@@ -588,9 +824,9 @@ export async function startAgent(): Promise<void> {
 
   // Inject 'dev' command into argv if no command was provided
   // cli.runApp() parses process.argv for commands like 'start', 'dev', 'connect'
-  const hasCommand = process.argv.slice(2).some((arg) =>
-    ['start', 'dev', 'connect', 'download-files'].includes(arg),
-  );
+  const hasCommand = process.argv
+    .slice(2)
+    .some((arg) => ['start', 'dev', 'connect', 'download-files'].includes(arg));
   if (!hasCommand) {
     process.argv.push('dev');
   }
@@ -616,7 +852,10 @@ export async function prewarm(proc: JobProcess): Promise<void> {
     loadAgentConfig();
     logger.info('Configuration loaded successfully');
   } catch (error) {
-    logger.error('Failed to load configuration during prewarm', error instanceof Error ? error : null);
+    logger.error(
+      'Failed to load configuration during prewarm',
+      error instanceof Error ? error : null
+    );
   }
 }
 

@@ -8,4 +8,3 @@ export function registerHealthRoutes(app: FastifyInstance): void {
     };
   });
 }
-

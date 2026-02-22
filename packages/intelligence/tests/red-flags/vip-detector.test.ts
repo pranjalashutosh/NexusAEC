@@ -1,8 +1,5 @@
 import type { StandardEmail, VIP, Contact } from '@nexus-aec/shared-types';
-import {
-  VipDetector,
-  type VipDetectorOptions,
-} from '../../src/red-flags/vip-detector';
+import { VipDetector, type VipDetectorOptions } from '../../src/red-flags/vip-detector';
 
 // Helper to create test emails
 function createTestEmail(overrides: Partial<StandardEmail> = {}): StandardEmail {
@@ -190,10 +187,7 @@ describe('VipDetector', () => {
         email: 'custom@example.com',
         interactionCount: 15,
       });
-      const detector = new VipDetector(
-        { contacts: [contact] },
-        { mediumInteractionThreshold: 10 }
-      );
+      const detector = new VipDetector({ contacts: [contact] }, { mediumInteractionThreshold: 10 });
       const email = createTestEmail({ from: { email: 'custom@example.com' } });
 
       const result = detector.detectVip(email);

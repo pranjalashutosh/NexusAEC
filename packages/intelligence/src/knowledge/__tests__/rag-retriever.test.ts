@@ -426,9 +426,7 @@ describe('RAGRetriever', () => {
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('[RAGRetriever] Searching')
       );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[RAGRetriever] Found')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('[RAGRetriever] Found'));
 
       consoleLogSpy.mockRestore();
     });
@@ -439,9 +437,7 @@ describe('RAGRetriever', () => {
 
       await retriever.retrieve('test query');
 
-      expect(consoleLogSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('[RAGRetriever]')
-      );
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(expect.stringContaining('[RAGRetriever]'));
 
       consoleLogSpy.mockRestore();
     });

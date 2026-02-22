@@ -280,7 +280,8 @@ class RateLimiter {
       }
 
       // Calculate wait time
-      const requestWaitMs = this.requestTokens < 1 ? (1 - this.requestTokens) * (60000 / this.requestsPerMinute) : 0;
+      const requestWaitMs =
+        this.requestTokens < 1 ? (1 - this.requestTokens) * (60000 / this.requestsPerMinute) : 0;
       const tokenWaitMs =
         this.completionTokens < estimatedTokens
           ? (estimatedTokens - this.completionTokens) * (60000 / this.tokensPerMinute)
@@ -382,7 +383,10 @@ export class LLMClient {
    * @param options - Completion options
    * @returns Completion result
    */
-  async complete(messages: LLMMessage[], options: LLMCompletionOptions = {}): Promise<LLMCompletionResult> {
+  async complete(
+    messages: LLMMessage[],
+    options: LLMCompletionOptions = {}
+  ): Promise<LLMCompletionResult> {
     const model = options.model ?? this.defaultModel;
     const temperature = options.temperature ?? this.defaultTemperature;
     const maxTokens = options.maxTokens ?? this.defaultMaxTokens;
@@ -392,7 +396,10 @@ export class LLMClient {
     }
 
     // Estimate tokens for rate limiting (rough estimate: ~4 chars per token)
-    const estimatedPromptTokens = messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0);
+    const estimatedPromptTokens = messages.reduce(
+      (sum, msg) => sum + Math.ceil(msg.content.length / 4),
+      0
+    );
     const estimatedTokens = estimatedPromptTokens + maxTokens;
 
     // Apply rate limiting
@@ -475,7 +482,10 @@ export class LLMClient {
     }
 
     // Estimate tokens for rate limiting
-    const estimatedPromptTokens = messages.reduce((sum, msg) => sum + Math.ceil(msg.content.length / 4), 0);
+    const estimatedPromptTokens = messages.reduce(
+      (sum, msg) => sum + Math.ceil(msg.content.length / 4),
+      0
+    );
     const estimatedTokens = estimatedPromptTokens + maxTokens;
 
     // Apply rate limiting
@@ -582,7 +592,10 @@ export class LLMClient {
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
 
         // Exponential backoff
-        retryDelay = Math.min(retryDelay * this.retryOptions.backoffMultiplier, this.retryOptions.maxRetryDelay);
+        retryDelay = Math.min(
+          retryDelay * this.retryOptions.backoffMultiplier,
+          this.retryOptions.maxRetryDelay
+        );
       }
     }
 

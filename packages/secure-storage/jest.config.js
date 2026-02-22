@@ -14,4 +14,3 @@ module.exports = {
     '^@nexus-aec/shared-types$': '<rootDir>/../shared-types/src/index.ts',
   },
 };
-

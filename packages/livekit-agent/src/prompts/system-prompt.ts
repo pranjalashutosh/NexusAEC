@@ -30,6 +30,12 @@ export interface SystemPromptContext {
   briefingMode: 'driving' | 'walking' | 'desk';
   /** User's persistent knowledge entries (loaded from memory) */
   knowledgeEntries?: string[];
+  /** Summary of filtered/triaged emails (e.g., "Filtered 38 newsletters, 12 LinkedIn notifications") */
+  triageSummary?: string;
+  /** Total unread emails from last 24h (before filtering) */
+  totalEmailCount?: number;
+  /** Number of emails selected for briefing */
+  briefingCount?: number;
 }
 
 // =============================================================================
@@ -104,8 +110,7 @@ const RESPONSE_FORMAT = `RESPONSE GUIDELINES:
  * Confirmation verbosity rules
  */
 const CONFIRMATION_RULES = `CONFIRMATION VERBOSITY:
-- Low risk (marking read, skipping): Just do it, brief acknowledgment ("Done", "Skipped")
-- Medium risk (flagging, archiving): Confirm action briefly ("Flagged for follow-up")
+- Low risk (marking read, skipping, flagging, archiving): Just do it, brief acknowledgment ("Done", "Skipped", "Flagged", "Archived")
 - High risk (sending email, deleting, muting VIP): Always confirm before acting ("I'll draft a reply. Want me to read it back before sending?")`;
 
 /**
@@ -132,10 +137,12 @@ It tells you exactly which email to present. Follow these rules:
 3. When the user says "next" or "move on", call next_item — the system will advance the cursor
 4. When the user says "skip this topic", call skip_topic
 5. NEVER present an email that is not in the current position — the system manages the order
-6. After an action (archive, flag, etc.), the system auto-advances — present the next email
-7. When all emails are done, summarize: "That's your briefing. X emails briefed, Y archived, Z flagged."
+6. After an action (archive, flag, etc.), the system auto-advances. ALWAYS present the next email immediately with a natural transition like "Next up..." or "Moving on..."
+7. NEVER leave a gap or pause after completing an action — always continue to the next email
+8. When transitioning topics: "That wraps up [topic]. Next is [topic]."
+9. When all emails are done, summarize: "That's your briefing. X emails briefed, Y archived, Z flagged."
 
-IMPORTANT: The CURRENT BRIEFING POSITION updates every turn. Always read it before responding.
+IMPORTANT: The CURRENT BRIEFING POSITION updates every turn. Always read the briefing position and understand how far you are in the briefing before responding. Keep progress internal — only share numbers if the user asks.
 Do NOT re-present emails you have already briefed. The system tracks this for you.`;
 
 /**
@@ -169,7 +176,7 @@ WHEN NOT TO SAVE:
  */
 export function buildSystemPrompt(context: SystemPromptContext): string {
   const greeting = getGreeting(context);
-  const vipContext = context.vipNames?.length 
+  const vipContext = context.vipNames?.length
     ? `\nVIP CONTACTS: ${context.vipNames.join(', ')}`
     : '';
   const mutedContext = context.mutedSenders?.length
@@ -180,8 +187,18 @@ export function buildSystemPrompt(context: SystemPromptContext): string {
   const modeNote = getModeNote(context.briefingMode);
 
   const knowledgeContext = context.knowledgeEntries?.length
-    ? `\nUSER MEMORY (information this user has asked you to remember):\n${context.knowledgeEntries.map(e => `- ${e}`).join('\n')}`
+    ? `\nUSER MEMORY (information this user has asked you to remember):\n${context.knowledgeEntries.map((e) => `- ${e}`).join('\n')}`
     : '';
+
+  let briefingScopeContext = '';
+  if (context.totalEmailCount !== undefined && context.briefingCount !== undefined) {
+    briefingScopeContext = `\nBRIEFING SCOPE: Last 24 hours of unread emails. ${context.totalEmailCount} total, ${context.briefingCount} selected for briefing.`;
+    if (context.triageSummary) {
+      briefingScopeContext += `\nFILTERED: ${context.triageSummary}`;
+    }
+    briefingScopeContext +=
+      "\nWhen starting: mention the total count and that you've prioritized the most important ones.";
+  }
 
   return `${PERSONA}
 
@@ -205,6 +222,7 @@ CURRENT CONTEXT:
 ${vipContext}
 ${mutedContext}
 ${knowledgeContext}
+${briefingScopeContext}
 ${verbosityNote}
 ${modeNote}
 
@@ -216,7 +234,7 @@ Remember: The user is likely multitasking. Be helpful, concise, and prioritize t
  */
 function getGreeting(context: SystemPromptContext): string {
   const name = context.userName ? `, ${context.userName}` : '';
-  
+
   switch (context.timeOfDay) {
     case 'morning':
       return `GREETING: Start with "Good morning${name}. Here's your briefing."`;

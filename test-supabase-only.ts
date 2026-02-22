@@ -67,14 +67,11 @@ async function main() {
     log('🔗 Connecting to Supabase...', 'cyan');
 
     // Test 1: Check if assets table exists and has data
-    const { data: assets, error: assetsError } = await supabase
-      .from('assets')
-      .select('*')
-      .limit(5);
+    const { data: assets, error: assetsError } = await supabase.from('assets').select('*').limit(5);
 
     if (assetsError) {
       // Helpful diagnostics when PostgREST doesn't see any tables for this project.
-      if (assetsError.message.includes("schema cache")) {
+      if (assetsError.message.includes('schema cache')) {
         try {
           const r = await fetch(`${supabaseUrl}/rest/v1/`, {
             headers: {
@@ -89,7 +86,10 @@ async function main() {
               `❌ Supabase REST API does not expose an /assets endpoint for this project (schema cache has no assets table).`,
               'red'
             );
-            log(`This typically means migrations/schema were NOT applied to this Supabase project.`, 'yellow');
+            log(
+              `This typically means migrations/schema were NOT applied to this Supabase project.`,
+              'yellow'
+            );
             if (projectRef) {
               log(
                 `Double-check you're in the right Supabase project: dashboard URL should include /project/${projectRef}/`,
@@ -175,14 +175,11 @@ async function main() {
     // Test the match_documents function
     log('🔍 Testing match_documents function...', 'cyan');
 
-    const { data: searchResults, error: searchError } = await supabase.rpc(
-      'match_documents',
-      {
-        query_embedding: fakeEmbeddingStr,
-        match_threshold: 0.0,
-        match_count: 3,
-      }
-    );
+    const { data: searchResults, error: searchError } = await supabase.rpc('match_documents', {
+      query_embedding: fakeEmbeddingStr,
+      match_threshold: 0.0,
+      match_count: 3,
+    });
 
     if (searchError) {
       throw new Error(`Vector search failed: ${searchError.message}`);
@@ -205,7 +202,6 @@ async function main() {
     console.log('   2. 💰 Add credits to your OpenAI account to test embeddings');
     console.log('   3. 🧪 Run full test: npx ts-node test-simple.ts');
     console.log('');
-
   } catch (error) {
     log(`\n❌ Test failed: ${(error as Error).message}`, 'red');
     console.error(error);

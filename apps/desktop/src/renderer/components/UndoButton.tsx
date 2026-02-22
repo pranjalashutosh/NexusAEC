@@ -47,11 +47,7 @@ export function UndoButton({
     return (
       <div className="undo-confirm-group">
         <span className="undo-confirm-text">Confirm?</span>
-        <button
-          className="btn btn-sm btn-danger"
-          onClick={handleClick}
-          disabled={isProcessing}
-        >
+        <button className="btn btn-sm btn-danger" onClick={handleClick} disabled={isProcessing}>
           {isProcessing ? '...' : 'Yes'}
         </button>
         <button className="btn btn-sm btn-secondary" onClick={handleCancel}>
@@ -124,18 +120,13 @@ export function BatchUndoButton({
       <span className="batch-undo-count">{count} selected</span>
       {isConfirming ? (
         <div className="batch-undo-confirm">
-          <span>Undo {count} action{count > 1 ? 's' : ''}?</span>
-          <button
-            className="btn btn-danger"
-            onClick={handleClick}
-            disabled={isProcessing}
-          >
+          <span>
+            Undo {count} action{count > 1 ? 's' : ''}?
+          </span>
+          <button className="btn btn-danger" onClick={handleClick} disabled={isProcessing}>
             {isProcessing ? 'Undoing...' : 'Confirm'}
           </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setIsConfirming(false)}
-          >
+          <button className="btn btn-secondary" onClick={() => setIsConfirming(false)}>
             Cancel
           </button>
         </div>

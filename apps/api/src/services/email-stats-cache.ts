@@ -41,7 +41,7 @@ export interface SyncCursor {
 const STATS_KEY_PREFIX = 'nexus:emailstats:';
 const CURSOR_KEY_PREFIX = 'nexus:synccursor:';
 
-const DEFAULT_STATS_TTL = 120;  // 2 minutes
+const DEFAULT_STATS_TTL = 120; // 2 minutes
 const DEFAULT_CURSOR_TTL = 600; // 10 minutes
 
 // =============================================================================
@@ -64,12 +64,16 @@ export class EmailStatsCache {
    * Returns null on cache miss or if Redis is unavailable.
    */
   async getStats(userId: string, vipHash: string): Promise<CachedStats | null> {
-    if (!this.client) return null;
+    if (!this.client) {
+      return null;
+    }
 
     try {
       const key = `${STATS_KEY_PREFIX}${userId}:${vipHash}`;
       const data = await this.client.get(key);
-      if (!data) return null;
+      if (!data) {
+        return null;
+      }
 
       const stats = JSON.parse(data) as CachedStats;
       logger.info('Stats cache hit', { userId });
@@ -89,9 +93,11 @@ export class EmailStatsCache {
     userId: string,
     vipHash: string,
     stats: Omit<CachedStats, 'cachedAt'>,
-    ttlSeconds: number = DEFAULT_STATS_TTL,
+    ttlSeconds: number = DEFAULT_STATS_TTL
   ): Promise<void> {
-    if (!this.client) return;
+    if (!this.client) {
+      return;
+    }
 
     try {
       const key = `${STATS_KEY_PREFIX}${userId}:${vipHash}`;
@@ -112,12 +118,16 @@ export class EmailStatsCache {
    * Get sync cursor for a user + source.
    */
   async getSyncCursor(userId: string, source: string): Promise<SyncCursor | null> {
-    if (!this.client) return null;
+    if (!this.client) {
+      return null;
+    }
 
     try {
       const key = `${CURSOR_KEY_PREFIX}${userId}:${source}`;
       const data = await this.client.get(key);
-      if (!data) return null;
+      if (!data) {
+        return null;
+      }
 
       return JSON.parse(data) as SyncCursor;
     } catch (error) {
@@ -135,9 +145,11 @@ export class EmailStatsCache {
     userId: string,
     source: string,
     cursor: SyncCursor,
-    ttlSeconds: number = DEFAULT_CURSOR_TTL,
+    ttlSeconds: number = DEFAULT_CURSOR_TTL
   ): Promise<void> {
-    if (!this.client) return;
+    if (!this.client) {
+      return;
+    }
 
     try {
       const key = `${CURSOR_KEY_PREFIX}${userId}:${source}`;
@@ -157,13 +169,12 @@ export class EmailStatsCache {
    * Invalidate all cached data for a user (stats + cursors).
    */
   async invalidateUser(userId: string): Promise<void> {
-    if (!this.client) return;
+    if (!this.client) {
+      return;
+    }
 
     try {
-      const patterns = [
-        `${STATS_KEY_PREFIX}${userId}:*`,
-        `${CURSOR_KEY_PREFIX}${userId}:*`,
-      ];
+      const patterns = [`${STATS_KEY_PREFIX}${userId}:*`, `${CURSOR_KEY_PREFIX}${userId}:*`];
 
       for (const pattern of patterns) {
         const keys = await this.client.keys(pattern);
@@ -184,7 +195,9 @@ export class EmailStatsCache {
    * Invalidate only stats cache for a user (keeps cursors).
    */
   async invalidateStats(userId: string): Promise<void> {
-    if (!this.client) return;
+    if (!this.client) {
+      return;
+    }
 
     try {
       const pattern = `${STATS_KEY_PREFIX}${userId}:*`;
@@ -209,6 +222,8 @@ export class EmailStatsCache {
  * Same VIP list always produces the same hash regardless of order.
  */
 export function computeVipHash(vips: string[]): string {
-  if (vips.length === 0) return 'none';
+  if (vips.length === 0) {
+    return 'none';
+  }
   return vips.slice().sort().join(',').toLowerCase();
 }

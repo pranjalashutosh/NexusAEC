@@ -18,4 +18,3 @@ export async function createApp(options: CreateAppOptions = {}): Promise<Fastify
   await registerRoutes(app);
   return app;
 }
-

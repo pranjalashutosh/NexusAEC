@@ -4,11 +4,7 @@
 
 import fastify, { type FastifyInstance } from 'fastify';
 
-import {
-  registerAuthRoutes,
-  resetAuthState,
-  injectPendingState,
-} from './auth';
+import { registerAuthRoutes, resetAuthState, injectPendingState } from './auth';
 
 describe('Auth Routes', () => {
   let app: FastifyInstance;

@@ -227,10 +227,7 @@ export function createAuthMiddleware(options: AuthMiddlewareOptions = {}) {
   const { excludePaths = [], required = true } = options;
   const config = getJWTConfig();
 
-  return async (
-    request: FastifyRequest,
-    reply: FastifyReply
-  ): Promise<void> => {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     // Check if path should be excluded
     const path = request.url.split('?')[0] ?? '/';
     if (excludePaths.some((p) => path.startsWith(p))) {
@@ -320,20 +317,14 @@ export function registerAuthMiddleware(
 /**
  * Require authentication for a specific route
  */
-export function requireAuth(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
+export function requireAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   return createAuthMiddleware({ required: true })(request, reply);
 }
 
 /**
  * Optional authentication - attach user if token present
  */
-export function optionalAuth(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
+export function optionalAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   return createAuthMiddleware({ required: false })(request, reply);
 }
 

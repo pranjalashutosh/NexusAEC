@@ -242,3 +242,23 @@ export {
   type LearningStats,
   type FeedbackLearnerOptions,
 } from './knowledge/feedback-learner';
+
+// Export Sender profile store
+export {
+  SenderProfileStore,
+  type SenderProfile,
+  type SenderProfileStoreOptions,
+  type ProfileAction,
+} from './knowledge/sender-profile-store';
+
+// Export Email preprocessor
+export {
+  preprocessEmails,
+  preprocessBatch,
+  presortEmails,
+  type PreprocessedEmail,
+  type BatchResult,
+  type PreprocessingResult,
+  type EmailMetadata,
+  type PreprocessOptions,
+} from './preprocessing/email-preprocessor';

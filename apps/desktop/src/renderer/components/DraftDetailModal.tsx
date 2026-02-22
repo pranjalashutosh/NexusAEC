@@ -133,10 +133,7 @@ export function DraftDetailModal({
           <div className="content-header">
             <h4 className="content-title">Draft Content</h4>
             {!isEditing && (
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setIsEditing(true)}
-              >
+              <button className="btn btn-secondary btn-sm" onClick={() => setIsEditing(true)}>
                 ✏️ Edit
               </button>
             )}
@@ -183,10 +180,7 @@ export function DraftDetailModal({
             </div>
           ) : (
             <>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
+              <button className="btn btn-secondary" onClick={() => setShowDeleteConfirm(true)}>
                 🗑️ Delete
               </button>
               <div className="footer-right">

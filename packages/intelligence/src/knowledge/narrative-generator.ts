@@ -292,8 +292,7 @@ export class NarrativeGenerator {
     const timeOfDay = this.getTimeOfDay(currentTime);
     const userName = input.userName ?? '';
     const clusterCount = input.clusters.length;
-    const redFlagCount = Array.from(input.redFlagScores.values()).filter((s) => s.isFlagged)
-      .length;
+    const redFlagCount = Array.from(input.redFlagScores.values()).filter((s) => s.isFlagged).length;
 
     const systemPrompt = this.getStyleSystemPrompt(style);
     const userPrompt = `Generate a brief opening greeting for an email briefing. Context:
@@ -376,13 +375,17 @@ Generate 1-2 sentences that wrap up the briefing and prompt for user interaction
     const summaries = new Set<EmailSummary>();
     for (const threadId of cluster.threadIds) {
       const summary = input.summaries.get(threadId);
-      if (summary) {summaries.add(summary);}
+      if (summary) {
+        summaries.add(summary);
+      }
     }
     // Fallback to individual email summaries
     if (summaries.size === 0) {
       for (const emailId of cluster.emailIds) {
         const summary = input.summaries.get(emailId);
-        if (summary) {summaries.add(summary);}
+        if (summary) {
+          summaries.add(summary);
+        }
       }
     }
 
@@ -524,8 +527,12 @@ Generate 1-2 sentences that wrap up the briefing and prompt for user interaction
       );
 
       // Sort by: red flag count (desc), max score (desc), size (desc)
-      if (aFlags !== bFlags) {return bFlags - aFlags;}
-      if (aMaxScore !== bMaxScore) {return bMaxScore - aMaxScore;}
+      if (aFlags !== bFlags) {
+        return bFlags - aFlags;
+      }
+      if (aMaxScore !== bMaxScore) {
+        return bMaxScore - aMaxScore;
+      }
       return b.size - a.size;
     });
   }
@@ -568,8 +575,12 @@ Generate 1-2 sentences that wrap up the briefing and prompt for user interaction
    */
   private getTimeOfDay(date: Date): string {
     const hour = date.getHours();
-    if (hour < 12) {return 'morning';}
-    if (hour < 17) {return 'afternoon';}
+    if (hour < 12) {
+      return 'morning';
+    }
+    if (hour < 17) {
+      return 'afternoon';
+    }
     return 'evening';
   }
 

@@ -10,11 +10,11 @@ export {
   type TTSOptions,
   type VoiceProfile,
   type StreamingConfig,
-  
+
   // Configuration
   createTTSOptions,
   createTTSOptionsWithVoice,
-  
+
   // Voice selection
   VOICE_PROFILES,
   voiceProfiles,
@@ -24,12 +24,12 @@ export {
   getVoiceProfile,
   getVoicesByGender,
   getVoicesByAccent,
-  
+
   // Streaming
   DEFAULT_STREAMING_CONFIG,
   defaultStreamingConfig,
   createStreamingConfig,
-  
+
   // Text processing
   preprocessTextForTTS,
   splitTextForStreaming,

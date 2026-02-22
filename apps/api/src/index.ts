@@ -1,6 +1,10 @@
 import { existsSync } from 'fs';
 import { resolve } from 'path';
+
+import { createLogger } from '@nexus-aec/logger';
 import { config } from 'dotenv';
+
+import { createApp } from './app';
 
 // Load .env — check cwd first (monorepo root), then walk up from package dir
 const envCandidates = [
@@ -15,10 +19,6 @@ for (const envPath of envCandidates) {
     break;
   }
 }
-
-import { createLogger } from '@nexus-aec/logger';
-
-import { createApp } from './app';
 
 async function main(): Promise<void> {
   const logger = createLogger({ baseContext: { component: 'api' } });
@@ -37,4 +37,3 @@ main().catch((error: unknown) => {
   logger.fatal('API server failed to start', err);
   process.exit(1);
 });
-

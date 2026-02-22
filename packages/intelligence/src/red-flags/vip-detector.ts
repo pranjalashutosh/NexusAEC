@@ -85,7 +85,12 @@ export interface VipReason {
   /**
    * Type of VIP reason
    */
-  type: 'explicit_vip' | 'high_interaction' | 'medium_interaction' | 'recent_interaction' | 'job_title';
+  type:
+    | 'explicit_vip'
+    | 'high_interaction'
+    | 'medium_interaction'
+    | 'recent_interaction'
+    | 'job_title';
 
   /**
    * Description of the reason
@@ -344,9 +349,7 @@ export class VipDetector {
    */
   removeVip(email: string): boolean {
     const normalized = normalizeEmail(email);
-    const index = this.vipList.findIndex(
-      (vip) => normalizeEmail(vip.email) === normalized
-    );
+    const index = this.vipList.findIndex((vip) => normalizeEmail(vip.email) === normalized);
 
     if (index !== -1) {
       this.vipList.splice(index, 1);

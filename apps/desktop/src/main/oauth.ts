@@ -20,7 +20,8 @@ const GOOGLE_CONFIG: OAuthConfig = {
   clientId: process.env.GOOGLE_CLIENT_ID ?? '',
   authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
   redirectUri: 'nexusaec://auth/google/callback',
-  scope: 'openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly',
+  scope:
+    'openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.readonly',
 };
 
 const MICROSOFT_CONFIG: OAuthConfig = {

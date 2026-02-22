@@ -13,9 +13,9 @@
  * sender). Only behavioural rules, preferences, feedback, and context.
  */
 
-import Redis from 'ioredis';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createLogger } from '@nexus-aec/logger';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import Redis from 'ioredis';
 
 const logger = createLogger({ baseContext: { component: 'user-knowledge-store' } });
 
@@ -76,7 +76,9 @@ export class UserKnowledgeStore {
       this.redis = new Redis(options.redisUrl, {
         maxRetriesPerRequest: 1,
         retryStrategy(times) {
-          if (times > 3) return null;
+          if (times > 3) {
+            return null;
+          }
           return Math.min(times * 200, 1000);
         },
         lazyConnect: true,
@@ -128,7 +130,9 @@ export class UserKnowledgeStore {
   async get(userId: string): Promise<KnowledgeDocument> {
     // Try Redis
     const redisDoc = await this.getFromRedis(userId);
-    if (redisDoc) return redisDoc;
+    if (redisDoc) {
+      return redisDoc;
+    }
 
     // Fallback to Supabase
     const supabaseDoc = await this.getFromSupabase(userId);
@@ -148,7 +152,7 @@ export class UserKnowledgeStore {
    */
   async append(
     userId: string,
-    entry: Omit<KnowledgeEntry, 'id' | 'createdAt'>,
+    entry: Omit<KnowledgeEntry, 'id' | 'createdAt'>
   ): Promise<KnowledgeEntry> {
     const doc = await this.get(userId);
 
@@ -165,10 +169,7 @@ export class UserKnowledgeStore {
     doc.lastUpdatedAt = new Date().toISOString();
 
     // Dual-write
-    await Promise.all([
-      this.writeToRedis(userId, doc),
-      this.writeToSupabase(userId, doc),
-    ]);
+    await Promise.all([this.writeToRedis(userId, doc), this.writeToSupabase(userId, doc)]);
 
     logger.info('Knowledge entry appended', {
       userId,
@@ -185,10 +186,14 @@ export class UserKnowledgeStore {
    * Check if the document exceeds configured limits.
    */
   isOverLimit(doc: KnowledgeDocument): boolean {
-    if (doc.entries.length > this.maxEntries) return true;
+    if (doc.entries.length > this.maxEntries) {
+      return true;
+    }
 
     const totalLength = doc.entries.reduce((sum, e) => sum + e.content.length, 0);
-    if (totalLength > this.maxContentLength) return true;
+    if (totalLength > this.maxContentLength) {
+      return true;
+    }
 
     return false;
   }
@@ -205,10 +210,7 @@ export class UserKnowledgeStore {
       lastUpdatedAt: new Date().toISOString(),
     };
 
-    await Promise.all([
-      this.writeToRedis(userId, doc),
-      this.writeToSupabase(userId, doc),
-    ]);
+    await Promise.all([this.writeToRedis(userId, doc), this.writeToSupabase(userId, doc)]);
 
     logger.info('Knowledge document replaced', {
       userId,
@@ -250,11 +252,15 @@ export class UserKnowledgeStore {
   // ===========================================================================
 
   private async getFromRedis(userId: string): Promise<KnowledgeDocument | null> {
-    if (!this.redis || !this.redisAvailable) return null;
+    if (!this.redis || !this.redisAvailable) {
+      return null;
+    }
 
     try {
       const data = await this.redis.get(`${REDIS_KEY_PREFIX}${userId}`);
-      if (!data) return null;
+      if (!data) {
+        return null;
+      }
       return JSON.parse(data) as KnowledgeDocument;
     } catch (err) {
       logger.warn('Redis read failed', {
@@ -266,13 +272,12 @@ export class UserKnowledgeStore {
   }
 
   private async writeToRedis(userId: string, doc: KnowledgeDocument): Promise<void> {
-    if (!this.redis || !this.redisAvailable) return;
+    if (!this.redis || !this.redisAvailable) {
+      return;
+    }
 
     try {
-      await this.redis.set(
-        `${REDIS_KEY_PREFIX}${userId}`,
-        JSON.stringify(doc),
-      );
+      await this.redis.set(`${REDIS_KEY_PREFIX}${userId}`, JSON.stringify(doc));
     } catch (err) {
       logger.warn('Redis write failed', {
         userId,
@@ -286,7 +291,9 @@ export class UserKnowledgeStore {
   // ===========================================================================
 
   private async getFromSupabase(userId: string): Promise<KnowledgeDocument | null> {
-    if (!this.supabase) return null;
+    if (!this.supabase) {
+      return null;
+    }
 
     try {
       const { data, error } = await this.supabase
@@ -295,7 +302,9 @@ export class UserKnowledgeStore {
         .eq('user_id', userId)
         .single();
 
-      if (error || !data) return null;
+      if (error || !data) {
+        return null;
+      }
 
       return {
         userId,
@@ -313,20 +322,20 @@ export class UserKnowledgeStore {
   }
 
   private async writeToSupabase(userId: string, doc: KnowledgeDocument): Promise<void> {
-    if (!this.supabase) return;
+    if (!this.supabase) {
+      return;
+    }
 
     try {
-      const { error } = await this.supabase
-        .from('user_knowledge')
-        .upsert(
-          {
-            user_id: userId,
-            entries: doc.entries,
-            version: doc.version,
-            updated_at: doc.lastUpdatedAt,
-          },
-          { onConflict: 'user_id' },
-        );
+      const { error } = await this.supabase.from('user_knowledge').upsert(
+        {
+          user_id: userId,
+          entries: doc.entries,
+          version: doc.version,
+          updated_at: doc.lastUpdatedAt,
+        },
+        { onConflict: 'user_id' }
+      );
 
       if (error) {
         logger.warn('Supabase write failed', {

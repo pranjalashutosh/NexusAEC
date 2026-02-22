@@ -86,10 +86,7 @@ function updateSyncState(updates: Partial<SyncState>): void {
 /**
  * Log a draft change for sync
  */
-export function logDraftChange(
-  type: 'created' | 'updated' | 'deleted',
-  draftId: string
-): void {
+export function logDraftChange(type: 'created' | 'updated' | 'deleted', draftId: string): void {
   const changeLog = syncStore.get('changeLog');
   changeLog.push({
     type,

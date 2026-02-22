@@ -2,11 +2,7 @@
  * Tests for Smart Draft Service
  */
 
-import {
-  SmartDraftService,
-  SmartDraftError,
-  isSmartDraftError,
-} from './smart-draft';
+import { SmartDraftService, SmartDraftError, isSmartDraftError } from './smart-draft';
 
 import type { EmailProvider } from '../interfaces/email-provider';
 import type { StandardEmail, StandardDraft, SyncStatus } from '../interfaces/types';
@@ -236,15 +232,14 @@ describe('SmartDraftService', () => {
 
     it('should set isPendingReview by default', async () => {
       const outlook = createMockProvider('OUTLOOK', {
-        createDraft: jest.fn().mockImplementation((input) =>
-          createMockDraft({ isPendingReview: input.isPendingReview })
-        ),
+        createDraft: jest
+          .fn()
+          .mockImplementation((input) =>
+            createMockDraft({ isPendingReview: input.isPendingReview })
+          ),
       });
 
-      const service = new SmartDraftService(
-        { OUTLOOK: outlook },
-        { defaultPendingReview: true }
-      );
+      const service = new SmartDraftService({ OUTLOOK: outlook }, { defaultPendingReview: true });
 
       await service.createDraft({
         subject: 'Draft',
@@ -507,4 +502,3 @@ describe('isSmartDraftError', () => {
     expect(isSmartDraftError(error)).toBe(false);
   });
 });
-

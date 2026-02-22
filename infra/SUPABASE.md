@@ -1,10 +1,12 @@
 # Supabase Setup Guide - Knowledge Base (Tier 3)
 
-This guide covers setting up Supabase with pgvector for the NexusAEC knowledge base.
+This guide covers setting up Supabase with pgvector for the NexusAEC knowledge
+base.
 
 ## Overview
 
 Supabase provides:
+
 - **PostgreSQL with pgvector** - Vector similarity search for RAG
 - **Row Level Security (RLS)** - Fine-grained access control
 - **Auto-generated APIs** - REST and GraphQL endpoints
@@ -12,6 +14,7 @@ Supabase provides:
 - **Storage** - File uploads for PDFs, CSVs
 
 **Use Cases in NexusAEC:**
+
 - Store asset knowledge embeddings (Tier 3 Knowledge Base)
 - Vector similarity search for RAG retrieval
 - Store user preferences, audit trail, draft references
@@ -104,7 +107,8 @@ supabase stop --backup
 
 ### Option 2: Docker Compose (Lightweight)
 
-If you don't need the full Supabase stack, use the existing Docker Compose setup with pgvector.
+If you don't need the full Supabase stack, use the existing Docker Compose setup
+with pgvector.
 
 ```bash
 # Already configured in infra/docker-compose.yml
@@ -115,12 +119,14 @@ pnpm infra:up
 ```
 
 **Limitations:**
+
 - No Supabase Studio UI
 - No auto-generated APIs
 - No real-time subscriptions
 - Manual connection string management
 
-**When to use:** Simple vector store operations, development without Supabase-specific features.
+**When to use:** Simple vector store operations, development without
+Supabase-specific features.
 
 ---
 
@@ -150,6 +156,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 Option A: Copy-paste `init-db.sql` into SQL Editor and execute.
 
 Option B: Use migrations:
+
 ```bash
 # Link local project to Supabase cloud
 supabase link --project-ref <your-project-ref>
@@ -175,21 +182,25 @@ DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<region>.pooler.supa
 Supabase provides connection pooling via Supavisor:
 
 **Transaction Mode (default):**
+
 ```
 postgresql://postgres.<ref>:<password>@<region>.pooler.supabase.com:5432/postgres
 ```
 
 **Session Mode (for migrations):**
+
 ```
 postgresql://postgres.<ref>:<password>@<region>.pooler.supabase.com:6543/postgres?pgbouncer=true
 ```
 
 **Direct Connection (no pooling):**
+
 ```
 postgresql://postgres.<ref>:<password>@db.<ref>.supabase.co:5432/postgres
 ```
 
-**Recommendation:** Use transaction mode for application, session mode for migrations.
+**Recommendation:** Use transaction mode for application, session mode for
+migrations.
 
 ### 6. Row Level Security (Optional)
 
@@ -215,7 +226,8 @@ CREATE POLICY audit_policy ON audit_entries
   USING (auth.uid()::text = user_id);
 ```
 
-**Note:** Documents and assets tables should remain open (no RLS) for RAG retrieval.
+**Note:** Documents and assets tables should remain open (no RLS) for RAG
+retrieval.
 
 ---
 
@@ -240,6 +252,7 @@ USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 ```
 
 **Usage:**
+
 - Store asset descriptions, safety manual chunks, procedure steps
 - Perform vector similarity search for RAG
 - Filter by `source_type` for targeted retrieval
@@ -262,6 +275,7 @@ CREATE TABLE assets (
 ```
 
 **Usage:**
+
 - Structured asset catalog
 - Fast lookup by asset_id
 - Metadata for filtering (category, location, criticality)
@@ -316,15 +330,16 @@ CREATE INDEX documents_embedding_idx ON documents
 
 ### OpenAI Models
 
-| Model | Dimension | Cost | Use Case |
-|-------|-----------|------|----------|
-| text-embedding-ada-002 | 1536 | $0.0001/1K tokens | Legacy |
-| text-embedding-3-small | 1536 | $0.00002/1K tokens | **Recommended** |
-| text-embedding-3-large | 3072 | $0.00013/1K tokens | High accuracy |
+| Model                  | Dimension | Cost               | Use Case        |
+| ---------------------- | --------- | ------------------ | --------------- |
+| text-embedding-ada-002 | 1536      | $0.0001/1K tokens  | Legacy          |
+| text-embedding-3-small | 1536      | $0.00002/1K tokens | **Recommended** |
+| text-embedding-3-large | 3072      | $0.00013/1K tokens | High accuracy   |
 
 **Default:** text-embedding-3-small (1536 dimensions)
 
 **To change dimension:**
+
 ```sql
 ALTER TABLE documents ALTER COLUMN embedding TYPE vector(3072);
 ```
@@ -332,6 +347,7 @@ ALTER TABLE documents ALTER COLUMN embedding TYPE vector(3072);
 ### Vector Index Tuning
 
 **IVFFlat Parameters:**
+
 ```sql
 -- lists: Number of clusters (sqrt of total rows)
 -- Good for 10K-1M rows
@@ -343,13 +359,16 @@ WITH (lists = 1000);
 ```
 
 **HNSW (Hierarchical Navigable Small World) - Better performance:**
+
 ```sql
 -- Requires pgvector 0.5.0+
 CREATE INDEX ON documents USING hnsw (embedding vector_cosine_ops);
 ```
 
 **Distance Functions:**
-- `vector_cosine_ops` - Cosine similarity (recommended for normalized embeddings)
+
+- `vector_cosine_ops` - Cosine similarity (recommended for normalized
+  embeddings)
 - `vector_l2_ops` - Euclidean distance
 - `vector_ip_ops` - Inner product (dot product)
 
@@ -374,6 +393,7 @@ LIMIT 5;
 ```
 
 **Explanation:**
+
 - `<=>` - Cosine distance operator
 - `$1::vector` - Query embedding (1536-dimensional vector)
 - `1 - distance` - Convert to similarity score (0-1)
@@ -517,7 +537,8 @@ psql "postgresql://..." < backup.sql
 
 ### Vector-specific Considerations
 
-- **Embedding regeneration:** If embeddings are lost, can regenerate from source content
+- **Embedding regeneration:** If embeddings are lost, can regenerate from source
+  content
 - **Index rebuilding:** Faster than re-embedding (if data exists)
 - **Partial backups:** Export metadata separately from vectors
 
@@ -527,11 +548,11 @@ psql "postgresql://..." < backup.sql
 
 ### Supabase Pricing (as of 2024)
 
-| Plan | Price | Database | Storage | Bandwidth |
-|------|-------|----------|---------|-----------|
-| Free | $0 | 500 MB | 1 GB | 5 GB |
-| Pro | $25/mo | 8 GB | 100 GB | 250 GB |
-| Team | $599/mo | Custom | Custom | Custom |
+| Plan | Price   | Database | Storage | Bandwidth |
+| ---- | ------- | -------- | ------- | --------- |
+| Free | $0      | 500 MB   | 1 GB    | 5 GB      |
+| Pro  | $25/mo  | 8 GB     | 100 GB  | 250 GB    |
+| Team | $599/mo | Custom   | Custom  | Custom    |
 
 ### Vector Storage Costs
 
@@ -540,13 +561,15 @@ psql "postgresql://..." < backup.sql
 - **1M vectors:** ~6 GB
 
 **Recommendations:**
+
 - **MVP (<50K assets):** Free tier or Pro
 - **Production (100K-500K assets):** Pro plan
 - **Enterprise (1M+ assets):** Team plan or self-hosted
 
 ### Optimization Strategies
 
-1. **Chunk size:** Balance between granularity and storage (500-token chunks recommended)
+1. **Chunk size:** Balance between granularity and storage (500-token chunks
+   recommended)
 2. **Metadata:** Store lightweight metadata in JSONB, not in content
 3. **Archival:** Move old/unused documents to cheaper storage
 4. **Compression:** PostgreSQL automatically compresses TOAST data

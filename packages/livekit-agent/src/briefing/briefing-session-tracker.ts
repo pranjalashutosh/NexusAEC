@@ -13,6 +13,7 @@ import { createLogger } from '@nexus-aec/logger';
 
 import type { BriefedEmailStore } from './briefed-email-store.js';
 import type { BriefingEmailRef, BriefingTopicRef } from '../reasoning/reasoning-loop.js';
+import type { SenderProfileStore, ProfileAction } from '@nexus-aec/intelligence';
 
 const logger = createLogger({ baseContext: { component: 'briefing-tracker' } });
 
@@ -56,14 +57,21 @@ export class BriefingSessionTracker {
   private history: Array<{ topicIndex: number; itemIndex: number }>;
   private store: BriefedEmailStore | null;
   private userId: string | null;
+  private senderProfileStore: SenderProfileStore | null;
 
-  constructor(topics: BriefingTopicRef[], store?: BriefedEmailStore, userId?: string) {
+  constructor(
+    topics: BriefingTopicRef[],
+    store?: BriefedEmailStore,
+    userId?: string,
+    senderProfileStore?: SenderProfileStore
+  ) {
     this.topics = topics;
     this.emailMap = new Map();
     this.cursor = { topicIndex: 0, itemIndex: 0 };
     this.history = [];
     this.store = store ?? null;
     this.userId = userId ?? null;
+    this.senderProfileStore = senderProfileStore ?? null;
 
     // Index every email across all topics
     for (let t = 0; t < topics.length; t++) {
@@ -87,6 +95,57 @@ export class BriefingSessionTracker {
   }
 
   // ===========================================================================
+  // Progressive Loading
+  // ===========================================================================
+
+  /**
+   * Add new topics (or merge emails into existing topics) for progressive loading.
+   * Used when paginated email fetches bring in additional batches.
+   */
+  addTopics(newTopics: BriefingTopicRef[]): void {
+    for (const newTopic of newTopics) {
+      // Check if a topic with this label already exists
+      const existing = this.topics.find((t) => t.label === newTopic.label);
+
+      if (existing) {
+        // Merge new emails into existing topic
+        for (const email of newTopic.emails) {
+          if (!this.emailMap.has(email.emailId)) {
+            existing.emails.push(email);
+            this.emailMap.set(email.emailId, {
+              ref: email,
+              topicIndex: this.topics.indexOf(existing),
+              itemIndex: existing.emails.length - 1,
+              status: 'pending',
+            });
+          }
+        }
+      } else {
+        // Add as a new topic
+        const topicIndex = this.topics.length;
+        this.topics.push(newTopic);
+        for (let i = 0; i < newTopic.emails.length; i++) {
+          const email = newTopic.emails[i]!;
+          if (!this.emailMap.has(email.emailId)) {
+            this.emailMap.set(email.emailId, {
+              ref: email,
+              topicIndex,
+              itemIndex: i,
+              status: 'pending',
+            });
+          }
+        }
+      }
+    }
+
+    logger.info('Topics added to tracker', {
+      newTopicCount: newTopics.length,
+      totalTopics: this.topics.length,
+      totalEmails: this.emailMap.size,
+    });
+  }
+
+  // ===========================================================================
   // Cursor Operations
   // ===========================================================================
 
@@ -96,7 +155,9 @@ export class BriefingSessionTracker {
    */
   getCurrentEmail(): BriefingEmailRef | null {
     const topic = this.topics[this.cursor.topicIndex];
-    if (!topic) return null;
+    if (!topic) {
+      return null;
+    }
 
     const email = topic.emails[this.cursor.itemIndex];
     return email ?? null;
@@ -209,6 +270,13 @@ export class BriefingSessionTracker {
       });
     }
 
+    // Record briefed-without-action as mild negative signal for personalization
+    if (this.senderProfileStore && this.userId) {
+      this.senderProfileStore
+        .recordAction(this.userId, state.ref.from, 'skipped', state.ref.priority)
+        .catch(() => {}); // fire-and-forget
+    }
+
     logger.info('Email marked as briefed', { emailId });
   }
 
@@ -236,6 +304,14 @@ export class BriefingSessionTracker {
       });
     }
 
+    // Record sender engagement for personalization
+    if (this.senderProfileStore && this.userId) {
+      const profileAction = mapToolToProfileAction(action);
+      this.senderProfileStore
+        .recordAction(this.userId, state.ref.from, profileAction, state.ref.priority)
+        .catch(() => {}); // fire-and-forget
+    }
+
     logger.info('Email marked as actioned', { emailId, action });
   }
 
@@ -260,6 +336,13 @@ export class BriefingSessionTracker {
       });
     }
 
+    // Record skip as implicit negative signal for personalization
+    if (this.senderProfileStore && this.userId) {
+      this.senderProfileStore
+        .recordAction(this.userId, state.ref.from, 'skipped', state.ref.priority)
+        .catch(() => {}); // fire-and-forget
+    }
+
     logger.info('Email marked as skipped', { emailId });
   }
 
@@ -276,9 +359,13 @@ export class BriefingSessionTracker {
     let skipped = 0;
 
     for (const state of this.emailMap.values()) {
-      if (state.status === 'briefed') briefed++;
-      else if (state.status === 'actioned') actioned++;
-      else if (state.status === 'skipped') skipped++;
+      if (state.status === 'briefed') {
+        briefed++;
+      } else if (state.status === 'actioned') {
+        actioned++;
+      } else if (state.status === 'skipped') {
+        skipped++;
+      }
     }
 
     const total = this.emailMap.size;
@@ -305,7 +392,9 @@ export class BriefingSessionTracker {
    */
   getActiveEmailsInCurrentTopic(): BriefingEmailRef[] {
     const topic = this.topics[this.cursor.topicIndex];
-    if (!topic) return [];
+    if (!topic) {
+      return [];
+    }
 
     return topic.emails.filter((e) => {
       const state = this.emailMap.get(e.emailId);
@@ -318,7 +407,9 @@ export class BriefingSessionTracker {
    */
   isComplete(): boolean {
     for (const state of this.emailMap.values()) {
-      if (state.status === 'pending') return false;
+      if (state.status === 'pending') {
+        return false;
+      }
     }
     return true;
   }
@@ -334,7 +425,9 @@ export class BriefingSessionTracker {
           emailId,
           status: state.status,
         };
-        if (state.actionTaken) entry.action = state.actionTaken;
+        if (state.actionTaken) {
+          entry.action = state.actionTaken;
+        }
         handled.push(entry);
       }
     }
@@ -348,10 +441,14 @@ export class BriefingSessionTracker {
    * incrementally, but this is a safety net for any that were missed.
    */
   async flushToStore(): Promise<void> {
-    if (!this.store || !this.userId) return;
+    if (!this.store || !this.userId) {
+      return;
+    }
 
     const handled = this.getHandledEmailIds();
-    if (handled.length === 0) return;
+    if (handled.length === 0) {
+      return;
+    }
 
     const records = handled.map((h) => ({
       emailId: h.emailId,
@@ -399,14 +496,20 @@ export class BriefingSessionTracker {
     const activeInTopic = this.getActiveEmailsInCurrentTopic().length;
     const flagLabel = currentEmail.isFlagged ? ' [FLAGGED]' : '';
 
+    const priorityLabel = currentEmail.priority ? ` [${currentEmail.priority.toUpperCase()}]` : '';
+    const summaryLine = currentEmail.summary ? `Summary: ${currentEmail.summary}` : '';
+
     return [
       'CURRENT BRIEFING POSITION:',
       `Topic ${progress.currentTopicIndex + 1} of ${progress.totalTopics}: "${progress.currentTopicLabel}"`,
       `Email ${progress.currentItemIndex + 1} of ${topicEmailCount} in this topic (${activeInTopic} remaining)`,
-      `Current email: "${currentEmail.subject}" from ${currentEmail.from}${flagLabel} (email_id: ${currentEmail.emailId})`,
+      `Current email: "${currentEmail.subject}" from ${currentEmail.from}${flagLabel}${priorityLabel} (email_id: ${currentEmail.emailId})`,
+      ...(summaryLine ? [summaryLine] : []),
       `Progress: ${progress.emailsBriefed + progress.emailsActioned} of ${progress.totalEmails} handled, ${progress.emailsRemaining} remaining`,
       '',
-      'NEXT: Present THIS email to the user. Summarize its subject and sender, then ask what action to take.',
+      summaryLine
+        ? 'NEXT: Read the summary to the user naturally (do NOT read verbatim). Then ask what action to take.'
+        : 'NEXT: Present THIS email to the user. Summarize its subject and sender, then ask what action to take.',
     ].join('\n');
   }
 
@@ -415,6 +518,7 @@ export class BriefingSessionTracker {
    * Replaces the static EMAIL REFERENCE block that was baked into the system prompt.
    */
   buildCompactEmailReference(): string {
+    const currentTopicIdx = this.cursor.topicIndex;
     const lines: string[] = ['REMAINING EMAILS (active, not yet briefed):'];
     let hasEmails = false;
 
@@ -425,13 +529,28 @@ export class BriefingSessionTracker {
         return state && state.status === 'pending';
       });
 
-      if (activeEmails.length === 0) continue;
+      if (activeEmails.length === 0) {
+        continue;
+      }
 
       hasEmails = true;
-      lines.push(`\nTopic ${t + 1}: "${topic.label}" (${activeEmails.length} emails)`);
-      for (const email of activeEmails) {
-        const flag = email.isFlagged ? ' [FLAGGED]' : '';
-        lines.push(`  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${email.subject}${flag}`);
+
+      if (t === currentTopicIdx) {
+        // Current topic: show full detail
+        lines.push(`\nCURRENT TOPIC: "${topic.label}" (${activeEmails.length} emails)`);
+        for (const email of activeEmails) {
+          const flag = email.isFlagged ? ' [FLAGGED]' : '';
+          const prio = email.priority ? ` [${email.priority.toUpperCase()}]` : '';
+          const summary = email.summary ? ` | "${email.summary}"` : '';
+          lines.push(
+            `  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${email.subject}${flag}${prio}${summary}`
+          );
+        }
+      } else {
+        // Other topics: one-line summary
+        const highCount = activeEmails.filter((e) => e.priority === 'high').length;
+        const highLabel = highCount > 0 ? `, ${highCount} high-priority` : '';
+        lines.push(`\n  - "${topic.label}" (${activeEmails.length} emails${highLabel})`);
       }
     }
 
@@ -445,6 +564,13 @@ export class BriefingSessionTracker {
   // ===========================================================================
   // Internal
   // ===========================================================================
+
+  /**
+   * Get the current cursor position (for testing / debugging).
+   */
+  getCursor(): { topicIndex: number; itemIndex: number } {
+    return { ...this.cursor };
+  }
 
   /**
    * Advance the cursor to the next pending email, starting from the
@@ -481,4 +607,23 @@ export class BriefingSessionTracker {
     logger.info('Briefing complete — no more pending emails');
     return null;
   }
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Map a tool action name to a SenderProfileStore action type.
+ */
+function mapToolToProfileAction(toolAction: string): ProfileAction {
+  const map: Record<string, ProfileAction> = {
+    archive_email: 'archived',
+    mark_read: 'markRead',
+    flag_followup: 'flagged',
+    flagged: 'flagged',
+    create_draft: 'replied',
+    mute_sender: 'archived',
+  };
+  return map[toolAction] ?? 'skipped';
 }

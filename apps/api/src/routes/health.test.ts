@@ -18,4 +18,3 @@ describe('GET /health', () => {
     await app.close();
   });
 });
-

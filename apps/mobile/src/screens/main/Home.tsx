@@ -4,7 +4,8 @@
  * Main dashboard with quick access to briefing
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -14,14 +15,12 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 
 import { ConnectionQualityIndicator } from '../../components/ConnectionQualityIndicator';
+import { getApiBaseUrl } from '../../config/api';
 import { useAuth, type AccountTokenStatus } from '../../hooks/useAuth';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useTheme } from '../../hooks/useTheme';
-
-import { getApiBaseUrl } from '../../config/api';
 
 import type { RootStackScreenProps } from '../../types/navigation';
 
@@ -45,16 +44,19 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
   const hasValidAccount = userId && accountStatuses[userId] === 'valid';
 
   const fetchEmailStats = useCallback(async () => {
-    if (!userId || !hasValidAccount) return;
+    if (!userId || !hasValidAccount) {
+      return;
+    }
 
     setStatsLoading(true);
     try {
-      const vips = preferences.vips.length > 0
-        ? `&vips=${encodeURIComponent(preferences.vips.join(','))}`
-        : '';
+      const vips =
+        preferences.vips.length > 0
+          ? `&vips=${encodeURIComponent(preferences.vips.join(','))}`
+          : '';
       const apiUrl = getApiBaseUrl();
       const response = await fetch(
-        `${apiUrl}/email/stats?userId=${encodeURIComponent(userId)}${vips}`,
+        `${apiUrl}/email/stats?userId=${encodeURIComponent(userId)}${vips}`
       );
 
       if (response.ok) {
@@ -85,7 +87,7 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
   useFocusEffect(
     useCallback(() => {
       void fetchEmailStats();
-    }, [fetchEmailStats]),
+    }, [fetchEmailStats])
   );
 
   const handleStartBriefing = () => {
@@ -113,9 +115,7 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
               <Text style={[styles.greeting, { color: colors.textSecondary }]}>
                 {getGreeting()}
               </Text>
-              <Text style={[styles.title, { color: colors.text }]}>
-                Ready for your briefing?
-              </Text>
+              <Text style={[styles.title, { color: colors.text }]}>Ready for your briefing?</Text>
             </View>
             <ConnectionQualityIndicator quality={quality} />
           </View>
@@ -198,13 +198,21 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
         {/* Connected Accounts */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Accounts</Text>
-          <View style={[styles.accountsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.accountsCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
             {accounts.map((account) => {
               const status: AccountTokenStatus = accountStatuses[account.id] ?? 'checking';
               const isExpired = status === 'expired';
-              const statusLabel = status === 'checking' ? 'Checking...'
-                : status === 'valid' ? 'Synced'
-                : 'Reconnect needed';
+              const statusLabel =
+                status === 'checking'
+                  ? 'Checking...'
+                  : status === 'valid'
+                    ? 'Synced'
+                    : 'Reconnect needed';
               const statusColor = isExpired ? colors.error : colors.success;
 
               return (
@@ -213,7 +221,9 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
                   style={styles.accountItem}
                   disabled={!isExpired || reconnecting === account.id}
                   onPress={async () => {
-                    if (!isExpired) return;
+                    if (!isExpired) {
+                      return;
+                    }
                     setReconnecting(account.id);
                     try {
                       await reconnectAccount(account);
@@ -243,9 +253,7 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
               style={[styles.addAccountButton, { borderColor: colors.border }]}
               onPress={() => navigation.navigate('AddAccount')}
             >
-              <Text style={[styles.addAccountText, { color: colors.primary }]}>
-                + Add Account
-              </Text>
+              <Text style={[styles.addAccountText, { color: colors.primary }]}>+ Add Account</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -258,11 +266,12 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
               {preferences.vips.slice(0, 4).map((vip, index) => (
                 <View
                   key={index}
-                  style={[styles.vipChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  style={[
+                    styles.vipChip,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                  ]}
                 >
-                  <Text style={[styles.vipName, { color: colors.text }]}>
-                    {vip.split('@')[0]}
-                  </Text>
+                  <Text style={[styles.vipName, { color: colors.text }]}>{vip.split('@')[0]}</Text>
                 </View>
               ))}
               {preferences.vips.length > 4 && (

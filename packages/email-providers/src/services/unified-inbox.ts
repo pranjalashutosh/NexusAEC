@@ -98,10 +98,7 @@ export class UnifiedInboxService {
   private readonly config: Required<UnifiedInboxConfig>;
   private syncStatus: UnifiedSyncStatus;
 
-  constructor(
-    providers: EmailProvider[],
-    config: UnifiedInboxConfig = {}
-  ) {
+  constructor(providers: EmailProvider[], config: UnifiedInboxConfig = {}) {
     this.providers = new Map();
     for (const provider of providers) {
       this.providers.set(provider.source, provider);
@@ -205,9 +202,7 @@ export class UnifiedInboxService {
    * Disconnect all providers
    */
   async disconnectAll(): Promise<void> {
-    await Promise.all(
-      Array.from(this.providers.values()).map((p) => p.disconnect())
-    );
+    await Promise.all(Array.from(this.providers.values()).map((p) => p.disconnect()));
   }
 
   // ===========================================================================
@@ -220,7 +215,9 @@ export class UnifiedInboxService {
   async fetchUnread(
     filters?: EmailQueryFilters,
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<StandardEmail> & { errors: Array<{ source: EmailSource; error: string }> }> {
+  ): Promise<
+    PaginatedResponse<StandardEmail> & { errors: Array<{ source: EmailSource; error: string }> }
+  > {
     return this.fetchEmailsFromAll(
       (provider, pag) => provider.fetchUnread(filters, pag),
       pagination
@@ -233,7 +230,9 @@ export class UnifiedInboxService {
   async fetchThreads(
     filters?: EmailQueryFilters,
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<StandardThread> & { errors: Array<{ source: EmailSource; error: string }> }> {
+  ): Promise<
+    PaginatedResponse<StandardThread> & { errors: Array<{ source: EmailSource; error: string }> }
+  > {
     const pageSize = pagination?.pageSize ?? this.config.defaultPageSize;
     const results: StandardThread[] = [];
     const errors: Array<{ source: EmailSource; error: string }> = [];
@@ -245,15 +244,17 @@ export class UnifiedInboxService {
           const response = await provider.fetchThreads(filters, { pageSize });
           results.push(...response.items);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
     );
 
     // Sort by last updated date (newest first)
-    results.sort((a, b) =>
-      new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime()
+    results.sort(
+      (a, b) => new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime()
     );
 
     // Limit to requested page size
@@ -271,7 +272,9 @@ export class UnifiedInboxService {
    */
   async fetchEmail(emailId: string): Promise<StandardEmail | null> {
     const provider = this.getProviderForId(emailId);
-    if (!provider) {return null;}
+    if (!provider) {
+      return null;
+    }
     return provider.fetchEmail(emailId);
   }
 
@@ -280,7 +283,9 @@ export class UnifiedInboxService {
    */
   async fetchThread(threadId: string): Promise<StandardThread | null> {
     const provider = this.getProviderForId(threadId);
-    if (!provider) {return null;}
+    if (!provider) {
+      return null;
+    }
     return provider.fetchThread(threadId);
   }
 
@@ -289,7 +294,9 @@ export class UnifiedInboxService {
    */
   async fetchThreadMessages(threadId: string): Promise<StandardEmail[]> {
     const provider = this.getProviderForId(threadId);
-    if (!provider) {return [];}
+    if (!provider) {
+      return [];
+    }
     return provider.fetchThreadMessages(threadId);
   }
 
@@ -348,18 +355,14 @@ export class UnifiedInboxService {
    * Apply labels to emails (routes to correct providers)
    */
   async applyLabels(emailIds: string[], labelIds: string[]): Promise<MultiProviderResult<void>> {
-    return this.routeToProviders(emailIds, (provider, ids) =>
-      provider.applyLabels(ids, labelIds)
-    );
+    return this.routeToProviders(emailIds, (provider, ids) => provider.applyLabels(ids, labelIds));
   }
 
   /**
    * Remove labels from emails (routes to correct providers)
    */
   async removeLabels(emailIds: string[], labelIds: string[]): Promise<MultiProviderResult<void>> {
-    return this.routeToProviders(emailIds, (provider, ids) =>
-      provider.removeLabels(ids, labelIds)
-    );
+    return this.routeToProviders(emailIds, (provider, ids) => provider.removeLabels(ids, labelIds));
   }
 
   /**
@@ -385,7 +388,9 @@ export class UnifiedInboxService {
    */
   async fetchDrafts(
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<StandardDraft> & { errors: Array<{ source: EmailSource; error: string }> }> {
+  ): Promise<
+    PaginatedResponse<StandardDraft> & { errors: Array<{ source: EmailSource; error: string }> }
+  > {
     const pageSize = pagination?.pageSize ?? this.config.defaultPageSize;
     const results: StandardDraft[] = [];
     const errors: Array<{ source: EmailSource; error: string }> = [];
@@ -396,16 +401,16 @@ export class UnifiedInboxService {
           const response = await provider.fetchDrafts({ pageSize });
           results.push(...response.items);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
     );
 
     // Sort by modified date (newest first)
-    results.sort((a, b) =>
-      new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime()
-    );
+    results.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
 
     return {
       items: results.slice(0, pageSize),
@@ -419,7 +424,9 @@ export class UnifiedInboxService {
    */
   async fetchDraft(draftId: string): Promise<StandardDraft | null> {
     const provider = this.getProviderForId(draftId);
-    if (!provider) {return null;}
+    if (!provider) {
+      return null;
+    }
     return provider.fetchDraft(draftId);
   }
 
@@ -464,7 +471,9 @@ export class UnifiedInboxService {
    */
   async deleteDraft(draftId: string): Promise<void> {
     const provider = this.getProviderForId(draftId);
-    if (!provider) {return;}
+    if (!provider) {
+      return;
+    }
     await provider.deleteDraft(draftId);
   }
 
@@ -499,7 +508,9 @@ export class UnifiedInboxService {
           const result = await provider.fetchFolders();
           folders.push(...result);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
@@ -524,7 +535,9 @@ export class UnifiedInboxService {
    */
   async deleteFolder(folderId: string): Promise<void> {
     const provider = this.getProviderForId(folderId);
-    if (!provider) {return;}
+    if (!provider) {
+      return;
+    }
     await provider.deleteFolder(folderId);
   }
 
@@ -538,7 +551,9 @@ export class UnifiedInboxService {
   async fetchCalendarEvents(
     filters: CalendarQueryFilters,
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<CalendarEvent> & { errors: Array<{ source: EmailSource; error: string }> }> {
+  ): Promise<
+    PaginatedResponse<CalendarEvent> & { errors: Array<{ source: EmailSource; error: string }> }
+  > {
     const pageSize = pagination?.pageSize ?? this.config.defaultPageSize;
     const results: CalendarEvent[] = [];
     const errors: Array<{ source: EmailSource; error: string }> = [];
@@ -549,16 +564,16 @@ export class UnifiedInboxService {
           const response = await provider.fetchCalendarEvents(filters, { pageSize });
           results.push(...response.items);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
     );
 
     // Sort by start time
-    results.sort((a, b) =>
-      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-    );
+    results.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     return {
       items: results.slice(0, pageSize * 2), // Allow more calendar events
@@ -571,7 +586,9 @@ export class UnifiedInboxService {
    */
   async fetchCalendarEvent(eventId: string): Promise<CalendarEvent | null> {
     const provider = this.getProviderForId(eventId);
-    if (!provider) {return null;}
+    if (!provider) {
+      return null;
+    }
     return provider.fetchCalendarEvent(eventId);
   }
 
@@ -584,7 +601,9 @@ export class UnifiedInboxService {
    */
   async fetchContacts(
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<Contact> & { errors: Array<{ source: EmailSource; error: string }> }> {
+  ): Promise<
+    PaginatedResponse<Contact> & { errors: Array<{ source: EmailSource; error: string }> }
+  > {
     const pageSize = pagination?.pageSize ?? this.config.defaultPageSize;
     const results: Contact[] = [];
     const errors: Array<{ source: EmailSource; error: string }> = [];
@@ -595,7 +614,9 @@ export class UnifiedInboxService {
           const response = await provider.fetchContacts({ pageSize });
           results.push(...response.items);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
@@ -608,7 +629,9 @@ export class UnifiedInboxService {
     const seen = new Set<string>();
     const deduped = results.filter((c) => {
       const primaryEmail = c.emailAddresses[0]?.email;
-      if (!primaryEmail || seen.has(primaryEmail)) {return false;}
+      if (!primaryEmail || seen.has(primaryEmail)) {
+        return false;
+      }
       seen.add(primaryEmail);
       return true;
     });
@@ -623,7 +646,10 @@ export class UnifiedInboxService {
   /**
    * Search contacts across all providers
    */
-  async searchContacts(query: string, limit = 10): Promise<{
+  async searchContacts(
+    query: string,
+    limit = 10
+  ): Promise<{
     contacts: Contact[];
     errors: Array<{ source: EmailSource; error: string }>;
   }> {
@@ -636,7 +662,9 @@ export class UnifiedInboxService {
           const contacts = await provider.searchContacts(query, limit);
           results.push(...contacts);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
@@ -647,18 +675,24 @@ export class UnifiedInboxService {
     results.sort((a, b) => {
       const aStarts = a.displayName.toLowerCase().startsWith(queryLower) ? 0 : 1;
       const bStarts = b.displayName.toLowerCase().startsWith(queryLower) ? 0 : 1;
-      if (aStarts !== bStarts) {return aStarts - bStarts;}
+      if (aStarts !== bStarts) {
+        return aStarts - bStarts;
+      }
       return a.displayName.localeCompare(b.displayName);
     });
 
     // Deduplicate and limit
     const seen = new Set<string>();
-    const contacts = results.filter((c) => {
-      const primaryEmail = c.emailAddresses[0]?.email;
-      if (!primaryEmail || seen.has(primaryEmail)) {return false;}
-      seen.add(primaryEmail);
-      return true;
-    }).slice(0, limit);
+    const contacts = results
+      .filter((c) => {
+        const primaryEmail = c.emailAddresses[0]?.email;
+        if (!primaryEmail || seen.has(primaryEmail)) {
+          return false;
+        }
+        seen.add(primaryEmail);
+        return true;
+      })
+      .slice(0, limit);
 
     return { contacts, errors };
   }
@@ -671,9 +705,14 @@ export class UnifiedInboxService {
    * Fetch emails from all providers and merge by date
    */
   private async fetchEmailsFromAll(
-    fetcher: (provider: EmailProvider, pagination: PaginationParams) => Promise<PaginatedResponse<StandardEmail>>,
+    fetcher: (
+      provider: EmailProvider,
+      pagination: PaginationParams
+    ) => Promise<PaginatedResponse<StandardEmail>>,
     pagination?: PaginationParams
-  ): Promise<PaginatedResponse<StandardEmail> & { errors: Array<{ source: EmailSource; error: string }> }> {
+  ): Promise<
+    PaginatedResponse<StandardEmail> & { errors: Array<{ source: EmailSource; error: string }> }
+  > {
     const pageSize = pagination?.pageSize ?? this.config.defaultPageSize;
     const results: StandardEmail[] = [];
     const errors: Array<{ source: EmailSource; error: string }> = [];
@@ -684,16 +723,16 @@ export class UnifiedInboxService {
           const response = await fetcher(provider, { pageSize });
           results.push(...response.items);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
     );
 
     // Sort by received date (newest first)
-    results.sort((a, b) =>
-      new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
-    );
+    results.sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
 
     // Limit to requested page size
     const items = results.slice(0, pageSize);
@@ -720,7 +759,9 @@ export class UnifiedInboxService {
 
     for (const id of ids) {
       const parsed = parseStandardId(id);
-      if (!parsed) {continue;}
+      if (!parsed) {
+        continue;
+      }
 
       if (!byProvider.has(parsed.source)) {
         byProvider.set(parsed.source, []);
@@ -746,7 +787,9 @@ export class UnifiedInboxService {
             results.push(result);
           }
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
@@ -764,7 +807,9 @@ export class UnifiedInboxService {
    */
   private getProviderForId(id: string): EmailProvider | undefined {
     const parsed = parseStandardId(id);
-    if (!parsed) {return undefined;}
+    if (!parsed) {
+      return undefined;
+    }
     return this.providers.get(parsed.source);
   }
 
@@ -804,8 +849,9 @@ export class UnifiedInboxService {
    * Get error message from unknown error
    */
   private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {return error.message;}
+    if (error instanceof Error) {
+      return error.message;
+    }
     return String(error);
   }
 }
-

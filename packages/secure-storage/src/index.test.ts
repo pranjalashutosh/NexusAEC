@@ -303,4 +303,3 @@ describe('@nexus-aec/secure-storage', () => {
     });
   });
 });
-

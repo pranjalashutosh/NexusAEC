@@ -10,4 +10,3 @@ module.exports = {
   coverageReporters: ['text', 'lcov'],
   verbose: true,
 };
-

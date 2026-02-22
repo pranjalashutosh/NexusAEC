@@ -3,6 +3,7 @@
 Intelligence layer for the NexusAEC Voice-Driven AI Executive Assistant.
 
 This package provides three tiers of intelligence:
+
 - **Tier 1**: Red flag detection and email analysis
 - **Tier 2**: Session management and voice interaction
 - **Tier 3**: Knowledge base with RAG (Retrieval Augmented Generation)
@@ -12,7 +13,8 @@ This package provides three tiers of intelligence:
 ### Tier 1: Red Flag Detection
 
 - **Keyword Matching**: Pattern-based detection with fuzzy matching
-- **VIP Detection**: Identify important contacts by title, role, or interaction frequency
+- **VIP Detection**: Identify important contacts by title, role, or interaction
+  frequency
 - **Thread Velocity**: Detect rapid email exchanges indicating urgency
 - **Calendar Proximity**: Flag emails related to upcoming meetings
 - **Topic Clustering**: Group related emails by semantic similarity
@@ -20,7 +22,8 @@ This package provides three tiers of intelligence:
 
 ### Tier 2: Session Management
 
-- **Drive State**: Manage briefing sessions with navigation and progress tracking
+- **Drive State**: Manage briefing sessions with navigation and progress
+  tracking
 - **Redis Session Store**: Persistent session storage with TTL management
 - **Shadow Processor**: Real-time voice command detection and state management
 
@@ -68,6 +71,7 @@ supabase db push
 ```
 
 This creates:
+
 - `documents` table for vector storage
 - `match_documents` function for similarity search
 
@@ -76,6 +80,7 @@ This creates:
 ### Required Columns
 
 Assets must include these fields:
+
 - **AssetID** (or variants: `assetId`, `asset_id`, `id`, `Asset No`, etc.)
 - **Name** (or variants: `Asset Name`, `asset_name`, `title`, etc.)
 - **Description** (or variants: `desc`, `details`, `notes`)
@@ -109,24 +114,26 @@ V-201,Valve Assembly 201,Main pressure regulation valve,VALVE,North Plant,MEDIUM
 
 The CSV parser recognizes various column naming conventions (case-insensitive):
 
-| Standard Field | Accepted Aliases |
-|----------------|------------------|
-| assetId | `assetid`, `asset_id`, `id`, `asset id`, `assetno`, `asset no`, `asset number` |
-| name | `name`, `asset name`, `asset_name`, `assetname`, `title` |
-| description | `description`, `desc`, `details`, `notes` |
-| category | `category`, `type`, `asset type`, `asset_type`, `assettype`, `class` |
-| location | `location`, `site`, `facility`, `place`, `address` |
-| criticality | `criticality`, `priority`, `importance`, `critical` |
-| status | `status`, `state`, `condition`, `operational status` |
+| Standard Field | Accepted Aliases                                                               |
+| -------------- | ------------------------------------------------------------------------------ |
+| assetId        | `assetid`, `asset_id`, `id`, `asset id`, `assetno`, `asset no`, `asset number` |
+| name           | `name`, `asset name`, `asset_name`, `assetname`, `title`                       |
+| description    | `description`, `desc`, `details`, `notes`                                      |
+| category       | `category`, `type`, `asset type`, `asset_type`, `assettype`, `class`           |
+| location       | `location`, `site`, `facility`, `place`, `address`                             |
+| criticality    | `criticality`, `priority`, `importance`, `critical`                            |
+| status         | `status`, `state`, `condition`, `operational status`                           |
 
 ### Category Normalization
 
 Categories are automatically normalized:
+
 - Lowercase → UPPERCASE
 - Spaces/hyphens → underscores
 - Example: `"control panel"` → `"CONTROL_PANEL"`
 
 Standard categories:
+
 - `PUMP`, `VALVE`, `GENERATOR`, `TANK`, `MOTOR`, `SENSOR`
 - `CONTROL_PANEL`, `PIPE`, `HVAC`, `ELECTRICAL`, `MECHANICAL`
 - `INSTRUMENTATION`, `OTHER`
@@ -135,14 +142,15 @@ Custom categories are preserved if they don't match standard values.
 
 ### Metadata Extraction
 
-Any columns not matching core fields are automatically extracted as metadata with camelCase keys:
+Any columns not matching core fields are automatically extracted as metadata
+with camelCase keys:
 
-| CSV Column | Metadata Key |
-|------------|--------------|
-| `Install Date` | `installDate` |
+| CSV Column         | Metadata Key      |
+| ------------------ | ----------------- |
+| `Install Date`     | `installDate`     |
 | `Last Maintenance` | `lastMaintenance` |
-| `Power Rating` | `powerRating` |
-| `Serial Number` | `serialNumber` |
+| `Power Rating`     | `powerRating`     |
+| `Serial Number`    | `serialNumber`    |
 
 ## CLI Tools
 
@@ -165,6 +173,7 @@ pnpm run ingest:assets -- -f ./data/assets.csv
 ```
 
 **Options:**
+
 - `-f, --file <path>` - Path to CSV or JSON file (required)
 - `-c, --clear` - Clear existing assets before ingestion
 - `-b, --batch-size <number>` - Batch size for processing (default: 10)
@@ -193,6 +202,7 @@ pnpm run ingest:manuals -- -f ./data/manuals.json
 ```
 
 **Document Types:**
+
 - `SAFETY_MANUAL` - Safety manuals and handbooks
 - `PROCEDURE` - Operating procedures and work instructions
 - `POLICY` - Safety policies and guidelines
@@ -220,6 +230,7 @@ pnpm run list:assets -- --type manual
 ```
 
 **Options:**
+
 - `-t, --type <type>` - Filter by type: asset, manual, or all (default: all)
 - `-l, --limit <number>` - Maximum items to display (default: 20)
 - `-o, --offset <number>` - Items to skip for pagination (default: 0)
@@ -244,30 +255,34 @@ pnpm run validate:manuals
 ### Tier 1: Red Flag Detection
 
 ```typescript
-import { KeywordMatcher, VipDetector, RedFlagScorer } from '@nexus-aec/intelligence';
+import {
+  KeywordMatcher,
+  VipDetector,
+  RedFlagScorer,
+} from '@nexus-aec/intelligence';
 
 // Keyword matching
 const matcher = new KeywordMatcher();
 const result = matcher.matchEmail({
   subject: 'URGENT: Production system down',
   body: 'We need immediate action...',
-  sender: 'cto@example.com'
+  sender: 'cto@example.com',
 });
 
 // VIP detection
 const vipDetector = new VipDetector({
-  vipList: ['ceo@example.com', 'cto@example.com']
+  vipList: ['ceo@example.com', 'cto@example.com'],
 });
 const vipResult = vipDetector.detectVip({
   from: 'cto@example.com',
-  contact: { jobTitle: 'CTO' }
+  contact: { jobTitle: 'CTO' },
 });
 
 // Composite scoring
 const scorer = new RedFlagScorer();
 const score = scorer.score({
   keywordSignals: result,
-  vipSignals: vipResult
+  vipSignals: vipResult,
 });
 ```
 
@@ -295,7 +310,7 @@ const nextState = updateDriveState(state, { type: 'NEXT' });
 import {
   SupabaseVectorStore,
   AssetIngestion,
-  parseAssetCSV
+  parseAssetCSV,
 } from '@nexus-aec/intelligence';
 import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
@@ -313,7 +328,7 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 const embedder = async (text: string) => {
   const response = await openai.embeddings.create({
     model: 'text-embedding-3-small',
-    input: text
+    input: text,
   });
   return response.data[0].embedding;
 };
@@ -326,20 +341,22 @@ const queryEmbedding = await embedder('pump maintenance procedures');
 const results = await vectorStore.search(queryEmbedding, {
   sourceType: 'safety_manual',
   limit: 5,
-  similarityThreshold: 0.7
+  similarityThreshold: 0.7,
 });
 ```
 
 ### Tier 3: RAG Retrieval
 
-The `RAGRetriever` provides a high-level interface for semantic search in Retrieval Augmented Generation (RAG) workflows. It handles query embedding generation and returns typed results.
+The `RAGRetriever` provides a high-level interface for semantic search in
+Retrieval Augmented Generation (RAG) workflows. It handles query embedding
+generation and returns typed results.
 
 ```typescript
 import {
   RAGRetriever,
   SupabaseVectorStore,
   type Asset,
-  type SafetyDocument
+  type SafetyDocument,
 } from '@nexus-aec/intelligence';
 import { createClient } from '@supabase/supabase-js';
 import { OpenAI } from 'openai';
@@ -401,21 +418,19 @@ console.log(`Found ${stats.resultCount} results in ${stats.queryTimeMs}ms`);
 console.log(`Average similarity: ${stats.averageScore.toFixed(3)}`);
 
 // Filter by metadata
-const criticalPumps = await retriever.retrieveAssets(
-  'water distribution',
-  {
-    topK: 10,
-    metadataFilter: {
-      category: 'PUMP',
-      criticality: 'CRITICAL'
-    }
-  }
-);
+const criticalPumps = await retriever.retrieveAssets('water distribution', {
+  topK: 10,
+  metadataFilter: {
+    category: 'PUMP',
+    criticality: 'CRITICAL',
+  },
+});
 ```
 
 ### Tier 3: LLM Client
 
-The `LLMClient` provides GPT-4o API integration with retry logic, rate limiting, and streaming support for email summarization and narrative generation.
+The `LLMClient` provides GPT-4o API integration with retry logic, rate limiting,
+and streaming support for email summarization and narrative generation.
 
 ```typescript
 import { LLMClient, type LLMMessage } from '@nexus-aec/intelligence';
@@ -477,7 +492,8 @@ console.log(`Has rate limiter: ${config.hasRateLimiter}`);
 
 ### Tier 3: Email Summarization
 
-The `EmailSummarizer` generates concise summaries of email threads using GPT-4o. Supports multiple summarization modes for different use cases.
+The `EmailSummarizer` generates concise summaries of email threads using GPT-4o.
+Supports multiple summarization modes for different use cases.
 
 ```typescript
 import { EmailSummarizer, LLMClient } from '@nexus-aec/intelligence';
@@ -546,6 +562,7 @@ console.log(`Default mode: ${config.defaultMode}`);
 ```
 
 Available summarization modes:
+
 - `brief` - Ultra-concise 1-2 sentence summaries
 - `detailed` - Comprehensive summaries with key points and context
 - `action-items` - Extracted tasks with assignees and deadlines
@@ -553,7 +570,8 @@ Available summarization modes:
 
 ### Tier 3: Narrative Generation
 
-The `NarrativeGenerator` converts email clusters, red flags, and summaries into podcast-style briefing scripts optimized for voice delivery.
+The `NarrativeGenerator` converts email clusters, red flags, and summaries into
+podcast-style briefing scripts optimized for voice delivery.
 
 ```typescript
 import {
@@ -599,7 +617,9 @@ for (const cluster of clusterResult.clusters) {
   for (const threadId of cluster.threadIds) {
     const thread = threads.find((t) => t.id === threadId);
     if (thread) {
-      const summary = await summarizer.summarizeThread(thread, { mode: 'brief' });
+      const summary = await summarizer.summarizeThread(thread, {
+        mode: 'brief',
+      });
       summaries.set(threadId, summary);
     }
   }
@@ -615,11 +635,15 @@ const script = await generator.generateBriefing({
 });
 
 // Use the script segments
-console.log(`Briefing: ${script.topicCount} topics, ${script.redFlagCount} red flags`);
+console.log(
+  `Briefing: ${script.topicCount} topics, ${script.redFlagCount} red flags`
+);
 console.log(`Estimated time: ${Math.ceil(script.totalSeconds / 60)} minutes\n`);
 
 for (const segment of script.segments) {
-  console.log(`[${segment.type.toUpperCase()}] (~${segment.estimatedSeconds}s)`);
+  console.log(
+    `[${segment.type.toUpperCase()}] (~${segment.estimatedSeconds}s)`
+  );
   console.log(segment.content);
   console.log();
 }
@@ -645,6 +669,7 @@ generator.setConfig({
 ```
 
 Available narrative styles:
+
 - `conversational` - Warm, friendly tone like a trusted colleague
 - `formal` - Professional, respectful, and precise language
 - `executive` - Concise and direct, gets to the point quickly
@@ -652,7 +677,9 @@ Available narrative styles:
 
 ### Tier 3: Red Flag Explanation
 
-The `ExplanationGenerator` creates natural language explanations for why emails are flagged as urgent, converting technical scoring into user-friendly explanations.
+The `ExplanationGenerator` creates natural language explanations for why emails
+are flagged as urgent, converting technical scoring into user-friendly
+explanations.
 
 ```typescript
 import {
@@ -689,7 +716,7 @@ if (redFlagScore.isFlagged) {
   console.log(`\nExplanation: ${explanation.explanation}`);
 
   console.log('\nKey Factors:');
-  explanation.keyFactors.forEach(factor => {
+  explanation.keyFactors.forEach((factor) => {
     console.log(`  - ${factor}`);
   });
 
@@ -723,14 +750,18 @@ explainer.setConfig({
 ```
 
 Available explanation styles:
-- `detailed` - Thorough explanations with context and specific details (3-4 sentences)
+
+- `detailed` - Thorough explanations with context and specific details (3-4
+  sentences)
 - `concise` - Brief and direct, gets to the point quickly (1-2 sentences)
-- `technical` - Includes technical details about scoring and signal contributions
+- `technical` - Includes technical details about scoring and signal
+  contributions
 - `casual` - Conversational, friendly language like talking to a colleague
 
 ### Tier 3: User Preferences
 
-The `PreferencesStore` manages user preferences with encrypted local storage and sync capabilities for VIPs, keywords, topics, and muted senders.
+The `PreferencesStore` manages user preferences with encrypted local storage and
+sync capabilities for VIPs, keywords, topics, and muted senders.
 
 ```typescript
 import { PreferencesStore } from '@nexus-aec/intelligence';
@@ -838,7 +869,9 @@ const isMuted = await preferencesStore.isMuted('spam@example.com');
 
 // Import/Export
 const exported = await preferencesStore.exportPreferences();
-console.log(`Exported ${exported.vips.length} VIPs, ${exported.keywords.length} keywords`);
+console.log(
+  `Exported ${exported.vips.length} VIPs, ${exported.keywords.length} keywords`
+);
 
 // Import with conflict resolution
 await preferencesStore.importPreferences(remotePreferences, 'merge');
@@ -849,6 +882,7 @@ await preferencesStore.clear();
 ```
 
 Features:
+
 - **Encrypted Storage**: AES-256-CBC encryption for sensitive data
 - **Auto-sync**: Optional automatic syncing to remote storage
 - **Domain Matching**: VIP and mute rules can apply to entire domains
@@ -858,7 +892,8 @@ Features:
 
 ### Tier 3: Feedback Learning
 
-The `FeedbackLearner` processes user feedback to adjust red flag scoring weights over time, improving accuracy through continuous learning.
+The `FeedbackLearner` processes user feedback to adjust red flag scoring weights
+over time, improving accuracy through continuous learning.
 
 ```typescript
 import { FeedbackLearner, RedFlagScorer } from '@nexus-aec/intelligence';
@@ -891,10 +926,13 @@ if (userDisagreed) {
     type: 'false_positive', // Was flagged but shouldn't have been
     originalScore: score.score,
     signals: {
-      keyword: score.signalBreakdown.find(s => s.signal === 'keyword')?.rawScore,
-      vip: score.signalBreakdown.find(s => s.signal === 'vip')?.rawScore,
-      velocity: score.signalBreakdown.find(s => s.signal === 'velocity')?.rawScore,
-      calendar: score.signalBreakdown.find(s => s.signal === 'calendar')?.rawScore,
+      keyword: score.signalBreakdown.find((s) => s.signal === 'keyword')
+        ?.rawScore,
+      vip: score.signalBreakdown.find((s) => s.signal === 'vip')?.rawScore,
+      velocity: score.signalBreakdown.find((s) => s.signal === 'velocity')
+        ?.rawScore,
+      calendar: score.signalBreakdown.find((s) => s.signal === 'calendar')
+        ?.rawScore,
     },
     note: 'User said this was not urgent',
   });
@@ -961,9 +999,11 @@ await feedbackLearner.clear();
 ```
 
 How it works:
+
 - **Gradient Descent**: Uses error signals to adjust weights
 - **Learning Rate**: Controls how quickly weights change (default: 0.1)
-- **Min Feedback**: Requires minimum samples before adjusting to avoid overfitting
+- **Min Feedback**: Requires minimum samples before adjusting to avoid
+  overfitting
 - **Max Adjustment**: Caps adjustments to prevent drastic changes
 - **Error Calculation**:
   - False positive: Negative error (reduce weights)
@@ -971,6 +1011,7 @@ How it works:
   - Correct: No error (maintain weights)
 
 Feedback types:
+
 - `correct` - System prediction was accurate
 - `false_positive` - Incorrectly flagged as urgent
 - `false_negative` - Should have been flagged but wasn't
@@ -982,6 +1023,7 @@ Feedback types:
 See the following files for detailed API documentation:
 
 ### Tier 1
+
 - `src/red-flags/keyword-matcher.ts` - Keyword pattern matching
 - `src/red-flags/vip-detector.ts` - VIP identification
 - `src/red-flags/thread-velocity.ts` - Email velocity analysis
@@ -990,21 +1032,27 @@ See the following files for detailed API documentation:
 - `src/red-flags/topic-clusterer.ts` - Topic clustering
 
 ### Tier 2
+
 - `src/session/drive-state.ts` - Briefing state management
 - `src/session/redis-session-store.ts` - Redis persistence
 - `src/session/shadow-processor.ts` - Voice command detection
 
 ### Tier 3
+
 - `src/knowledge/supabase-vector-store.ts` - Vector storage and search
 - `src/knowledge/asset-types.ts` - Type definitions and validation
 - `src/knowledge/csv-parser.ts` - CSV parsing with flexible column mapping
 - `src/knowledge/pdf-extractor.ts` - PDF text extraction
 - `src/knowledge/asset-ingestion.ts` - Ingestion orchestration
 - `src/knowledge/rag-retriever.ts` - RAG semantic search interface
-- `src/knowledge/llm-client.ts` - GPT-4o API integration with retry and rate limiting
-- `src/knowledge/email-summarizer.ts` - Email thread summarization with multiple modes
-- `src/knowledge/narrative-generator.ts` - Podcast-style briefing script generation
-- `src/knowledge/explanation-generator.ts` - Natural language explanations for red flags
+- `src/knowledge/llm-client.ts` - GPT-4o API integration with retry and rate
+  limiting
+- `src/knowledge/email-summarizer.ts` - Email thread summarization with multiple
+  modes
+- `src/knowledge/narrative-generator.ts` - Podcast-style briefing script
+  generation
+- `src/knowledge/explanation-generator.ts` - Natural language explanations for
+  red flags
 - `src/knowledge/preferences-store.ts` - Encrypted user preferences with sync
 - `src/knowledge/feedback-learner.ts` - Continuous learning from user feedback
 
@@ -1013,6 +1061,7 @@ See the following files for detailed API documentation:
 ### Seed Data
 
 Located in `data/`:
+
 - `seed-assets.json` - 39 sample assets for development/testing
 - `seed-safety-manuals.json` - 7 sample safety documents
 - `assets-template.csv` - CSV template for asset imports
@@ -1021,6 +1070,7 @@ Located in `data/`:
 ### Validation Scripts
 
 Located in `scripts/`:
+
 - `validate-seed-data.ts` - Validate asset seed data
 - `validate-safety-manuals.ts` - Validate safety manual seed data
 
@@ -1038,6 +1088,7 @@ pnpm test csv-parser
 ```
 
 Test coverage:
+
 - 763 total tests
 - All major components fully tested
 - Mocked external dependencies (Redis, Supabase, OpenAI, file system)
@@ -1067,6 +1118,7 @@ pnpm clean
 ### Vector Storage
 
 Uses Supabase with pgvector extension:
+
 - **Embeddings**: OpenAI text-embedding-3-small (1536 dimensions)
 - **Indexing**: IVFFlat for efficient similarity search
 - **Similarity**: Cosine distance (`<=>` operator)
@@ -1107,13 +1159,16 @@ Uses Supabase with pgvector extension:
 
 ### "Missing required columns" error
 
-Ensure your CSV has all required fields. The parser supports various naming conventions:
+Ensure your CSV has all required fields. The parser supports various naming
+conventions:
+
 - Try: `AssetID`, `Asset ID`, `assetId`, `asset_id`, `id`
 - See "Column Name Flexibility" section above
 
 ### "OpenAI API rate limit exceeded"
 
 Reduce concurrency in ingestion:
+
 ```bash
 pnpm tsx cli/ingest-assets.ts --file data.csv --max-concurrency 2
 ```
@@ -1121,6 +1176,7 @@ pnpm tsx cli/ingest-assets.ts --file data.csv --max-concurrency 2
 ### "Failed to connect to Supabase"
 
 Verify credentials and database status:
+
 ```bash
 # Check .env file has correct values
 cat .env
@@ -1132,6 +1188,7 @@ cd supabase && supabase status
 ### Embedding generation slow
 
 Use smaller batch sizes:
+
 ```bash
 pnpm tsx cli/ingest-assets.ts --file data.csv --batch-size 5
 ```
@@ -1156,6 +1213,7 @@ Private - Part of NexusAEC project
 ## Support
 
 For issues or questions:
+
 - Review this README and related documentation
 - Check the task file for implementation details
 - See inline code documentation for API usage

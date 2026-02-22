@@ -6,11 +6,7 @@
  */
 
 import type { EmailProvider } from '../interfaces/email-provider';
-import type {
-  EmailSource,
-  Contact,
-  EmailAddress,
-} from '../interfaces/types';
+import type { EmailSource, Contact, EmailAddress } from '../interfaces/types';
 
 // =============================================================================
 // Types
@@ -97,10 +93,7 @@ export class ContactsSyncService {
   /** Directory cache (email -> DirectoryEntry) */
   private directoryCache: Map<string, DirectoryEntry> = new Map();
 
-  constructor(
-    providers: EmailProvider[],
-    config: ContactsSyncConfig = {}
-  ) {
+  constructor(providers: EmailProvider[], config: ContactsSyncConfig = {}) {
     this.providers = new Map();
     for (const provider of providers) {
       this.providers.set(provider.source, provider);
@@ -167,7 +160,9 @@ export class ContactsSyncService {
             pageToken = response.nextPageToken;
           } while (pageToken && fetched < this.config.maxContactsPerProvider);
         } catch (error) {
-          if (!this.config.continueOnError) {throw error;}
+          if (!this.config.continueOnError) {
+            throw error;
+          }
           errors.push({ source, error: this.getErrorMessage(error) });
         }
       })
@@ -269,7 +264,9 @@ export class ContactsSyncService {
     const seen = new Set<string>();
     const deduped = results.filter((r) => {
       const primaryEmail = r.contact.emailAddresses[0]?.email.toLowerCase();
-      if (!primaryEmail || seen.has(primaryEmail)) {return false;}
+      if (!primaryEmail || seen.has(primaryEmail)) {
+        return false;
+      }
       seen.add(primaryEmail);
       return true;
     });
@@ -406,9 +403,7 @@ export class ContactsSyncService {
     const { contacts } = await this.fetchAllContacts();
     const companyLower = company.toLowerCase();
 
-    return contacts.filter(
-      (c) => c.company?.toLowerCase().includes(companyLower)
-    );
+    return contacts.filter((c) => c.company?.toLowerCase().includes(companyLower));
   }
 
   /**
@@ -468,7 +463,9 @@ export class ContactsSyncService {
     const seen = new Set<string>();
     return contacts.filter((c) => {
       const primaryEmail = c.emailAddresses[0]?.email.toLowerCase();
-      if (!primaryEmail || seen.has(primaryEmail)) {return false;}
+      if (!primaryEmail || seen.has(primaryEmail)) {
+        return false;
+      }
       seen.add(primaryEmail);
       return true;
     });
@@ -513,10 +510,7 @@ export class ContactsSyncService {
   /**
    * Determine why a contact matched the search
    */
-  private determineMatchReason(
-    contact: Contact,
-    query: string
-  ): ContactSuggestion['matchReason'] {
+  private determineMatchReason(contact: Contact, query: string): ContactSuggestion['matchReason'] {
     if (contact.displayName.toLowerCase().includes(query)) {
       return 'name';
     }
@@ -538,8 +532,9 @@ export class ContactsSyncService {
    * Get error message from unknown error
    */
   private getErrorMessage(error: unknown): string {
-    if (error instanceof Error) {return error.message;}
+    if (error instanceof Error) {
+      return error.message;
+    }
     return String(error);
   }
 }
-

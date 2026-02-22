@@ -30,11 +30,14 @@ export interface ToolDefinition {
     description: string;
     parameters: {
       type: 'object';
-      properties: Record<string, {
-        type: string;
-        description: string;
-        enum?: string[];
-      }>;
+      properties: Record<
+        string,
+        {
+          type: string;
+          description: string;
+          enum?: string[];
+        }
+      >;
       required: string[];
     };
   };
@@ -170,7 +173,8 @@ export const goDeeperTool: ToolDefinition = {
   type: 'function',
   function: {
     name: 'go_deeper',
-    description: 'Get more details about the current item (read full email, thread context, etc.).',
+    description:
+      'Get more details about a specific email. If the user mentions an email by name/sender, pass its email_id. Defaults to the current briefing email if omitted.',
     parameters: {
       type: 'object',
       properties: {
@@ -178,6 +182,11 @@ export const goDeeperTool: ToolDefinition = {
           type: 'string',
           description: 'What aspect to explore',
           enum: ['full_email', 'thread_history', 'sender_info', 'attachments', 'related_emails'],
+        },
+        email_id: {
+          type: 'string',
+          description:
+            'Optional email_id to inspect. Use this when the user refers to a specific email by name or sender. Defaults to the current briefing email if omitted.',
         },
       },
       required: [],
@@ -307,7 +316,7 @@ export function executeNextItem(
 ): NavigationResult {
   const currentTopicItemCount = state.topicItems[state.currentTopicIndex] ?? 0;
 
-  logger.info('Executing next_item', { 
+  logger.info('Executing next_item', {
     currentTopic: state.currentTopicIndex,
     currentItem: state.currentItemIndex,
     topicItemCount: currentTopicItemCount,
@@ -351,7 +360,7 @@ export function executeGoBack(
   args: Record<string, unknown>,
   state: BriefingState
 ): NavigationResult {
-  const steps = args['steps'] as string ?? '1';
+  const steps = (args['steps'] as string) ?? '1';
 
   logger.info('Executing go_back', { steps, history: state.history.length });
 
@@ -398,7 +407,7 @@ export function executeRepeatThat(
 
   return {
     success: true,
-    message: '',  // The actual repeat is handled by the reasoning loop
+    message: '', // The actual repeat is handled by the reasoning loop
     action: 'repeat',
   };
 }
@@ -429,7 +438,7 @@ export function executePauseBriefing(
   _args: Record<string, unknown>,
   state: BriefingState
 ): NavigationResult {
-  logger.info('Executing pause_briefing', { 
+  logger.info('Executing pause_briefing', {
     currentTopic: state.currentTopicIndex,
     currentItem: state.currentItemIndex,
   });
@@ -484,15 +493,18 @@ export function executeStopBriefing(
 
   logger.info('Executing stop_briefing', { saveProgress, currentPosition: state.currentItemIndex });
 
-  const remainingItems = state.topicItems.reduce((sum, count) => sum + count, 0) - 
+  const remainingItems =
+    state.topicItems.reduce((sum, count) => sum + count, 0) -
     state.topicItems.slice(0, state.currentTopicIndex).reduce((sum, count) => sum + count, 0) -
-    state.currentItemIndex - 1;
+    state.currentItemIndex -
+    1;
 
   return {
     success: true,
-    message: remainingItems > 0 
-      ? `Stopping the briefing. You have ${remainingItems} items remaining.` 
-      : "That's your briefing complete.",
+    message:
+      remainingItems > 0
+        ? `Stopping the briefing. You have ${remainingItems} items remaining.`
+        : "That's your briefing complete.",
     action: 'stop',
     data: { saveProgress },
   };
@@ -538,7 +550,10 @@ export function executeNavigationTool(
   try {
     return executor(args, state);
   } catch (error) {
-    logger.error('Navigation execution error', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Navigation execution error',
+      error instanceof Error ? error : new Error(String(error))
+    );
     return {
       success: false,
       message: `Navigation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -568,15 +583,15 @@ export function createBriefingState(topicItems: number[]): BriefingState {
 /**
  * Update briefing state after navigation
  */
-export function updateBriefingState(
-  state: BriefingState,
-  result: NavigationResult
-): BriefingState {
+export function updateBriefingState(state: BriefingState, result: NavigationResult): BriefingState {
   // Record current position in history before changing
-  const history = [...state.history, {
-    topicIndex: state.currentTopicIndex,
-    itemIndex: state.currentItemIndex,
-  }];
+  const history = [
+    ...state.history,
+    {
+      topicIndex: state.currentTopicIndex,
+      itemIndex: state.currentItemIndex,
+    },
+  ];
 
   const data = result.data ?? {};
 

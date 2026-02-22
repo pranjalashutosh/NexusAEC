@@ -547,9 +547,7 @@ export class PreferencesStore {
    */
   async getMutedSenders(): Promise<MutedSender[]> {
     const now = new Date();
-    return this.preferences.mutedSenders.filter(
-      (m) => !m.expiresAt || m.expiresAt >= now
-    );
+    return this.preferences.mutedSenders.filter((m) => !m.expiresAt || m.expiresAt >= now);
   }
 
   /**

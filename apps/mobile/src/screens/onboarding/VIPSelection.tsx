@@ -5,14 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -60,10 +53,10 @@ export function VIPSelectionScreen({ navigation }: Props): React.JSX.Element {
   };
 
   const handleContinue = async () => {
-    const selectedEmails = SUGGESTED_CONTACTS
-      .filter((c) => selectedIds.has(c.id))
-      .map((c) => c.email);
-    
+    const selectedEmails = SUGGESTED_CONTACTS.filter((c) => selectedIds.has(c.id)).map(
+      (c) => c.email
+    );
+
     await updatePreferences({ vips: selectedEmails });
     navigation.navigate('TopicSelection');
   };
@@ -83,16 +76,19 @@ export function VIPSelectionScreen({ navigation }: Props): React.JSX.Element {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Who's Important?
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Who's Important?</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Emails from VIPs will always be prioritized in your briefings
           </Text>
         </View>
 
         {/* Search */}
-        <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.searchContainer,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
@@ -113,7 +109,10 @@ export function VIPSelectionScreen({ navigation }: Props): React.JSX.Element {
               style={[
                 styles.contactItem,
                 { borderColor: colors.border },
-                selectedIds.has(item.id) && { backgroundColor: colors.primary + '15', borderColor: colors.primary },
+                selectedIds.has(item.id) && {
+                  backgroundColor: colors.primary + '15',
+                  borderColor: colors.primary,
+                },
               ]}
               onPress={() => toggleVIP(item.id)}
               activeOpacity={0.8}

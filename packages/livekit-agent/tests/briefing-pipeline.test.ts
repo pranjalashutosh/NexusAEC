@@ -50,12 +50,14 @@ jest.mock('@nexus-aec/intelligence', () => {
       }
       // Put all emails in one cluster
       return {
-        clusters: [{
-          id: 'cluster-1',
-          topic: 'General',
-          keywords: ['email', 'test'],
-          emailIds: emails.map((e: any) => e.id),
-        }],
+        clusters: [
+          {
+            id: 'cluster-1',
+            topic: 'General',
+            keywords: ['email', 'test'],
+            emailIds: emails.map((e: any) => e.id),
+          },
+        ],
         totalEmails: emails.length,
         clusterCount: 1,
         unclusteredEmailIds: [],
@@ -68,6 +70,11 @@ jest.mock('@nexus-aec/intelligence', () => {
     VipDetector: mockVipDetector,
     RedFlagScorer: mockRedFlagScorer,
     TopicClusterer: mockTopicClusterer,
+    // New exports needed by LLM pipeline (not used in legacy tests)
+    preprocessEmails: jest.fn(),
+    preprocessBatch: jest.fn(),
+    presortEmails: jest.fn(),
+    SenderProfileStore: jest.fn(),
   };
 });
 
@@ -82,7 +89,6 @@ jest.mock('@nexus-aec/logger', () => ({
 }));
 
 import { runBriefingPipeline } from '../src/briefing-pipeline';
-import type { BriefingData } from '../src/briefing-pipeline';
 
 // Helper to create mock emails
 function createMockEmail(id: string, subject: string) {
@@ -118,17 +124,17 @@ function createMockInboxService(emails: any[] = []) {
 }
 
 describe('briefing-pipeline', () => {
-  describe('runBriefingPipeline', () => {
+  describe('runBriefingPipeline (legacy path)', () => {
     it('returns empty briefing for empty inbox', async () => {
       const inbox = createMockInboxService([]);
-      const result = await runBriefingPipeline(inbox);
+      const { briefingData } = await runBriefingPipeline(inbox);
 
-      expect(result.topics).toHaveLength(0);
-      expect(result.topicItems).toHaveLength(0);
-      expect(result.topicLabels).toHaveLength(0);
-      expect(result.totalEmails).toBe(0);
-      expect(result.totalFlagged).toBe(0);
-      expect(result.pipelineDurationMs).toBeGreaterThanOrEqual(0);
+      expect(briefingData.topics).toHaveLength(0);
+      expect(briefingData.topicItems).toHaveLength(0);
+      expect(briefingData.topicLabels).toHaveLength(0);
+      expect(briefingData.totalEmails).toBe(0);
+      expect(briefingData.totalFlagged).toBe(0);
+      expect(briefingData.pipelineDurationMs).toBeGreaterThanOrEqual(0);
     });
 
     it('processes emails and produces briefing data', async () => {
@@ -139,58 +145,50 @@ describe('briefing-pipeline', () => {
       ];
 
       const inbox = createMockInboxService(emails);
-      const result = await runBriefingPipeline(inbox);
+      const { briefingData } = await runBriefingPipeline(inbox);
 
-      expect(result.totalEmails).toBe(3);
-      expect(result.topics.length).toBeGreaterThan(0);
-      expect(result.topicItems.length).toBe(result.topics.length);
-      expect(result.topicLabels.length).toBe(result.topics.length);
-      expect(result.scoreMap.size).toBe(3);
+      expect(briefingData.totalEmails).toBe(3);
+      expect(briefingData.topics.length).toBeGreaterThan(0);
+      expect(briefingData.topicItems.length).toBe(briefingData.topics.length);
+      expect(briefingData.topicLabels.length).toBe(briefingData.topics.length);
+      expect(briefingData.scoreMap.size).toBe(3);
     });
 
     it('respects maxEmails option', async () => {
-      const emails = Array.from({ length: 10 }, (_, i) =>
-        createMockEmail(`${i}`, `Email ${i}`),
-      );
+      const emails = Array.from({ length: 10 }, (_, i) => createMockEmail(`${i}`, `Email ${i}`));
       const inbox = createMockInboxService(emails);
 
       await runBriefingPipeline(inbox, { maxEmails: 5 });
 
       expect(inbox.fetchUnread).toHaveBeenCalledWith(
-        {},
-        { pageSize: 5 },
+        expect.objectContaining({ after: expect.any(Date) }),
+        { pageSize: 5 }
       );
     });
 
     it('each topic has scored emails sorted by score descending', async () => {
-      const emails = [
-        createMockEmail('1', 'First'),
-        createMockEmail('2', 'Second'),
-      ];
+      const emails = [createMockEmail('1', 'First'), createMockEmail('2', 'Second')];
 
       const inbox = createMockInboxService(emails);
-      const result = await runBriefingPipeline(inbox);
+      const { briefingData } = await runBriefingPipeline(inbox);
 
-      for (const topic of result.topics) {
+      for (const topic of briefingData.topics) {
         for (let i = 1; i < topic.emails.length; i++) {
           expect(topic.emails[i - 1]!.score.score).toBeGreaterThanOrEqual(
-            topic.emails[i]!.score.score,
+            topic.emails[i]!.score.score
           );
         }
       }
     });
 
     it('scoreMap contains entries for all emails', async () => {
-      const emails = [
-        createMockEmail('a', 'Alpha'),
-        createMockEmail('b', 'Beta'),
-      ];
+      const emails = [createMockEmail('a', 'Alpha'), createMockEmail('b', 'Beta')];
 
       const inbox = createMockInboxService(emails);
-      const result = await runBriefingPipeline(inbox);
+      const { briefingData } = await runBriefingPipeline(inbox);
 
-      expect(result.scoreMap.has('a')).toBe(true);
-      expect(result.scoreMap.has('b')).toBe(true);
+      expect(briefingData.scoreMap.has('a')).toBe(true);
+      expect(briefingData.scoreMap.has('b')).toBe(true);
     });
 
     it('topicItems matches email counts in each topic', async () => {
@@ -201,29 +199,36 @@ describe('briefing-pipeline', () => {
       ];
 
       const inbox = createMockInboxService(emails);
-      const result = await runBriefingPipeline(inbox);
+      const { briefingData } = await runBriefingPipeline(inbox);
 
-      for (let i = 0; i < result.topics.length; i++) {
-        expect(result.topicItems[i]).toBe(result.topics[i]!.emails.length);
+      for (let i = 0; i < briefingData.topics.length; i++) {
+        expect(briefingData.topicItems[i]).toBe(briefingData.topics[i]!.emails.length);
       }
     });
 
     it('topicLabels matches labels in each topic', async () => {
       const emails = [createMockEmail('1', 'Test')];
       const inbox = createMockInboxService(emails);
-      const result = await runBriefingPipeline(inbox);
+      const { briefingData } = await runBriefingPipeline(inbox);
 
-      for (let i = 0; i < result.topics.length; i++) {
-        expect(result.topicLabels[i]).toBe(result.topics[i]!.label);
+      for (let i = 0; i < briefingData.topics.length; i++) {
+        expect(briefingData.topicLabels[i]).toBe(briefingData.topics[i]!.label);
       }
     });
 
     it('records pipeline duration', async () => {
       const inbox = createMockInboxService([createMockEmail('1', 'Test')]);
-      const result = await runBriefingPipeline(inbox);
+      const { briefingData } = await runBriefingPipeline(inbox);
 
-      expect(typeof result.pipelineDurationMs).toBe('number');
-      expect(result.pipelineDurationMs).toBeGreaterThanOrEqual(0);
+      expect(typeof briefingData.pipelineDurationMs).toBe('number');
+      expect(briefingData.pipelineDurationMs).toBeGreaterThanOrEqual(0);
+    });
+
+    it('returns empty remainingBatches for legacy pipeline', async () => {
+      const inbox = createMockInboxService([createMockEmail('1', 'Test')]);
+      const { remainingBatches } = await runBriefingPipeline(inbox);
+
+      expect(remainingBatches).toHaveLength(0);
     });
   });
 });

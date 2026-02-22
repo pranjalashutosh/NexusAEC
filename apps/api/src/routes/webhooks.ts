@@ -147,10 +147,7 @@ export function registerWebhookRoutes(app: FastifyInstance): void {
    */
   app.post<{ Body: LiveKitWebhookPayload }>(
     '/webhooks/livekit',
-    async (
-      request: FastifyRequest<{ Body: LiveKitWebhookPayload }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: LiveKitWebhookPayload }>, reply: FastifyReply) => {
       const apiSecret = process.env['LIVEKIT_API_SECRET'] ?? '';
 
       // Verify webhook signature in production
