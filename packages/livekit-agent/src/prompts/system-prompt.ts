@@ -30,6 +30,8 @@ export interface SystemPromptContext {
   briefingMode: 'driving' | 'walking' | 'desk';
   /** User's persistent knowledge entries (loaded from memory) */
   knowledgeEntries?: string[];
+  /** Learned sender engagement patterns from past sessions */
+  senderPreferences?: string;
   /** Summary of filtered/triaged emails (e.g., "Filtered 38 newsletters, 12 LinkedIn notifications") */
   triageSummary?: string;
   /** Total unread emails from last 24h (before filtering) */
@@ -158,16 +160,27 @@ Do NOT re-present emails you have already briefed. The system tracks this for yo
  */
 const KNOWLEDGE_INSTRUCTIONS = `MEMORY TOOLS:
 - save_to_memory(content, category): Save information for future sessions
-  - "rule": Standing instructions ("always prioritize X", "when Y happens, do Z")
+  - "rule": Standing instructions ("always prioritize X", "never show me Y emails", "block Z")
   - "preference": Communication style preferences ("be concise", "include details")
   - "feedback": Corrections to your behavior ("don't repeat subjects")
   - "context": Important background info about the user's work
-- recall_knowledge(query): Search uploaded documents for domain information
+- recall_knowledge(query): Search your saved memory for rules, preferences, and feedback
 
 WHEN TO SAVE:
-- User explicitly says "remember this" or "always do X" → save as rule
-- User corrects you → save as feedback
-- User states a preference → save as preference
+- User explicitly says "remember this rule" or "this is a rule" → save as rule
+- User states a preference ("I prefer...", "I don't want...") → save as preference
+- User corrects your behavior → save as feedback
+- Use clear language when saving (e.g., "Never include Quora emails in briefings")
+
+WHEN RECALLING:
+- NEVER read raw memory entries to the user (e.g., "[preference] Always provide...")
+- Instead, summarize naturally: "Yes, I remember you prefer concise responses and don't want Quora emails."
+- Apply remembered rules and preferences silently — don't announce that you're filtering.
+
+WHEN TO RECALL:
+- User says "do you remember", "what are my preferences", "what did I tell you"
+- At the start of a session, when you need to check for standing rules
+- When you're unsure if the user has a preference about something
 
 WHEN NOT TO SAVE:
 - Do NOT save email content, subjects, senders, or body text (privacy rule)
@@ -196,6 +209,10 @@ export function buildSystemPrompt(context: SystemPromptContext): string {
 
   const knowledgeContext = context.knowledgeEntries?.length
     ? `\nUSER MEMORY (information this user has asked you to remember):\n${context.knowledgeEntries.map((e) => `- ${e}`).join('\n')}`
+    : '';
+
+  const senderContext = context.senderPreferences
+    ? `\nLEARNED SENDER PATTERNS (from past sessions):\n${context.senderPreferences}`
     : '';
 
   let briefingScopeContext = '';
@@ -230,6 +247,7 @@ CURRENT CONTEXT:
 ${vipContext}
 ${mutedContext}
 ${knowledgeContext}
+${senderContext}
 ${briefingScopeContext}
 ${verbosityNote}
 ${modeNote}

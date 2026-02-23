@@ -3,7 +3,7 @@
  *
  * GPT-4o function calling tools for persistent memory:
  * - save_to_memory: Store rules, preferences, feedback, context across sessions
- * - recall_knowledge: Search uploaded documents via RAG (Phase 2)
+ * - recall_knowledge: Search saved memory entries by keyword
  */
 
 import { createLogger } from '@nexus-aec/logger';
@@ -72,13 +72,14 @@ export const recallKnowledgeTool: ToolDefinition = {
   function: {
     name: 'recall_knowledge',
     description:
-      'Search the knowledge base for information from uploaded documents (PDFs, CSVs, manuals). Use this when the user asks about domain-specific information that might be in their uploaded files.',
+      'Search your saved memory for rules, preferences, and feedback the user has given you in past sessions. Use this when the user asks "do you remember", "what are my preferences", or when you need to check if there are standing instructions.',
     parameters: {
       type: 'object',
       properties: {
         query: {
           type: 'string',
-          description: 'The search query describing what information you need.',
+          description:
+            'The search query describing what you want to recall (e.g., "email preferences", "filtering rules", "Quora").',
         },
       },
       required: ['query'],
@@ -169,8 +170,7 @@ export async function executeSaveToMemory(args: Record<string, unknown>): Promis
 }
 
 /**
- * Execute recall_knowledge: search uploaded documents via RAG.
- * Phase 2 — returns a placeholder until file upload + RAG is wired.
+ * Execute recall_knowledge: search the user's saved memory for matching entries.
  */
 export async function executeRecallKnowledge(args: Record<string, unknown>): Promise<ToolResult> {
   const query = args['query'] as string | undefined;
@@ -183,16 +183,73 @@ export async function executeRecallKnowledge(args: Record<string, unknown>): Pro
     };
   }
 
-  // Phase 2: Wire to RAGRetriever here.
-  // For now, return a helpful message indicating no documents are uploaded.
-  logger.info('recall_knowledge called (Phase 2 stub)', { query });
+  if (!_knowledgeStore || !_currentUserId) {
+    return {
+      success: false,
+      message: 'Memory is not available right now.',
+      riskLevel: 'low',
+    };
+  }
 
-  return {
-    success: false,
-    message:
-      "I don't have any uploaded documents to search yet. You can upload files through the app to build your knowledge base.",
-    riskLevel: 'low',
-  };
+  try {
+    const doc = await _knowledgeStore.get(_currentUserId);
+
+    if (doc.entries.length === 0) {
+      return {
+        success: true,
+        message:
+          "I don't have any saved memories yet. You can ask me to remember things for future sessions.",
+        riskLevel: 'low',
+      };
+    }
+
+    // Keyword-match against the query
+    const queryWords = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+
+    const matches = doc.entries.filter((entry) => {
+      const text = `${entry.content} ${entry.category}`.toLowerCase();
+      return queryWords.some((word) => text.includes(word));
+    });
+
+    // Fall back to all entries if no keyword matches (document is small, ≤30 entries)
+    const results = matches.length > 0 ? matches : doc.entries;
+
+    const formatted = results.map((e) => `[${e.category}] ${e.content}`).join('\n');
+
+    logger.info('recall_knowledge matched', {
+      userId: _currentUserId,
+      query,
+      totalEntries: doc.entries.length,
+      matchCount: matches.length,
+      returnedAll: matches.length === 0,
+    });
+
+    return {
+      success: true,
+      message:
+        matches.length > 0
+          ? `Found ${matches.length} matching memor${matches.length === 1 ? 'y' : 'ies'}:\n${formatted}`
+          : `No exact matches for "${query}", but here is everything I remember:\n${formatted}`,
+      data: {
+        matchCount: results.length,
+        entries: results.map((e) => ({ category: e.category, content: e.content })),
+      },
+      riskLevel: 'low',
+    };
+  } catch (error) {
+    logger.error(
+      'recall_knowledge failed',
+      error instanceof Error ? error : new Error(String(error))
+    );
+    return {
+      success: false,
+      message: "I wasn't able to search my memory right now.",
+      riskLevel: 'low',
+    };
+  }
 }
 
 // =============================================================================

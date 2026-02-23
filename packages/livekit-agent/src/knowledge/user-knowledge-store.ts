@@ -64,6 +64,7 @@ export class UserKnowledgeStore {
   private redis: Redis | null = null;
   private supabase: SupabaseClient | null = null;
   private redisAvailable = false;
+  private connectPromise: Promise<void> | null = null;
   private maxEntries: number;
   private maxContentLength: number;
 
@@ -84,11 +85,6 @@ export class UserKnowledgeStore {
         lazyConnect: true,
       });
 
-      this.redis.on('connect', () => {
-        this.redisAvailable = true;
-        logger.info('Knowledge store Redis connected');
-      });
-
       this.redis.on('error', (err) => {
         if (this.redisAvailable) {
           logger.warn('Knowledge store Redis error', { error: err.message });
@@ -100,12 +96,18 @@ export class UserKnowledgeStore {
         this.redisAvailable = false;
       });
 
-      this.redis.connect().catch((err) => {
-        logger.warn('Knowledge store Redis unavailable — using Supabase only', {
-          error: err instanceof Error ? err.message : String(err),
+      this.connectPromise = this.redis
+        .connect()
+        .then(() => {
+          this.redisAvailable = true;
+          logger.info('Knowledge store Redis connected');
+        })
+        .catch((err) => {
+          logger.warn('Knowledge store Redis unavailable — using Supabase only', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          this.redisAvailable = false;
         });
-        this.redisAvailable = false;
-      });
     } catch (err) {
       logger.warn('Knowledge store Redis init failed', {
         error: err instanceof Error ? err.message : String(err),
@@ -122,6 +124,17 @@ export class UserKnowledgeStore {
   // ===========================================================================
   // Public API
   // ===========================================================================
+
+  /**
+   * Wait for Redis connection to be established (or fail).
+   * Call this before get() to avoid the race condition where Redis hasn't
+   * connected yet when lazyConnect is used.
+   */
+  async waitForReady(): Promise<void> {
+    if (this.connectPromise) {
+      await this.connectPromise;
+    }
+  }
 
   /**
    * Get the full knowledge document for a user.
@@ -168,8 +181,30 @@ export class UserKnowledgeStore {
     doc.version++;
     doc.lastUpdatedAt = new Date().toISOString();
 
-    // Dual-write
-    await Promise.all([this.writeToRedis(userId, doc), this.writeToSupabase(userId, doc)]);
+    // Dual-write — succeed if at least one backend writes
+    const [redisResult, supabaseResult] = await Promise.allSettled([
+      this.writeToRedis(userId, doc),
+      this.writeToSupabase(userId, doc),
+    ]);
+
+    if (redisResult.status === 'rejected' && supabaseResult.status === 'rejected') {
+      throw new Error(
+        `Both Redis and Supabase writes failed: Redis=${String(redisResult.reason)}, Supabase=${String(supabaseResult.reason)}`
+      );
+    }
+
+    if (redisResult.status === 'rejected') {
+      logger.warn('Knowledge append: Redis write failed, Supabase succeeded', {
+        userId,
+        error: String(redisResult.reason),
+      });
+    }
+    if (supabaseResult.status === 'rejected') {
+      logger.warn('Knowledge append: Supabase write failed, Redis succeeded', {
+        userId,
+        error: String(supabaseResult.reason),
+      });
+    }
 
     logger.info('Knowledge entry appended', {
       userId,
@@ -326,29 +361,50 @@ export class UserKnowledgeStore {
       return;
     }
 
-    try {
-      const { error } = await this.supabase.from('user_knowledge').upsert(
-        {
-          user_id: userId,
-          entries: doc.entries,
-          version: doc.version,
-          updated_at: doc.lastUpdatedAt,
-        },
-        { onConflict: 'user_id' }
-      );
+    const MAX_RETRIES = 2;
+    let lastError: string | undefined;
 
-      if (error) {
-        logger.warn('Supabase write failed', {
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const { error } = await this.supabase.from('user_knowledge').upsert(
+          {
+            user_id: userId,
+            entries: doc.entries,
+            version: doc.version,
+            updated_at: doc.lastUpdatedAt,
+          },
+          { onConflict: 'user_id' }
+        );
+
+        if (!error) {
+          return; // Success
+        }
+
+        lastError = error.message;
+        logger.warn('Supabase write failed, will retry', {
           userId,
+          attempt: attempt + 1,
           error: error.message,
         });
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        logger.warn('Supabase write failed, will retry', {
+          userId,
+          attempt: attempt + 1,
+          error: lastError,
+        });
       }
-    } catch (err) {
-      logger.warn('Supabase write failed', {
-        userId,
-        error: err instanceof Error ? err.message : String(err),
-      });
+
+      // Exponential backoff before retry
+      if (attempt < MAX_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 500));
+      }
     }
+
+    logger.warn('Supabase write failed after all retries', {
+      userId,
+      error: lastError,
+    });
   }
 
   // ===========================================================================

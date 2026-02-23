@@ -199,6 +199,38 @@ export async function runBriefingPipeline(
     });
   }
 
+  // Filter based on user knowledge rules (e.g., "never show Quora emails")
+  const knowledgeEntries = options.knowledgeEntries ?? [];
+  if (knowledgeEntries.length > 0) {
+    const rules = extractFilterRules(knowledgeEntries);
+    if (rules.blockedDomains.length > 0 || rules.blockedKeywords.length > 0) {
+      const beforeRules = emails.length;
+      emails = emails.filter((e) => {
+        const fromLower = e.from.email.toLowerCase();
+        const subjectLower = e.subject.toLowerCase();
+        const previewLower = (e.bodyPreview ?? '').toLowerCase();
+        const searchable = `${fromLower} ${subjectLower} ${previewLower}`;
+
+        for (const domain of rules.blockedDomains) {
+          if (fromLower.includes(domain)) {
+            return false;
+          }
+        }
+        for (const keyword of rules.blockedKeywords) {
+          if (searchable.includes(keyword)) {
+            return false;
+          }
+        }
+        return true;
+      });
+      logger.info('Filtered by knowledge rules', {
+        blockedDomains: rules.blockedDomains,
+        blockedKeywords: rules.blockedKeywords,
+        removed: beforeRules - emails.length,
+      });
+    }
+  }
+
   logger.info('Fetched emails for briefing', {
     fetched: rawEmails.length,
     excluded: rawEmails.length - emails.length,
@@ -500,6 +532,53 @@ function runLegacyPipeline(
 // =============================================================================
 // Helpers
 // =============================================================================
+
+/**
+ * Parse user knowledge entries tagged as [rule] for email filtering patterns.
+ * Looks for phrases like "never show X", "skip all X", "block X", "hide X",
+ * "don't bring X", "no X emails", "exclude X".
+ */
+function extractFilterRules(knowledgeEntries: string[]): {
+  blockedDomains: string[];
+  blockedKeywords: string[];
+} {
+  const blockedDomains: string[] = [];
+  const blockedKeywords: string[] = [];
+
+  // Scan ALL entries — blocking intent can appear in any category (rule, preference, etc.)
+  const ruleEntries = knowledgeEntries;
+
+  // Patterns that indicate blocking/filtering intent
+  const blockPatterns =
+    /(?:never\s+(?:show|include|bring)|skip\s+all|block|hide|exclude|don't\s+(?:show|bring|include)|no\s+\S+\s+emails|filter\s+out)\s+(.+)/i;
+
+  for (const entry of ruleEntries) {
+    // Strip any [category] prefix (e.g., [rule], [preference], [feedback])
+    const content = entry.replace(/^\[\w+\]\s*/i, '');
+    const match = content.match(blockPatterns);
+    if (!match?.[1]) {
+      continue;
+    }
+
+    const target = match[1]
+      .replace(/\s*(emails?|messages?|notifications?|in\s+briefings?|from\s+briefings?)\s*/gi, '')
+      .trim()
+      .toLowerCase();
+
+    if (target.length === 0) {
+      continue;
+    }
+
+    // If it looks like a domain or email, treat as domain filter
+    if (target.includes('.') || target.includes('@')) {
+      blockedDomains.push(target);
+    } else {
+      blockedKeywords.push(target);
+    }
+  }
+
+  return { blockedDomains, blockedKeywords };
+}
 
 function createEmptyBriefing(durationMs: number): BriefingData {
   return {

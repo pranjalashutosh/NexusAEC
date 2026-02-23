@@ -34,7 +34,11 @@ import { summarizeKnowledge } from './knowledge/summarize-knowledge.js';
 import { UserKnowledgeStore } from './knowledge/user-knowledge-store.js';
 import { ReasoningLLM } from './llm/reasoning-llm.js';
 import { removeSession, setSession } from './session-store.js';
-import { initializeFromPreferences } from './tools/email-tools.js';
+import {
+  initializeFromPreferences,
+  setPreferencesStore,
+  clearPreferencesStore,
+} from './tools/email-tools.js';
 import { setKnowledgeStore, clearKnowledgeStore } from './tools/knowledge-tools.js';
 
 import type { BriefingData } from './briefing-pipeline.js';
@@ -176,6 +180,9 @@ export function createVoiceAgent(config: AgentConfig) {
           // Pre-populate in-memory VIP/mute lists in email tools
           initializeFromPreferences(vipEmails, mutedEmails);
 
+          // Wire PreferencesStore to email tools so mute/VIP persist across sessions
+          setPreferencesStore(prefStore);
+
           logger.info('Loaded user preferences', {
             vipCount: vipEmails.length,
             mutedCount: mutedEmails.length,
@@ -191,12 +198,64 @@ export function createVoiceAgent(config: AgentConfig) {
         });
       }
 
+      // Load user's persistent knowledge document (BEFORE pipeline so rules are available)
+      let knowledgeEntries: string[] = [];
+      let knowledgeStore: UserKnowledgeStore | null = null;
+
+      try {
+        const storeOpts: ConstructorParameters<typeof UserKnowledgeStore>[0] = {
+          redisUrl: process.env['REDIS_URL'] ?? 'redis://localhost:6379',
+        };
+        const sbUrl = process.env['SUPABASE_URL'];
+        const sbKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
+        if (sbUrl) {
+          storeOpts.supabaseUrl = sbUrl;
+        }
+        if (sbKey) {
+          storeOpts.supabaseKey = sbKey;
+        }
+
+        knowledgeStore = new UserKnowledgeStore(storeOpts);
+        await knowledgeStore.waitForReady();
+
+        const userId = participant.identity;
+        let knowledgeDoc = await knowledgeStore.get(userId);
+
+        // Summarize if over limit (runs before user hears anything — no latency impact)
+        if (knowledgeStore.isOverLimit(knowledgeDoc)) {
+          logger.info('Knowledge over limit, summarizing', {
+            entryCount: knowledgeDoc.entries.length,
+            userId,
+            sessionId,
+          });
+          await summarizeKnowledge(knowledgeStore, knowledgeDoc, config.openai.apiKey);
+          knowledgeDoc = await knowledgeStore.get(userId);
+        }
+
+        knowledgeEntries = knowledgeDoc.entries.map((e) => `[${e.category}] ${e.content}`);
+
+        // Register the store so knowledge tools can use it
+        setKnowledgeStore(knowledgeStore, userId);
+
+        logger.info('User knowledge loaded', {
+          entryCount: knowledgeEntries.length,
+          userId,
+          sessionId,
+        });
+      } catch (error) {
+        logger.warn('Failed to load user knowledge, continuing without', {
+          error: error instanceof Error ? error.message : String(error),
+          sessionId,
+        });
+      }
+
       // Bootstrap email services from participant metadata
       // The backend API places OAuth tokens in metadata when issuing join tokens
       const emailResult = bootstrapFromMetadata(participant.metadata);
       let briefingData: BriefingData | null = null;
       let sessionHistoryId: string | null = null;
       let remainingBatches: EmailMetadata[][] = [];
+      let senderPreferences: string | undefined;
 
       if (emailResult?.success && emailResult.inboxService) {
         logger.info('Email services available', {
@@ -227,7 +286,6 @@ export function createVoiceAgent(config: AgentConfig) {
         // Synthesize learned preferences from past sessions.
         // We pass VIP emails as a proxy; the pipeline will inject them
         // into the LLM prompt along with any cached sender knowledge.
-        let senderPreferences: string | undefined;
         if (senderProfileStore) {
           try {
             senderPreferences = await senderProfileStore.synthesizePreferences(
@@ -250,6 +308,7 @@ export function createVoiceAgent(config: AgentConfig) {
             mutedSenderEmails: mutedEmails.map((m) => m.email),
             apiKey: config.openai.apiKey,
             ...(senderPreferences ? { senderPreferences } : {}),
+            ...(knowledgeEntries.length > 0 ? { knowledgeEntries } : {}),
           });
           briefingData = pipelineResult.briefingData;
           remainingBatches = pipelineResult.remainingBatches;
@@ -292,56 +351,6 @@ export function createVoiceAgent(config: AgentConfig) {
         });
       }
 
-      // Load user's persistent knowledge document
-      let knowledgeEntries: string[] = [];
-      let knowledgeStore: UserKnowledgeStore | null = null;
-
-      try {
-        const storeOpts: ConstructorParameters<typeof UserKnowledgeStore>[0] = {
-          redisUrl: process.env['REDIS_URL'] ?? 'redis://localhost:6379',
-        };
-        const sbUrl = process.env['SUPABASE_URL'];
-        const sbKey = process.env['SUPABASE_SERVICE_ROLE_KEY'];
-        if (sbUrl) {
-          storeOpts.supabaseUrl = sbUrl;
-        }
-        if (sbKey) {
-          storeOpts.supabaseKey = sbKey;
-        }
-
-        knowledgeStore = new UserKnowledgeStore(storeOpts);
-
-        const userId = participant.identity;
-        let knowledgeDoc = await knowledgeStore.get(userId);
-
-        // Summarize if over limit (runs before user hears anything — no latency impact)
-        if (knowledgeStore.isOverLimit(knowledgeDoc)) {
-          logger.info('Knowledge over limit, summarizing', {
-            entryCount: knowledgeDoc.entries.length,
-            userId,
-            sessionId,
-          });
-          await summarizeKnowledge(knowledgeStore, knowledgeDoc, config.openai.apiKey);
-          knowledgeDoc = await knowledgeStore.get(userId);
-        }
-
-        knowledgeEntries = knowledgeDoc.entries.map((e) => `[${e.category}] ${e.content}`);
-
-        // Register the store so knowledge tools can use it
-        setKnowledgeStore(knowledgeStore, userId);
-
-        logger.info('User knowledge loaded', {
-          entryCount: knowledgeEntries.length,
-          userId,
-          sessionId,
-        });
-      } catch (error) {
-        logger.warn('Failed to load user knowledge, continuing without', {
-          error: error instanceof Error ? error.message : String(error),
-          sessionId,
-        });
-      }
-
       // Start the voice assistant pipeline with real or fallback briefing data
       const inboxService = emailResult?.inboxService ?? null;
       const sessionTracker = await startVoiceAssistant(
@@ -355,7 +364,8 @@ export function createVoiceAgent(config: AgentConfig) {
         inboxService,
         vipEmails,
         mutedEmails.map((m) => m.email),
-        senderProfileStore
+        senderProfileStore,
+        senderPreferences
       );
 
       // Process remaining batches in background (if LLM pipeline was used)
@@ -386,6 +396,7 @@ export function createVoiceAgent(config: AgentConfig) {
         }
         teardownEmailServices();
         clearKnowledgeStore();
+        clearPreferencesStore();
         if (knowledgeStore) {
           await knowledgeStore.disconnect();
         }
@@ -418,7 +429,8 @@ async function startVoiceAssistant(
   inboxService?: UnifiedInboxService | null,
   vipEmails?: string[],
   mutedSenderEmails?: string[],
-  senderProfileStore?: SenderProfileStore | null
+  senderProfileStore?: SenderProfileStore | null,
+  senderPreferences?: string
 ): Promise<BriefingSessionTracker | undefined> {
   // Resolve topicItems: distinguish "no pipeline ran" from "pipeline ran but inbox empty"
   let topicItems: number[];
@@ -566,6 +578,7 @@ async function startVoiceAssistant(
       ...(mutedSenderEmails && mutedSenderEmails.length > 0
         ? { mutedSenders: mutedSenderEmails }
         : {}),
+      ...(senderPreferences ? { senderPreferences } : {}),
     },
     topicRefs,
     tracker

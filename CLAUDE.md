@@ -47,8 +47,8 @@ pnpm lint:fix             # ESLint auto-fix
 pnpm format:check         # Prettier check
 pnpm format               # Prettier auto-format
 
-# Testing
-pnpm test                 # All tests (Jest, runs after build)
+# Testing (NEVER include desktop — no test files, hangs the runner)
+pnpm --filter @nexus-aec/encryption --filter @nexus-aec/logger --filter @nexus-aec/secure-storage --filter @nexus-aec/intelligence --filter @nexus-aec/email-providers --filter @nexus-aec/livekit-agent --filter @nexus-aec/api test
 pnpm --filter @nexus-aec/encryption test  # Single package
 pnpm test:watch           # Watch mode
 
@@ -100,10 +100,37 @@ pnpm infra:reset          # Reset all data and volumes
 - Template transitions in `src/prompts/transition-generator.ts` — eliminates
   follow-up LLM call per email (2→1 LLM calls per transition)
 - Conditional tool inclusion during briefing: `callLLM()` sends only core tools
-  (archive, mark_read, flag, create_draft, mute, batch_action, navigation),
-  saving ~170 tokens per call
+  (archive, mark_read, flag, create_draft, mute, batch_action, navigation,
+  save_to_memory, recall_knowledge), saving ~130 tokens per call
 - `batch_action` tool for bulk operations ("archive all LinkedIn", "mark all
   newsletters as read") — supports `archive`, `mark_read`, `flag` actions
+
+#### Cross-Session Memory
+
+The voice agent remembers user preferences, rules, and feedback across sessions
+via a multi-layer persistence system:
+
+- **Knowledge tools in briefing:** `save_to_memory` and `recall_knowledge` are
+  in `BRIEFING_CORE_TOOLS`, so GPT-4o can save/recall during briefing mode.
+- **`recall_knowledge` searches saved memory:** Keyword-matches the user's
+  `KnowledgeDocument` entries. Falls back to returning all entries if no match
+  (document is ≤30 entries). NOT a stub — fully functional.
+- **Rule-based pipeline filtering:** `extractFilterRules()` in
+  `briefing-pipeline.ts` parses `[rule]` knowledge entries for blocking patterns
+  ("never show X", "skip all X", "block X") and filters emails by
+  `blockedDomains` / `blockedKeywords` before briefing.
+- **Knowledge loaded BEFORE pipeline:** `agent.ts` loads `knowledgeEntries`
+  before calling `runBriefingPipeline()`, so rules are available for filtering.
+  `knowledgeEntries` is passed into pipeline options.
+- **Mute/VIP persistence:** `executeMuteSender` and `executePrioritizeVip` in
+  `email-tools.ts` fire-and-forget persist to `PreferencesStore` via
+  `setPreferencesStore()`. Wired in `agent.ts` after `initializeFromPreferences`.
+- **Sender preferences in reasoning prompt:** `senderPreferences` from
+  `SenderProfileStore.synthesizePreferences()` is injected into the system
+  prompt's CURRENT CONTEXT section as "LEARNED SENDER PATTERNS".
+- **Dual-write durability:** `UserKnowledgeStore.append()` uses
+  `Promise.allSettled()` — succeeds if at least one backend writes.
+  `writeToSupabase()` retries 2x with exponential backoff.
 
 ### Briefing Pipeline
 
@@ -153,7 +180,8 @@ The briefing pipeline (`src/briefing/briefing-pipeline.ts`) has dual mode:
   metadata (sender, subject, timestamp, thread ID) may be cached.
 - **Redis schemas:** `nexus:sender:{userId}:{hash}` (sender profiles, 90-day
   TTL), `nexus:prebriefing:{userId}` (pre-computed briefing cache, 30-min TTL),
-  `nexus:briefed:{userId}` (briefed email records, 7-day TTL)
+  `nexus:briefed:{userId}` (briefed email records, 7-day TTL),
+  `nexus:knowledge:{userId}` (user knowledge document, no TTL)
 
 ### Mobile (apps/mobile)
 
@@ -194,8 +222,11 @@ complete:
 3. **Format:** `pnpm format:check` — run `pnpm format` if format errors exist.
 4. **Build:** `pnpm build` — Turborepo will surface dependency order issues
    here.
-5. **Tests:** `pnpm test` — all tests must pass. Fix the code, not the tests
-   (unless the test itself is wrong).
+5. **Tests:** Run tests for all packages EXCEPT desktop (no test files, hangs
+   the runner). Use explicit filters:
+   `pnpm --filter @nexus-aec/encryption --filter @nexus-aec/logger --filter @nexus-aec/secure-storage --filter @nexus-aec/intelligence --filter @nexus-aec/email-providers --filter @nexus-aec/livekit-agent --filter @nexus-aec/api test`
+   All tests must pass. Fix the code, not the tests (unless the test itself is
+   wrong). **NEVER include `@nexus-aec/desktop`** — only if explicitly asked.
 
 **Loop rule:** If any step fails → fix → restart from step 1. Do not skip steps
 or proceed with known failures.
@@ -209,6 +240,8 @@ current work. All tests must pass — zero tolerance for known failures.
 
 ### Package-Specific Validation Gotchas
 
+- **desktop:** Has NO test files — `pnpm test` hangs indefinitely if desktop is
+  included. Always use explicit `--filter` flags listing only testable packages.
 - **livekit-agent:** Must use Node 20 —
   `PATH="$HOME/.nvm/versions/node/v20.20.0/bin:$PATH"` before running.
 - **mobile:** React Native type errors may require Metro cache clear —

@@ -642,6 +642,8 @@ export class ReasoningLoop {
       'stop_briefing',
       'go_back',
       'search_emails',
+      'save_to_memory',
+      'recall_knowledge',
     ]);
 
     const isBriefing = this.tracker !== null;
@@ -990,6 +992,13 @@ export class ReasoningLoop {
           tool_call_id: toolCall.id,
         });
       }
+    }
+
+    // After knowledge recall, let GPT-4o synthesize a natural response
+    // instead of speaking raw tool output verbatim
+    const didRecallKnowledge = actionsTaken.some((a) => a.tool === 'recall_knowledge');
+    if (didRecallKnowledge) {
+      return await this.callLLM();
     }
 
     // After tool execution, if a navigation/action tool advanced the cursor to a new

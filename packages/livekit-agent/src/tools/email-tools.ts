@@ -22,6 +22,7 @@ import type {
   SmartDraftService,
   EmailQueryFilters,
 } from '@nexus-aec/email-providers';
+import type { PreferencesStore } from '@nexus-aec/intelligence';
 
 const logger = createLogger({ baseContext: { component: 'email-tools' } });
 
@@ -88,6 +89,7 @@ export type ToolExecutor = (
 
 let _inboxService: UnifiedInboxService | null = null;
 let _draftService: SmartDraftService | null = null;
+let _preferencesStore: PreferencesStore | null = null;
 
 /**
  * Register email services for use by tool executors.
@@ -99,6 +101,22 @@ export function setEmailServices(inbox: UnifiedInboxService, draft?: SmartDraftS
     _draftService = draft;
   }
   logger.info('Email services registered');
+}
+
+/**
+ * Register the preferences store so mute/VIP actions persist across sessions.
+ */
+export function setPreferencesStore(store: PreferencesStore): void {
+  _preferencesStore = store;
+  logger.info('PreferencesStore registered for tool persistence');
+}
+
+/**
+ * Clear the preferences store (call on disconnect/shutdown).
+ */
+export function clearPreferencesStore(): void {
+  _preferencesStore = null;
+  logger.info('PreferencesStore cleared');
 }
 
 /**
@@ -601,6 +619,22 @@ export async function executeMuteSender(
   const until = computeExpiration(duration);
   muteList.set(senderEmail, { until });
 
+  // Persist to PreferencesStore (fire-and-forget) so mute survives reconnect
+  if (_preferencesStore && !wasMuted) {
+    _preferencesStore
+      .muteSender({
+        identifier: senderEmail,
+        reason: `Muted via voice command (${duration})`,
+        ...(until ? { expiresAt: until } : {}),
+      })
+      .catch((err) => {
+        logger.warn('Failed to persist mute to PreferencesStore', {
+          senderEmail,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+  }
+
   recordAction('mute_sender', { ...args, _wasMuted: wasMuted }, context, true);
 
   return {
@@ -624,6 +658,21 @@ export async function executePrioritizeVip(
 
   const wasVip = vipList.has(senderEmail);
   vipList.add(senderEmail);
+
+  // Persist to PreferencesStore (fire-and-forget) so VIP survives reconnect
+  if (_preferencesStore && !wasVip) {
+    _preferencesStore
+      .addVip({
+        identifier: senderEmail,
+        ...(senderName !== senderEmail ? { name: senderName } : {}),
+      })
+      .catch((err) => {
+        logger.warn('Failed to persist VIP to PreferencesStore', {
+          senderEmail,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
+  }
 
   recordAction('prioritize_vip', { ...args, _wasVip: wasVip }, context, true);
 
