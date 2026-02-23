@@ -206,6 +206,11 @@ export async function runBriefingPipeline(
   });
 
   if (emails.length === 0) {
+    logger.info('[briefing-pipeline] 0 emails after filtering — returning empty briefing', {
+      rawFetched: rawEmails.length,
+      excludedCount: rawEmails.length - emails.length,
+      since: since.toISOString(),
+    });
     return {
       briefingData: createEmptyBriefing(Date.now() - startTime),
       remainingBatches: [],

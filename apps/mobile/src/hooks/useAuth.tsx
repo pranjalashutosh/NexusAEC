@@ -65,6 +65,7 @@ interface AuthContextValue extends AuthState {
   connectAccount: (provider: 'google' | 'microsoft') => Promise<void>;
   disconnectAccount: (accountId: string) => Promise<void>;
   reconnectAccount: (account: ConnectedAccount) => Promise<void>;
+  markAccountExpired: (accountId: string) => void;
   updatePreferences: (prefs: Partial<UserPreferences>) => Promise<void>;
   completeOnboarding: () => Promise<void>;
   logout: () => Promise<void>;
@@ -204,10 +205,15 @@ async function verifyTokenStatus(
       if (response.ok) {
         const data = (await response.json()) as {
           success: boolean;
-          statuses: Record<string, { hasTokens: boolean }>;
+          statuses: Record<string, { hasTokens: boolean; isValid?: boolean }>;
         };
         const key = source.toLowerCase();
-        statuses[account.id] = data.statuses[key]?.hasTokens ? 'valid' : 'expired';
+        const sourceStatus = data.statuses[key];
+        if (!sourceStatus?.hasTokens) {
+          statuses[account.id] = 'expired';
+        } else {
+          statuses[account.id] = sourceStatus.isValid === false ? 'expired' : 'valid';
+        }
       } else {
         statuses[account.id] = 'expired';
       }
@@ -352,6 +358,10 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
     [accounts]
   );
 
+  const markAccountExpired = useCallback((accountId: string) => {
+    setAccountStatuses((prev) => ({ ...prev, [accountId]: 'expired' }));
+  }, []);
+
   const updatePreferences = useCallback(
     async (prefs: Partial<UserPreferences>) => {
       const newPrefs = { ...preferences, ...prefs };
@@ -388,6 +398,7 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
       connectAccount,
       disconnectAccount,
       reconnectAccount,
+      markAccountExpired,
       updatePreferences,
       completeOnboarding,
       logout,
@@ -401,6 +412,7 @@ export function AuthProvider({ children }: { children: ReactNode }): React.JSX.E
       connectAccount,
       disconnectAccount,
       reconnectAccount,
+      markAccountExpired,
       updatePreferences,
       completeOnboarding,
       logout,

@@ -34,7 +34,8 @@ interface EmailStats {
 
 export function HomeScreen({ navigation }: Props): React.JSX.Element {
   const { colors } = useTheme();
-  const { accounts, accountStatuses, preferences, reconnectAccount } = useAuth();
+  const { accounts, accountStatuses, preferences, reconnectAccount, markAccountExpired } =
+    useAuth();
   const [reconnecting, setReconnecting] = useState<string | null>(null);
   const { quality } = useNetworkStatus();
   const [emailStats, setEmailStats] = useState<EmailStats | null>(null);
@@ -60,13 +61,20 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
       );
 
       if (response.ok) {
-        const data = (await response.json()) as { success: boolean } & EmailStats;
+        const data = (await response.json()) as {
+          success: boolean;
+          requiresReauth?: boolean;
+        } & EmailStats;
         if (data.success) {
-          setEmailStats({
-            newCount: data.newCount,
-            vipCount: data.vipCount,
-            urgentCount: data.urgentCount,
-          });
+          if (data.requiresReauth && userId) {
+            markAccountExpired(userId);
+          } else {
+            setEmailStats({
+              newCount: data.newCount,
+              vipCount: data.vipCount,
+              urgentCount: data.urgentCount,
+            });
+          }
         }
       } else {
         console.warn('Email stats fetch failed:', response.status);
@@ -76,7 +84,7 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
     } finally {
       setStatsLoading(false);
     }
-  }, [userId, hasValidAccount, preferences.vips]);
+  }, [userId, hasValidAccount, preferences.vips, markAccountExpired]);
 
   // Fetch stats when account becomes valid (e.g. after reconnect)
   useEffect(() => {

@@ -358,11 +358,23 @@ export function registerAuthRoutes(app: FastifyInstance): void {
         ? [source.toUpperCase() as EmailSource]
         : ['OUTLOOK', 'GMAIL'];
 
-      const statuses: Record<string, { hasTokens: boolean }> = {};
+      const statuses: Record<string, { hasTokens: boolean; isValid: boolean }> = {};
 
       for (const src of sourcesToCheck) {
         const hasTokens = await manager.hasTokens(userId, src);
-        statuses[src.toLowerCase()] = { hasTokens };
+        if (!hasTokens) {
+          statuses[src.toLowerCase()] = { hasTokens: false, isValid: false };
+          continue;
+        }
+
+        // Try to validate — getValidAccessToken auto-refreshes if needed
+        let isValid = true;
+        try {
+          await manager.getValidAccessToken(userId, src);
+        } catch {
+          isValid = false;
+        }
+        statuses[src.toLowerCase()] = { hasTokens: true, isValid };
       }
 
       return reply.send({ success: true, statuses });

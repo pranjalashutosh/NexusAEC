@@ -25,8 +25,27 @@ const ACTION_ACKS: Record<string, string> = {
 };
 
 // =============================================================================
+// Priority Group Labels
+// =============================================================================
+
+const PRIORITY_GROUP_LABELS: Record<string, string> = {
+  high: 'high-priority',
+  medium: 'medium-priority',
+  low: 'lower-priority',
+};
+
+// =============================================================================
 // Transition Generator
 // =============================================================================
+
+export interface TransitionProgress {
+  handled: number;
+  total: number;
+  /** Priority of the topic we just left */
+  previousTopicPriority?: 'high' | 'medium' | 'low';
+  /** Priority of the topic we're entering */
+  nextTopicPriority?: 'high' | 'medium' | 'low';
+}
 
 /**
  * Generate a natural transition from the completed action to the next email.
@@ -35,7 +54,7 @@ const ACTION_ACKS: Record<string, string> = {
 export function generateTransition(
   completedAction: string,
   nextEmail: BriefingEmailRef | null,
-  progress: { handled: number; total: number }
+  progress: TransitionProgress
 ): string {
   const ack = ACTION_ACKS[completedAction] ?? 'Done.';
 
@@ -44,11 +63,23 @@ export function generateTransition(
     return `${ack} That wraps up your briefing.${countNote}`;
   }
 
+  // Detect priority group transition
+  let groupTransition = '';
+  if (
+    progress.previousTopicPriority &&
+    progress.nextTopicPriority &&
+    progress.previousTopicPriority !== progress.nextTopicPriority
+  ) {
+    const nextLabel =
+      PRIORITY_GROUP_LABELS[progress.nextTopicPriority] ?? progress.nextTopicPriority;
+    groupTransition = ` Now moving to your ${nextLabel} emails.`;
+  }
+
   const priorityLabel = nextEmail.priority === 'high' ? " This one's important." : '';
 
   const summary = nextEmail.summary
     ? nextEmail.summary
     : `${nextEmail.subject} from ${nextEmail.from}`;
 
-  return `${ack} Next up: ${summary}${priorityLabel}`.trim();
+  return `${ack}${groupTransition} Next up: ${summary}${priorityLabel}`.trim();
 }

@@ -17,7 +17,7 @@ system:** Turborepo 2.0 **Node:** >=20.0.0 **TypeScript:** 5.4+ strict mode
 
 ```
 apps/
-  api/          — Fastify 5 backend (OAuth, LiveKit tokens, email stats, sync)
+  api/          — Fastify 5 backend (OAuth, LiveKit tokens, email stats, sync, briefing pre-computation)
   mobile/       — React Native iOS/Android with LiveKit voice
   desktop/      — Electron + React + Vite (draft review, settings sync)
 packages/
@@ -26,7 +26,7 @@ packages/
   secure-storage — Platform-agnostic secure storage abstraction
   logger        — Structured logging with PII filtering
   email-providers — Gmail/Outlook adapters, OAuth providers, token management
-  intelligence  — Red flag detection, clustering, knowledge base (Supabase vectors)
+  intelligence  — Email preprocessing (LLM batched), sender profiles, red flags, knowledge base (Supabase vectors)
   livekit-agent — Voice agent: briefings, STT/TTS, GPT-4o reasoning loop
 infra/          — Docker Compose (Redis, PostgreSQL/pgvector)
 ```
@@ -70,6 +70,10 @@ pnpm infra:reset          # Reset all data and volumes
   (returns null if Redis unavailable)
 - OAuth tokens stored via `FileTokenStorage` →
   `apps/api/.nexus-data/tokens.json`
+- Briefing routes: `POST /briefing/precompute` (triggers background
+  computation), `GET /briefing/status/:userId` (returns `{ ready, emailCount }`)
+- Pre-computation service in `src/services/briefing-precompute.ts` — stores
+  results in Redis with 30-min TTL, 15-min freshness window
 
 ### Email Providers (packages/email-providers)
 
@@ -91,6 +95,54 @@ pnpm infra:reset          # Reset all data and volumes
 - Briefing logic in `src/briefing/`, tools in `src/tools/`, prompts in
   `src/prompts/`
 - Agent requires Node >=20: `PATH="$HOME/.nvm/versions/node/v20.20.0/bin:$PATH"`
+- `go_deeper` uses `summarizeEmailForVoice()` (private method on
+  `ReasoningLoop`) for clean LLM summaries instead of raw email text
+- Template transitions in `src/prompts/transition-generator.ts` — eliminates
+  follow-up LLM call per email (2→1 LLM calls per transition)
+- Conditional tool inclusion during briefing: `callLLM()` sends only core tools
+  (archive, mark_read, flag, create_draft, mute, batch_action, navigation),
+  saving ~170 tokens per call
+- `batch_action` tool for bulk operations ("archive all LinkedIn", "mark all
+  newsletters as read") — supports `archive`, `mark_read`, `flag` actions
+
+### Briefing Pipeline
+
+The briefing pipeline (`src/briefing/briefing-pipeline.ts`) has dual mode:
+
+- **LLM path** (when `apiKey` provided): Uses `EmailPreprocessor` from
+  `@nexus-aec/intelligence` for batched GPT-4o preprocessing. Emails split into
+  batches of 25; Batch 1 processed synchronously, remaining batches processed in
+  background. Priority ordering: HIGH → MEDIUM → LOW.
+- **Legacy fallback** (no `apiKey` or LLM failure): Uses `RedFlagScorer` +
+  `KeywordMatcher` + `VipDetector` + `TopicClusterer`. Always test both paths.
+- **24-hour fetch window:** Only processes last 24 hours of unread emails.
+- **Progressive loading:** `BriefingSessionTracker.addTopics()` merges
+  background batch results into the active session. `ReasoningLoop` can inject
+  system alerts for high-priority finds from later batches.
+- **Pre-computation:** `precomputed-loader.ts` checks Redis for cached Batch 1
+  results — uses cache if <15 min old, otherwise runs fresh.
+- **Dynamic context:** `buildCursorContext()` generates per-call system messages
+  with current email position, topic progress, and priority.
+  `buildCompactEmailReference()` shows current topic in detail, others as
+  one-line summaries.
+
+#### Personalization
+
+- **SenderProfileStore**
+  (`packages/intelligence/src/knowledge/sender-profile-store.ts`): Redis-backed
+  per-sender engagement tracking with 90-day TTL.
+- Key pattern: `nexus:sender:{userId}:{sha256[:16]}` (first 16 chars of SHA-256
+  of lowercase sender email).
+- Tracks: `archived`, `flagged`, `replied`, `deeperViewed`, `markRead`,
+  `skipped` action counts + priority mismatch feedback.
+- `synthesizePreferences()` generates natural language injected into the LLM
+  preprocessing prompt (requires ≥3 interactions per sender).
+- Fire-and-forget tracking in `BriefingSessionTracker`: `markActioned()`,
+  `markSkipped()`, `markBriefed()` — maps tool names to profile actions via
+  `mapToolToProfileAction()`.
+- `BriefedEmailStore` (`src/briefing/briefed-email-store.ts`): Redis hash per
+  user tracking briefed/actioned/skipped emails (7-day TTL). Skipped emails
+  re-appear in future sessions.
 
 ### 3-Tier Memory
 
@@ -99,6 +151,9 @@ pnpm infra:reset          # Reset all data and volumes
 - **Tier 3 (Knowledge):** Supabase + pgvector for vector search
 - **PRD Rule 60:** Email content must NOT persist beyond active session. Only
   metadata (sender, subject, timestamp, thread ID) may be cached.
+- **Redis schemas:** `nexus:sender:{userId}:{hash}` (sender profiles, 90-day
+  TTL), `nexus:prebriefing:{userId}` (pre-computed briefing cache, 30-min TTL),
+  `nexus:briefed:{userId}` (briefed email records, 7-day TTL)
 
 ### Mobile (apps/mobile)
 
@@ -145,6 +200,11 @@ complete:
 **Loop rule:** If any step fails → fix → restart from step 1. Do not skip steps
 or proceed with known failures.
 
+**Pre-existing test failures:** Do NOT ignore pre-existing test failures. If a
+test was already failing before your changes (e.g., the ElevenLabs defaults test
+in `packages/livekit-agent/tests/config.test.ts`), fix it as part of your
+current work. All tests must pass — zero tolerance for known failures.
+
 **Commit gate:** Only commit when steps 1–5 are all clean.
 
 ### Package-Specific Validation Gotchas
@@ -174,3 +234,12 @@ or proceed with known failures.
   cannot be fixed.
 - SDK uses fire-and-forget Promises — add
   `process.on('unhandledRejection', ...)` in agent `main.ts`.
+- `exactOptionalPropertyTypes` is enabled — use conditional spread
+  `...(val ? { key: val } : {})` for optional fields, never assign `undefined`
+  directly.
+- `briefing-pipeline.ts` has dual mode: LLM path (with `apiKey`) and legacy
+  fallback — always test both paths when modifying briefing logic.
+- `RedFlagScore` interface uses `signalBreakdown` (not `contributions`) and
+  `severity` field (can be `null` when below threshold).
+- `ScoringReason` uses `description` (not `reason`) for the human-readable
+  explanation field.

@@ -478,6 +478,13 @@ export class BriefingSessionTracker {
    * Build a dynamic cursor context string to inject before each LLM call.
    * This tells GPT-4o exactly which email to present.
    */
+  /**
+   * Get the priority group label for a topic index.
+   */
+  private getTopicPriority(topicIndex: number): 'high' | 'medium' | 'low' | undefined {
+    return this.topics[topicIndex]?.priority;
+  }
+
   buildCursorContext(): string {
     const progress = this.getProgress();
     const currentEmail = progress.currentEmail;
@@ -499,17 +506,24 @@ export class BriefingSessionTracker {
     const priorityLabel = currentEmail.priority ? ` [${currentEmail.priority.toUpperCase()}]` : '';
     const summaryLine = currentEmail.summary ? `Summary: ${currentEmail.summary}` : '';
 
+    // Detect priority group for announcements
+    const topicPriority = this.getTopicPriority(progress.currentTopicIndex);
+    const priorityGroupLine = topicPriority ? `Priority group: ${topicPriority.toUpperCase()}` : '';
+
     return [
       'CURRENT BRIEFING POSITION:',
       `Topic ${progress.currentTopicIndex + 1} of ${progress.totalTopics}: "${progress.currentTopicLabel}"`,
+      ...(priorityGroupLine ? [priorityGroupLine] : []),
       `Email ${progress.currentItemIndex + 1} of ${topicEmailCount} in this topic (${activeInTopic} remaining)`,
       `Current email: "${currentEmail.subject}" from ${currentEmail.from}${flagLabel}${priorityLabel} (email_id: ${currentEmail.emailId})`,
       ...(summaryLine ? [summaryLine] : []),
       `Progress: ${progress.emailsBriefed + progress.emailsActioned} of ${progress.totalEmails} handled, ${progress.emailsRemaining} remaining`,
       '',
+      'MANDATORY: When the user says "next", "move on", "skip", "mark as read", "flag", "archive", or any action command, you MUST call the corresponding tool. NEVER just say "OK" or describe an action without a tool call.',
+      '',
       summaryLine
-        ? 'NEXT: Read the summary to the user naturally (do NOT read verbatim). Then ask what action to take.'
-        : 'NEXT: Present THIS email to the user. Summarize its subject and sender, then ask what action to take.',
+        ? 'NEXT: Read the summary to the user naturally (do NOT read verbatim). Then ask: "Should I mark it as read, move on, or flag it?"'
+        : 'NEXT: Present THIS email to the user. Summarize its subject and sender, then ask: "Should I mark it as read, move on, or flag it?"',
     ].join('\n');
   }
 

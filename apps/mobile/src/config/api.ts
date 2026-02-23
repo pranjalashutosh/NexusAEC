@@ -18,7 +18,7 @@ import { Platform } from 'react-native';
  * Then paste the https URL here (e.g., 'https://abc123.ngrok-free.app')
  * Set to null to use default localhost/IP-based URL.
  */
-const NGROK_URL: string | null = 'https://necessity-consumer-crafts-folk.trycloudflare.com';
+const NGROK_URL: string | null = 'https://name-muscles-amp-specifically.trycloudflare.com';
 
 /**
  * Get the API base URL.

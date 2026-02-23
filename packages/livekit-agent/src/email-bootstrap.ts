@@ -160,7 +160,13 @@ function createProviders(credentials: EmailCredentials): {
         tokens: credentials.outlook,
       };
       providers.push(new OutlookAdapter(config));
-      logger.info('Outlook adapter created', { userId: credentials.userId });
+      const tokenExpiresAt = credentials.outlook.expiresAt;
+      const isExpired = new Date(tokenExpiresAt) < new Date();
+      logger.info('[email-bootstrap] Outlook adapter created', {
+        userId: credentials.userId,
+        tokenExpiresAt,
+        isExpired,
+      });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       logger.error('Failed to create Outlook adapter', error instanceof Error ? error : null);
@@ -175,7 +181,13 @@ function createProviders(credentials: EmailCredentials): {
         tokens: credentials.gmail,
       };
       providers.push(new GmailAdapter(config));
-      logger.info('Gmail adapter created', { userId: credentials.userId });
+      const tokenExpiresAt = credentials.gmail.expiresAt;
+      const isExpired = new Date(tokenExpiresAt) < new Date();
+      logger.info('[email-bootstrap] Gmail adapter created', {
+        userId: credentials.userId,
+        tokenExpiresAt,
+        isExpired,
+      });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       logger.error('Failed to create Gmail adapter', error instanceof Error ? error : null);

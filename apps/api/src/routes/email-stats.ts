@@ -67,14 +67,24 @@ interface UserAdapters {
 // =============================================================================
 
 /**
+ * Result of adapter creation, including whether any token failures occurred.
+ */
+interface AdapterCreationResult {
+  adapters: UserAdapters;
+  /** True if at least one source had tokens but failed to refresh them */
+  requiresReauth: boolean;
+}
+
+/**
  * Create email providers from stored OAuth tokens for a user.
  * Returns both the generic providers array (for UnifiedInboxService)
  * and typed adapter references (for incremental sync).
  */
-async function createAdaptersForUser(userId: string): Promise<UserAdapters> {
+async function createAdaptersForUser(userId: string): Promise<AdapterCreationResult> {
   const tokenManager = getTokenManagerInstance();
-  const result: UserAdapters = { providers: [], gmail: null, outlook: null };
+  const adapters: UserAdapters = { providers: [], gmail: null, outlook: null };
   const sources: EmailSource[] = ['OUTLOOK', 'GMAIL'];
+  let tokenFailure = false;
 
   for (const source of sources) {
     const hasTokens = await tokenManager.hasTokens(userId, source);
@@ -96,14 +106,15 @@ async function createAdaptersForUser(userId: string): Promise<UserAdapters> {
       };
       if (source === 'OUTLOOK') {
         const adapter = new OutlookAdapter(config);
-        result.providers.push(adapter);
-        result.outlook = adapter;
+        adapters.providers.push(adapter);
+        adapters.outlook = adapter;
       } else {
         const adapter = new GmailAdapter(config);
-        result.providers.push(adapter);
-        result.gmail = adapter;
+        adapters.providers.push(adapter);
+        adapters.gmail = adapter;
       }
     } catch (error) {
+      tokenFailure = true;
       logger.warn('Failed to create adapter for stats', {
         source,
         error: error instanceof Error ? error.message : String(error),
@@ -111,7 +122,7 @@ async function createAdaptersForUser(userId: string): Promise<UserAdapters> {
     }
   }
 
-  return result;
+  return { adapters, requiresReauth: tokenFailure };
 }
 
 // =============================================================================
@@ -295,7 +306,7 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
         // =====================================================================
         // Create adapters (needed for both change detection and full fetch)
         // =====================================================================
-        const adapters = await createAdaptersForUser(userId);
+        const { adapters, requiresReauth } = await createAdaptersForUser(userId);
 
         if (adapters.providers.length === 0) {
           return reply.send({
@@ -303,7 +314,8 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
             newCount: 0,
             vipCount: 0,
             urgentCount: 0,
-          } satisfies EmailStatsResponse);
+            ...(requiresReauth ? { requiresReauth: true } : {}),
+          });
         }
 
         // =====================================================================

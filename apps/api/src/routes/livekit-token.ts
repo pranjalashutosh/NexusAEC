@@ -177,11 +177,58 @@ async function buildEmailMetadata(userId: string): Promise<Record<string, unknow
     let hasAnyTokens = false;
 
     for (const source of sources) {
-      const data = await tokenManager.getTokens(userId, source);
-      if (data?.tokens) {
-        const key = source === 'OUTLOOK' ? 'outlook' : 'gmail';
-        emailMeta[key] = data.tokens;
+      const key = source === 'OUTLOOK' ? 'outlook' : 'gmail';
+      try {
+        const hasTokens = await tokenManager.hasTokens(userId, source);
+        if (!hasTokens) {
+          continue;
+        }
+
+        // Refresh expired tokens before embedding (pattern from email-stats.ts)
+        const accessToken = await tokenManager.getValidAccessToken(userId, source);
+        const data = await tokenManager.getTokens(userId, source);
+        if (!data?.tokens) {
+          continue;
+        }
+
+        // Overlay the freshly-validated access token
+        emailMeta[key] = { ...data.tokens, accessToken };
         hasAnyTokens = true;
+
+        logger.info('[livekit-token] Token embedded', {
+          userId,
+          source,
+          wasRefreshed: accessToken !== data.tokens.accessToken,
+          expiresAt: data.tokens.expiresAt,
+          nowIso: new Date().toISOString(),
+        });
+      } catch (error) {
+        // Token refresh failed (likely expired/revoked refresh token).
+        // Fall back to embedding the stale stored tokens so the agent at least
+        // knows this provider was configured. The Gmail/Outlook API will return
+        // 401, the pipeline will get 0 emails, and the agent's empty-inbox guard
+        // will prevent hallucination.
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        logger.warn('[livekit-token] Token refresh failed, embedding stale tokens', {
+          userId,
+          source: key,
+          errorMessage: errorMsg,
+        });
+
+        try {
+          const data = await tokenManager.getTokens(userId, source);
+          if (data?.tokens) {
+            emailMeta[key] = data.tokens;
+            hasAnyTokens = true;
+            logger.info('[livekit-token] Stale tokens embedded as fallback', {
+              userId,
+              source: key,
+              expiresAt: data.tokens.expiresAt,
+            });
+          }
+        } catch {
+          // Storage read also failed — truly nothing we can do
+        }
       }
     }
 
