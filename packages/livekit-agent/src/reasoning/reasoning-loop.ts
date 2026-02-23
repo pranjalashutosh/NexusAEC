@@ -150,6 +150,8 @@ export interface BriefingEmailRef {
 export interface BriefingTopicRef {
   label: string;
   emails: BriefingEmailRef[];
+  /** Topic-level priority from the briefing pipeline */
+  priority?: 'high' | 'medium' | 'low';
 }
 
 // =============================================================================
@@ -385,6 +387,7 @@ export class ReasoningLoop {
   private bargeInDetected: boolean = false;
   private inboxService: unknown = null;
   private sessionHistoryId: string | null = null;
+  private previousTopicIndex: number = 0;
 
   constructor(
     topicItems: number[] = [5, 3, 2],
@@ -448,10 +451,16 @@ export class ReasoningLoop {
       lastSpokenText: '',
     };
 
+    // Determine the source of email reference data
+    const emailRefSource = this.tracker ? 'tracker' : this.topicRefs.length > 0 ? 'static' : 'none';
+
     logger.info('Reasoning loop initialized', {
       totalItems: this.state.briefingContext.totalItems,
       topicCount: topicItems.length,
       hasEmailRefs: this.topicRefs.length > 0,
+      hasEmailReferenceBlock: emailRefSource !== 'none',
+      emailRefSource,
+      systemPromptLength: systemPrompt.length,
       hasTracker: !!this.tracker,
       initialEmailId: initialEmailContext?.emailId,
     });
@@ -604,6 +613,12 @@ export class ReasoningLoop {
    * Call LLM and process response
    */
   private async callLLM(): Promise<ReasoningResult> {
+    logger.info('[reasoning-loop] callLLM invoked', {
+      messageCount: this.state.messages.length,
+      hasCursorContext: !!this.tracker,
+      totalItems: this.state.briefingContext.totalItems,
+    });
+
     // Inject dynamic briefing cursor context so GPT-4o knows which email to present
     if (this.tracker) {
       this.state.messages.push({
@@ -680,12 +695,64 @@ export class ReasoningLoop {
       return await this.handleToolCalls(message.tool_calls);
     }
 
-    // Handle text response
-    const responseText = message.content ?? '';
+    // Handle text response (no tool calls)
+    let responseText = message.content ?? '';
     logger.info('GPT-4o returned text response (no tools)', {
       responseLength: responseText.length,
       responseText: responseText.substring(0, 300),
     });
+
+    // Fallback: if user likely intended a navigation action but GPT-4o didn't call
+    // a tool, detect it and force the cursor advance to prevent the agent from stalling.
+    // Only active during briefing — after completion, let GPT-4o handle freely.
+    if (this.tracker && !this.tracker.isComplete() && responseText) {
+      const lastUserMsg = this.state.messages
+        .filter((m) => m.role === 'user')
+        .slice(-1)[0]
+        ?.content?.toLowerCase();
+
+      if (lastUserMsg) {
+        const moveOnPatterns = /\b(next|move on|skip|go ahead|continue|proceed)\b/;
+        const markReadPatterns = /\bmark\s+(it\s+)?(as\s+)?re[a]?d\b/;
+        const flagPatterns = /\b(flag|flag\s+it|follow.up)\b/;
+
+        if (moveOnPatterns.test(lastUserMsg)) {
+          logger.warn('Fallback: GPT-4o missed next_item tool call, forcing cursor advance');
+          const nextEmail = this.tracker.advance();
+          if (nextEmail) {
+            this.state.emailContext = buildEmailContext(nextEmail);
+            const progress = this.tracker.getProgress();
+            responseText = generateTransition('next_item', nextEmail, {
+              handled: progress.emailsBriefed + progress.emailsActioned,
+              total: progress.totalEmails,
+            });
+          }
+        } else if (markReadPatterns.test(lastUserMsg)) {
+          logger.warn('Fallback: GPT-4o missed mark_read tool call, forcing mark + advance');
+          const currentEmail = this.tracker.getCurrentEmail();
+          if (currentEmail) {
+            this.tracker.markActioned(currentEmail.emailId, 'mark_read');
+            const nextEmail = this.tracker.advance();
+            if (nextEmail) {
+              this.state.emailContext = buildEmailContext(nextEmail);
+            }
+            const progress = this.tracker.getProgress();
+            responseText = generateTransition('mark_read', nextEmail, {
+              handled: progress.emailsBriefed + progress.emailsActioned,
+              total: progress.totalEmails,
+            });
+          }
+        } else if (flagPatterns.test(lastUserMsg)) {
+          logger.warn('Fallback: GPT-4o missed flag_followup tool call');
+          const currentEmail = this.tracker.getCurrentEmail();
+          if (currentEmail) {
+            this.tracker.markActioned(currentEmail.emailId, 'flagged');
+            responseText = 'Flagged for follow-up.';
+          }
+        }
+      }
+    }
+
     return this.createTextResult(responseText);
   }
 
@@ -862,29 +929,28 @@ export class ReasoningLoop {
                 if (aspect === 'full_email' || aspect === 'thread_history') {
                   // Summarize via LLM instead of dumping raw text
                   const detailedSummary = await this.summarizeEmailForVoice(fullEmail);
-                  content = [
-                    `From: ${fullEmail.from.name ?? fullEmail.from.email}`,
-                    `To: ${fullEmail.to.map((r) => r.name ?? r.email).join(', ')}`,
-                    `Subject: ${fullEmail.subject}`,
-                    `Sent: ${fullEmail.sentAt}`,
-                    '',
-                    'Detailed summary:',
-                    detailedSummary,
-                  ].join('\n');
+                  content = `Here are more details. ${detailedSummary}`;
                 } else if (aspect === 'sender_info') {
-                  content = `Sender: ${fullEmail.from.name ?? ''} <${fullEmail.from.email}>`;
+                  const senderName = fullEmail.from.name ?? fullEmail.from.email;
+                  content = `This is from ${senderName}, ${fullEmail.from.email}.`;
                 } else if (aspect === 'attachments') {
                   content =
                     fullEmail.attachments.length > 0
-                      ? fullEmail.attachments.map((a) => `${a.name} (${a.contentType})`).join(', ')
-                      : 'No attachments.';
+                      ? `This email has ${fullEmail.attachments.length} attachment${fullEmail.attachments.length > 1 ? 's' : ''}: ${fullEmail.attachments.map((a) => a.name).join(', ')}.`
+                      : 'This email has no attachments.';
                 }
 
-                // Override the tool result with actual content
+                // Override the tool result with voice-friendly content
                 result = {
                   ...result,
                   message: content,
                   data: { ...result.data, emailContent: content },
+                };
+              } else {
+                result = {
+                  ...result,
+                  message:
+                    "I couldn't retrieve the full email content. It may have been deleted or moved.",
                 };
               }
             } catch (error) {
@@ -892,7 +958,11 @@ export class ReasoningLoop {
                 emailId: currentEmailId,
                 error: error instanceof Error ? error.message : String(error),
               });
-              // Fall through with original "Getting more details..." message
+              result = {
+                ...result,
+                message:
+                  "I'm having trouble retrieving the full email right now. The email service may be temporarily unavailable.",
+              };
             }
           }
         }
@@ -931,10 +1001,22 @@ export class ReasoningLoop {
     if (didNavigate && this.tracker && !shouldEnd) {
       const nextEmail = this.tracker.getCurrentEmail();
       const progress = this.tracker.getProgress();
+
+      // Detect priority group transitions
+      const prevTopicIdx = this.previousTopicIndex ?? 0;
+      const curTopicIdx = progress.currentTopicIndex;
+      const prevPriority = this.topicRefs[prevTopicIdx]?.priority;
+      const nextPriority = this.topicRefs[curTopicIdx]?.priority;
+
       responseText = generateTransition(actionsTaken[0]?.tool ?? '', nextEmail, {
         handled: progress.emailsBriefed + progress.emailsActioned,
         total: progress.totalEmails,
+        ...(prevPriority ? { previousTopicPriority: prevPriority } : {}),
+        ...(nextPriority ? { nextTopicPriority: nextPriority } : {}),
       });
+
+      // Track current topic index for next transition
+      this.previousTopicIndex = curTopicIdx;
     }
 
     return this.createTextResult(responseText.trim(), actionsTaken, shouldEnd);
@@ -1157,16 +1239,16 @@ export class ReasoningLoop {
    * Returns whether new emails were detected. If so, injects an alert
    * into the conversation for GPT-4o to surface on the next turn.
    */
-  async checkForNewEmails(): Promise<{ hasNew: boolean }> {
+  async checkForNewEmails(): Promise<{ hasNew: boolean; authFailed: boolean }> {
     if (!this.inboxService || !this.sessionHistoryId) {
-      return { hasNew: false };
+      return { hasNew: false, authFailed: false };
     }
 
     try {
       // Duck-type check for Gmail provider with fetchHistory
       const service = this.inboxService as { getProvider?: (source: string) => unknown };
       if (!service.getProvider) {
-        return { hasNew: false };
+        return { hasNew: false, authFailed: false };
       }
 
       const gmailProvider = service.getProvider('GMAIL') as
@@ -1178,7 +1260,7 @@ export class ReasoningLoop {
         | undefined;
 
       if (!gmailProvider?.fetchHistory) {
-        return { hasNew: false };
+        return { hasNew: false, authFailed: false };
       }
 
       const { hasChanges, currentHistoryId } = await gmailProvider.fetchHistory(
@@ -1202,15 +1284,23 @@ export class ReasoningLoop {
           newHistoryId: currentHistoryId,
         });
 
-        return { hasNew: true };
+        return { hasNew: true, authFailed: false };
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const isAuthError = /authentication credentials|OAuth|unauthorized|401/i.test(errorMsg);
+
       logger.warn('Failed to check for new emails', {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMsg,
+        isAuthError,
       });
+
+      if (isAuthError) {
+        return { hasNew: false, authFailed: true };
+      }
     }
 
-    return { hasNew: false };
+    return { hasNew: false, authFailed: false };
   }
 
   /**

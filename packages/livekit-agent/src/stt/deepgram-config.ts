@@ -134,6 +134,16 @@ export const DEFAULT_CUSTOM_VOCABULARY: string[] = [
   'reply',
   'forward',
 
+  // Voice command phrases (boost recognition)
+  'mark as read',
+  'mark it as read',
+  'mark read',
+  'move on',
+  'go deeper',
+  'go back',
+  'stop briefing',
+  'skip topic',
+
   // VIP names (would be loaded dynamically in production)
   // These are placeholders
 ];
@@ -310,10 +320,29 @@ export function processTranscript(event: TranscriptEvent): {
   }
 
   // Clean up the text
-  const cleanText = event.text.trim();
+  let cleanText = event.text.trim();
 
   // Skip empty or very short transcripts
   if (cleanText.length < 2) {
+    return {
+      text: cleanText,
+      shouldProcess: false,
+      confidence: event.confidence,
+    };
+  }
+
+  // Normalize common STT misrecognitions
+  const normalizations: [RegExp, string][] = [
+    [/\bmark\s+(it\s+)?(as\s+)?red\b/gi, 'mark it as read'],
+    [/\bmark\s+this\s+(as\s+)?red\b/gi, 'mark this as read'],
+  ];
+  for (const [pattern, replacement] of normalizations) {
+    cleanText = cleanText.replace(pattern, replacement);
+  }
+
+  // Filter out standalone filler words that shouldn't trigger actions
+  const fillerPatterns = /^(mhmm|mmhmm|uh-huh|uh huh|hmm|um|uh|ah|oh|huh|yeah)\.?$/i;
+  if (fillerPatterns.test(cleanText)) {
     return {
       text: cleanText,
       shouldProcess: false,

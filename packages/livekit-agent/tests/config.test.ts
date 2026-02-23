@@ -173,6 +173,13 @@ describe('livekit-agent/config', () => {
 
     it('uses defaults for optional values', () => {
       process.env['ELEVENLABS_API_KEY'] = 'el-api-key';
+      delete process.env['ELEVENLABS_VOICE_ID'];
+      delete process.env['ELEVENLABS_MODEL_ID'];
+      delete process.env['ELEVENLABS_STABILITY'];
+      delete process.env['ELEVENLABS_SIMILARITY_BOOST'];
+      delete process.env['ELEVENLABS_STYLE'];
+      delete process.env['ELEVENLABS_SPEAKER_BOOST'];
+      delete process.env['ELEVENLABS_OUTPUT_FORMAT'];
 
       const config = loadElevenLabsConfig();
 
@@ -182,7 +189,7 @@ describe('livekit-agent/config', () => {
       expect(config.voiceSettings.similarityBoost).toBe(0.75);
       expect(config.voiceSettings.style).toBe(0.0);
       expect(config.voiceSettings.useSpeakerBoost).toBe(true);
-      expect(config.outputFormat).toBe('pcm_24000');
+      expect(config.outputFormat).toBe('pcm_22050');
     });
   });
 

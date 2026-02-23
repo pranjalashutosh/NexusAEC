@@ -420,9 +420,27 @@ async function startVoiceAssistant(
   mutedSenderEmails?: string[],
   senderProfileStore?: SenderProfileStore | null
 ): Promise<BriefingSessionTracker | undefined> {
-  // Use real briefing data when available, fall back to defaults
-  const topicItems = briefingData?.topicItems.length ? briefingData.topicItems : [5, 3, 2];
+  // Resolve topicItems: distinguish "no pipeline ran" from "pipeline ran but inbox empty"
+  let topicItems: number[];
+  let topicItemsSource: 'no-data-fallback' | 'real-data' | 'empty-inbox';
+  if (!briefingData) {
+    topicItems = [5, 3, 2]; // No pipeline ran at all — preserve legacy
+    topicItemsSource = 'no-data-fallback';
+  } else if (briefingData.totalEmails > 0) {
+    topicItems = briefingData.topicItems; // Real emails
+    topicItemsSource = 'real-data';
+  } else {
+    topicItems = []; // Pipeline ran, inbox genuinely empty
+    topicItemsSource = 'empty-inbox';
+  }
   const topicLabels = briefingData?.topicLabels ?? ['Inbox', 'VIP', 'Flagged'];
+
+  logger.info('[voice-agent] topicItems resolved', {
+    source: topicItemsSource,
+    topicItems,
+    totalEmails: briefingData?.totalEmails ?? 0,
+    sessionId: session.sessionId,
+  });
 
   // Build lightweight topic references with email IDs for GPT-4o context.
   // When LLM preprocessing was used, each email has a priority and summary
@@ -454,6 +472,7 @@ async function startVoiceAssistant(
   const topicRefs: BriefingTopicRef[] =
     briefingData?.topics.map((topic) => ({
       label: topic.label,
+      ...(topic.priority ? { priority: topic.priority } : {}),
       emails: topic.emails.map((se) => {
         const preprocessed = preprocessedMap.get(se.email.id);
         return {
@@ -655,23 +674,60 @@ async function startVoiceAssistant(
 
   // 11. Generate an initial greeting with real briefing context
   let greetingContext: string;
+  let greetingBranch: string;
   if (tracker && briefingData && briefingData.totalEmails > 0) {
     const progress = tracker.getProgress();
+    const highCount = briefingData.topics
+      .filter((t) => t.priority === 'high')
+      .reduce((s, t) => s + t.emails.length, 0);
+    const mediumCount = briefingData.topics
+      .filter((t) => t.priority === 'medium')
+      .reduce((s, t) => s + t.emails.length, 0);
+    const lowCount = briefingData.topics
+      .filter((t) => t.priority === 'low')
+      .reduce((s, t) => s + t.emails.length, 0);
+
+    let priorityBreakdown = '';
+    if (highCount > 0) {
+      priorityBreakdown += `${highCount} high-priority`;
+      if (mediumCount > 0 || lowCount > 0) {
+        priorityBreakdown += `, ${mediumCount} medium`;
+      }
+      if (lowCount > 0) {
+        priorityBreakdown += `, and ${lowCount} lower-priority`;
+      }
+    }
+
     greetingContext =
       `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. ` +
       `You have ${progress.totalEmails} new emails across ${progress.totalTopics} topics. ` +
-      `${briefingData.totalFlagged} are flagged as important. ` +
+      (priorityBreakdown
+        ? `The system has identified ${priorityBreakdown} emails. We'll start with the high-priority ones first. `
+        : `${briefingData.totalFlagged} are flagged as important. `) +
       `Start with the first email shown in your CURRENT BRIEFING POSITION.`;
+    greetingBranch = 'tracker-briefing';
   } else if (briefingData && briefingData.totalEmails > 0) {
     greetingContext =
       `Greet the user and start the briefing. Introduce yourself as their NexusAEC executive assistant. ` +
       `You have ${briefingData.totalEmails} new emails across ${briefingData.topics.length} topics. ` +
       `${briefingData.totalFlagged} are flagged as important. ` +
       `Topics to cover: ${topicLabels.join(', ')}.`;
+    greetingBranch = 'data-briefing';
   } else {
     greetingContext =
-      'Greet the user and start the morning briefing. Introduce yourself as their NexusAEC executive assistant.';
+      'Greet the user. Introduce yourself as Nexus, their NexusAEC executive assistant. ' +
+      'You have NO new emails in the last 24 hours. ' +
+      'Let the user know their inbox is clear and ask how you can help them today. ' +
+      'Do NOT invent, mention, or summarize any emails.';
+    greetingBranch = 'empty-inbox';
   }
+
+  logger.info('[voice-agent] Greeting branch selected', {
+    greetingBranch,
+    hasTracker: !!tracker,
+    totalEmails: briefingData?.totalEmails ?? 0,
+    sessionId: session.sessionId,
+  });
 
   logger.info('Generating initial greeting...');
   agentSession.generateReply({
@@ -681,10 +737,22 @@ async function startVoiceAssistant(
   // 12. Start periodic new-email check (every 60 seconds) if inbox awareness is available
   if (sessionHistoryId && inboxService) {
     const NEW_EMAIL_CHECK_INTERVAL_MS = 60_000;
+    let consecutiveAuthFailures = 0;
     const checkInterval = setInterval(() => {
       reasoningLLM
         .getReasoningLoop()
         .checkForNewEmails()
+        .then(({ authFailed }) => {
+          if (authFailed) {
+            consecutiveAuthFailures++;
+            if (consecutiveAuthFailures >= 3) {
+              clearInterval(checkInterval);
+              logger.warn('Stopped new-email check after 3 consecutive auth failures');
+            }
+          } else {
+            consecutiveAuthFailures = 0;
+          }
+        })
         .catch((err) => {
           logger.warn('Periodic new-email check failed', {
             error: err instanceof Error ? err.message : String(err),
@@ -734,6 +802,7 @@ async function processRemainingBatches(
     const newTopicRefs: BriefingTopicRef[] = result.clusters.map(
       (cluster: { label: string; priority: string; emails: PreprocessedEmail[] }) => ({
         label: cluster.label,
+        priority: cluster.priority as 'high' | 'medium' | 'low',
         emails: cluster.emails.map((pe: PreprocessedEmail) => ({
           emailId: pe.emailId,
           subject: pe.summary,

@@ -332,6 +332,26 @@ export function createStreamingConfig(options?: Partial<StreamingConfig>): Strea
 export function preprocessTextForTTS(text: string): string {
   let processed = text;
 
+  // Remove markdown formatting (bold, italic, headers, horizontal rules)
+  processed = processed.replace(/\*\*(.+?)\*\*/g, '$1');
+  processed = processed.replace(/\*(.+?)\*/g, '$1');
+  processed = processed.replace(/^#{1,6}\s+/gm, '');
+  processed = processed.replace(/^-{3,}$/gm, '');
+  processed = processed.replace(/\n{2,}/g, ' ');
+
+  // Remove emoji characters (Unicode emoji property)
+  // eslint-disable-next-line no-misleading-character-class
+  processed = processed.replace(/\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu, '');
+
+  // Remove dollar signs before numbers (e.g., "$2.01" → "2.01")
+  processed = processed.replace(/\$(\d)/g, '$1');
+
+  // Convert percent after numbers to spoken form (e.g., "50%" → "50 percent")
+  processed = processed.replace(/(\d)%/g, '$1 percent');
+
+  // Remove standalone currency symbols that TTS would verbalize
+  processed = processed.replace(/[$£€¥]/g, '');
+
   // Add slight pause after sentences
   processed = processed.replace(/\. /g, '. ... ');
 
@@ -349,6 +369,9 @@ export function preprocessTextForTTS(text: string): string {
 
   // Handle asset IDs (add hyphens for clarity)
   processed = processed.replace(/\b([A-Z])-?(\d+)\b/g, '$1 $2');
+
+  // Clean up extra whitespace from removals
+  processed = processed.replace(/\s{2,}/g, ' ').trim();
 
   return processed;
 }
