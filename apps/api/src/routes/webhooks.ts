@@ -5,6 +5,9 @@
  */
 
 import { createLogger } from '@nexus-aec/logger';
+import { WebhookReceiver } from 'livekit-server-sdk';
+
+import { getHashAll, getHashField, setHashField } from '../lib/redis-state';
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
@@ -97,7 +100,7 @@ interface WebhookErrorResponse {
 }
 
 // =============================================================================
-// Analytics Storage (In-memory for now)
+// Analytics Storage (Redis-backed)
 // =============================================================================
 
 interface RoomSession {
@@ -113,24 +116,33 @@ interface RoomSession {
   }>;
 }
 
-const roomSessions = new Map<string, RoomSession>();
+const ROOM_SESSIONS_KEY = 'nexus:room-sessions';
+const ROOM_SESSIONS_TTL = 24 * 60 * 60; // 24 hours
 
 // =============================================================================
 // Webhook Verification
 // =============================================================================
 
+let webhookReceiver: WebhookReceiver | null = null;
+
 /**
- * Verify LiveKit webhook signature
- * Note: In production, use proper HMAC verification with the API secret
+ * Get or create the WebhookReceiver singleton
  */
-async function verifyLiveKitWebhook(
-  _request: FastifyRequest,
-  _apiSecret: string
-): Promise<boolean> {
-  // TODO: Implement proper HMAC verification
-  // The Authorization header contains a JWT signed with the API secret
-  // For now, we skip verification in development
-  return true;
+function getWebhookReceiver(): WebhookReceiver | null {
+  if (webhookReceiver) {
+    return webhookReceiver;
+  }
+
+  const apiKey = process.env['LIVEKIT_API_KEY'] ?? '';
+  const apiSecret = process.env['LIVEKIT_API_SECRET'] ?? '';
+
+  if (!apiKey || !apiSecret) {
+    logger.warn('LiveKit API key/secret not configured — webhook verification disabled');
+    return null;
+  }
+
+  webhookReceiver = new WebhookReceiver(apiKey, apiSecret);
+  return webhookReceiver;
 }
 
 // =============================================================================
@@ -145,16 +157,41 @@ export function registerWebhookRoutes(app: FastifyInstance): void {
    * LiveKit webhook endpoint
    * POST /webhooks/livekit
    */
-  app.post<{ Body: LiveKitWebhookPayload }>(
-    '/webhooks/livekit',
-    async (request: FastifyRequest<{ Body: LiveKitWebhookPayload }>, reply: FastifyReply) => {
-      const apiSecret = process.env['LIVEKIT_API_SECRET'] ?? '';
+  app.addContentTypeParser(
+    'application/webhook+json',
+    { parseAs: 'string' },
+    (_req, body, done) => {
+      done(null, body);
+    }
+  );
 
-      // Verify webhook signature in production
+  app.post<{ Body: string | LiveKitWebhookPayload }>(
+    '/webhooks/livekit',
+    async (
+      request: FastifyRequest<{ Body: string | LiveKitWebhookPayload }>,
+      reply: FastifyReply
+    ) => {
+      // Verify webhook signature
+      const receiver = getWebhookReceiver();
+      const rawBody =
+        typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+      const authHeader = request.headers.authorization ?? (request.headers['authorize'] as string);
+
       if (process.env['NODE_ENV'] === 'production') {
-        const isValid = await verifyLiveKitWebhook(request, apiSecret);
-        if (!isValid) {
-          logger.warn('Invalid webhook signature', {});
+        if (!receiver) {
+          logger.error('Webhook receiver not configured', null, {});
+          return reply.status(500).send({
+            received: false,
+            error: 'Webhook verification not configured',
+            code: 'NOT_CONFIGURED',
+          } satisfies WebhookErrorResponse);
+        }
+
+        try {
+          await receiver.receive(rawBody, authHeader);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          logger.warn('Invalid webhook signature', { error: msg });
           return reply.status(401).send({
             received: false,
             error: 'Invalid webhook signature',
@@ -163,7 +200,10 @@ export function registerWebhookRoutes(app: FastifyInstance): void {
         }
       }
 
-      const payload = request.body;
+      const payload: LiveKitWebhookPayload =
+        typeof request.body === 'string'
+          ? (JSON.parse(request.body) as LiveKitWebhookPayload)
+          : request.body;
       const timestamp = new Date().toISOString();
 
       logger.info('LiveKit webhook received', {
@@ -204,14 +244,15 @@ export function registerWebhookRoutes(app: FastifyInstance): void {
     async (request, reply) => {
       const limit = parseInt(request.query.limit ?? '50', 10);
 
-      const sessions = Array.from(roomSessions.values())
+      const allSessions = await getHashAll<RoomSession>(ROOM_SESSIONS_KEY);
+      const sessions = Object.values(allSessions)
         .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
         .slice(0, limit);
 
       return reply.send({
         success: true,
         data: sessions,
-        total: roomSessions.size,
+        total: Object.keys(allSessions).length,
       });
     }
   );
@@ -224,7 +265,7 @@ export function registerWebhookRoutes(app: FastifyInstance): void {
     '/webhooks/livekit/sessions/:roomSid',
     async (request, reply) => {
       const { roomSid } = request.params;
-      const session = roomSessions.get(roomSid);
+      const session = await getHashField<RoomSession>(ROOM_SESSIONS_KEY, roomSid);
 
       if (!session) {
         return reply.status(404).send({
@@ -261,16 +302,28 @@ async function processLiveKitEvent(
 
   const roomSid = room.sid;
 
+  // Helper to load, modify, and save a session
+  const updateSession = async (
+    sid: string,
+    updater: (session: RoomSession) => void
+  ): Promise<void> => {
+    const session = await getHashField<RoomSession>(ROOM_SESSIONS_KEY, sid);
+    if (session) {
+      updater(session);
+      await setHashField(ROOM_SESSIONS_KEY, sid, session, ROOM_SESSIONS_TTL);
+    }
+  };
+
   switch (event) {
     case 'room_started': {
-      // Create new session
-      roomSessions.set(roomSid, {
+      const newSession: RoomSession = {
         roomSid,
         roomName: room.name,
         startedAt: timestamp,
         participants: [],
         events: [{ type: event, timestamp }],
-      });
+      };
+      await setHashField(ROOM_SESSIONS_KEY, roomSid, newSession, ROOM_SESSIONS_TTL);
 
       logger.info('Room session started', {
         roomSid,
@@ -280,9 +333,7 @@ async function processLiveKitEvent(
     }
 
     case 'room_finished': {
-      // Mark session as ended
-      const session = roomSessions.get(roomSid);
-      if (session) {
+      await updateSession(roomSid, (session) => {
         session.endedAt = timestamp;
         session.events.push({ type: event, timestamp });
 
@@ -292,23 +343,24 @@ async function processLiveKitEvent(
           duration: Date.now() - new Date(session.startedAt).getTime(),
           participantCount: session.participants.length,
         });
-      }
+      });
       break;
     }
 
     case 'participant_joined': {
-      const session = roomSessions.get(roomSid);
-      if (session && participant) {
-        if (!session.participants.includes(participant.identity)) {
-          session.participants.push(participant.identity);
-        }
-        session.events.push({
-          type: event,
-          timestamp,
-          data: {
-            identity: participant.identity,
-            name: participant.name,
-          },
+      if (participant) {
+        await updateSession(roomSid, (session) => {
+          if (!session.participants.includes(participant.identity)) {
+            session.participants.push(participant.identity);
+          }
+          session.events.push({
+            type: event,
+            timestamp,
+            data: {
+              identity: participant.identity,
+              name: participant.name,
+            },
+          });
         });
 
         logger.info('Participant joined', {
@@ -321,12 +373,13 @@ async function processLiveKitEvent(
     }
 
     case 'participant_left': {
-      const session = roomSessions.get(roomSid);
-      if (session && participant) {
-        session.events.push({
-          type: event,
-          timestamp,
-          data: { identity: participant.identity },
+      if (participant) {
+        await updateSession(roomSid, (session) => {
+          session.events.push({
+            type: event,
+            timestamp,
+            data: { identity: participant.identity },
+          });
         });
 
         logger.info('Participant left', {
@@ -339,16 +392,17 @@ async function processLiveKitEvent(
 
     case 'track_published':
     case 'track_unpublished': {
-      const session = roomSessions.get(roomSid);
-      if (session && track && participant) {
-        session.events.push({
-          type: event,
-          timestamp,
-          data: {
-            identity: participant.identity,
-            trackType: track.type,
-            trackSource: track.source,
-          },
+      if (track && participant) {
+        await updateSession(roomSid, (session) => {
+          session.events.push({
+            type: event,
+            timestamp,
+            data: {
+              identity: participant.identity,
+              trackType: track.type,
+              trackSource: track.source,
+            },
+          });
         });
 
         logger.debug('Track event', {
@@ -362,11 +416,9 @@ async function processLiveKitEvent(
     }
 
     default: {
-      // Log other events but don't process them specifically
-      const session = roomSessions.get(roomSid);
-      if (session) {
+      await updateSession(roomSid, (session) => {
         session.events.push({ type: event, timestamp });
-      }
+      });
       logger.debug('Unhandled webhook event', { event, roomSid });
     }
   }

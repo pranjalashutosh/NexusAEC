@@ -2,9 +2,12 @@
  * @nexus-aec/api - Sync Routes
  *
  * Handles synchronization of drafts and preferences between mobile and desktop clients.
+ * State is stored in Redis for Lambda/container compatibility.
  */
 
 import { createLogger } from '@nexus-aec/logger';
+
+import { deleteState, getState, setState } from '../lib/redis-state';
 
 import type { FastifyInstance } from 'fastify';
 
@@ -67,14 +70,13 @@ interface SyncErrorResponse {
 }
 
 // =============================================================================
-// In-Memory Storage (Replace with database in production)
+// Redis Key Helpers
 // =============================================================================
 
-// User drafts storage: Map<userId, DraftReference[]>
-const userDrafts = new Map<string, DraftReference[]>();
-
-// User preferences storage: Map<userId, UserPreferences>
-const userPreferences = new Map<string, UserPreferences>();
+const DRAFTS_PREFIX = 'nexus:drafts:';
+const PREFS_PREFIX = 'nexus:prefs:';
+const DRAFTS_TTL = 30 * 24 * 60 * 60; // 30 days
+const PREFS_TTL = 365 * 24 * 60 * 60; // 1 year
 
 // Default preferences
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -87,6 +89,24 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   theme: 'system',
   auditRetentionDays: 30,
 };
+
+async function getDrafts(userId: string): Promise<DraftReference[]> {
+  return (await getState<DraftReference[]>(`${DRAFTS_PREFIX}${userId}`)) ?? [];
+}
+
+async function saveDrafts(userId: string, drafts: DraftReference[]): Promise<void> {
+  await setState(`${DRAFTS_PREFIX}${userId}`, drafts, DRAFTS_TTL);
+}
+
+async function getPrefs(userId: string): Promise<UserPreferences> {
+  return (
+    (await getState<UserPreferences>(`${PREFS_PREFIX}${userId}`)) ?? { ...DEFAULT_PREFERENCES }
+  );
+}
+
+async function savePrefs(userId: string, prefs: UserPreferences): Promise<void> {
+  await setState(`${PREFS_PREFIX}${userId}`, prefs, PREFS_TTL);
+}
 
 // =============================================================================
 // Drafts Routes
@@ -107,11 +127,10 @@ export function registerSyncRoutes(app: FastifyInstance): void {
   app.get<{ Querystring: { userId?: string; status?: string } }>(
     '/sync/drafts',
     async (request, reply) => {
-      // In production, userId would come from authenticated session
       const userId = request.query.userId ?? 'default-user';
       const statusFilter = request.query.status;
 
-      let drafts = userDrafts.get(userId) ?? [];
+      let drafts = await getDrafts(userId);
 
       // Apply status filter if provided
       if (statusFilter) {
@@ -141,7 +160,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       const userId = request.query.userId ?? 'default-user';
       const { draftId } = request.params;
 
-      const drafts = userDrafts.get(userId) ?? [];
+      const drafts = await getDrafts(userId);
       const draft = drafts.find((d) => d.id === draftId);
 
       if (!draft) {
@@ -178,7 +197,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       } satisfies SyncErrorResponse);
     }
 
-    const currentDrafts = userDrafts.get(userId) ?? [];
+    const currentDrafts = await getDrafts(userId);
     const syncedAt = new Date().toISOString();
 
     // Merge incoming drafts with existing (last-write-wins)
@@ -199,7 +218,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       }
     }
 
-    userDrafts.set(userId, currentDrafts);
+    await saveDrafts(userId, currentDrafts);
 
     logger.info('Drafts synced', {
       userId,
@@ -240,9 +259,9 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       updatedAt: now,
     };
 
-    const currentDrafts = userDrafts.get(userId) ?? [];
+    const currentDrafts = await getDrafts(userId);
     currentDrafts.push(newDraft);
-    userDrafts.set(userId, currentDrafts);
+    await saveDrafts(userId, currentDrafts);
 
     logger.info('Draft created', { userId, draftId: newDraft.id });
 
@@ -265,7 +284,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
     const { draftId } = request.params;
     const updates = request.body.updates;
 
-    const currentDrafts = userDrafts.get(userId) ?? [];
+    const currentDrafts = await getDrafts(userId);
     const draftIndex = currentDrafts.findIndex((d) => d.id === draftId);
 
     const existingDraft = currentDrafts[draftIndex];
@@ -285,7 +304,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
     };
     currentDrafts[draftIndex] = updatedDraft;
 
-    userDrafts.set(userId, currentDrafts);
+    await saveDrafts(userId, currentDrafts);
 
     logger.info('Draft updated', { userId, draftId });
 
@@ -306,7 +325,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       const userId = request.query.userId ?? 'default-user';
       const { draftId } = request.params;
 
-      const currentDrafts = userDrafts.get(userId) ?? [];
+      const currentDrafts = await getDrafts(userId);
       const draftIndex = currentDrafts.findIndex((d) => d.id === draftId);
       const draftToDelete = currentDrafts[draftIndex];
 
@@ -322,7 +341,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       draftToDelete.status = 'deleted';
       draftToDelete.updatedAt = new Date().toISOString();
 
-      userDrafts.set(userId, currentDrafts);
+      await saveDrafts(userId, currentDrafts);
 
       logger.info('Draft deleted', { userId, draftId });
 
@@ -345,7 +364,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
   app.get<{ Querystring: { userId?: string } }>('/sync/preferences', async (request, reply) => {
     const userId = request.query.userId ?? 'default-user';
 
-    const prefs = userPreferences.get(userId) ?? { ...DEFAULT_PREFERENCES };
+    const prefs = await getPrefs(userId);
 
     logger.info('Preferences fetched', { userId });
 
@@ -366,7 +385,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       const { userId: bodyUserId, ...updates } = request.body;
       const userId = bodyUserId ?? 'default-user';
 
-      const currentPrefs = userPreferences.get(userId) ?? { ...DEFAULT_PREFERENCES };
+      const currentPrefs = await getPrefs(userId);
       const syncedAt = new Date().toISOString();
 
       // Check for conflict using lastSyncedAt
@@ -390,7 +409,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
         lastSyncedAt: syncedAt,
       };
 
-      userPreferences.set(userId, mergedPrefs);
+      await savePrefs(userId, mergedPrefs);
 
       logger.info('Preferences updated', { userId });
 
@@ -412,7 +431,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       const { userId: bodyUserId, ...updates } = request.body;
       const userId = bodyUserId ?? 'default-user';
 
-      const currentPrefs = userPreferences.get(userId) ?? { ...DEFAULT_PREFERENCES };
+      const currentPrefs = await getPrefs(userId);
       const syncedAt = new Date().toISOString();
 
       // Partial merge
@@ -422,7 +441,7 @@ export function registerSyncRoutes(app: FastifyInstance): void {
         lastSyncedAt: syncedAt,
       };
 
-      userPreferences.set(userId, mergedPrefs);
+      await savePrefs(userId, mergedPrefs);
 
       logger.info('Preferences patched', { userId, fields: Object.keys(updates) });
 
@@ -446,7 +465,8 @@ export function registerSyncRoutes(app: FastifyInstance): void {
       lastSyncedAt: new Date().toISOString(),
     };
 
-    userPreferences.set(userId, resetPrefs);
+    await deleteState(`${PREFS_PREFIX}${userId}`);
+    await savePrefs(userId, resetPrefs);
 
     logger.info('Preferences reset', { userId });
 

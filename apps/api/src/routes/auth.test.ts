@@ -159,7 +159,7 @@ describe('Auth Routes', () => {
 
     it('should return error when provider mismatch occurs', async () => {
       // Inject a state for GMAIL but call OUTLOOK callback
-      injectPendingState({
+      await injectPendingState({
         codeVerifier: 'test-verifier',
         state: 'test-state',
         redirectUri: 'http://localhost:3000/auth/google/callback',
@@ -235,7 +235,7 @@ describe('Auth Routes', () => {
 
     it('should return error when provider mismatch occurs', async () => {
       // Inject a state for OUTLOOK but call GMAIL callback
-      injectPendingState({
+      await injectPendingState({
         codeVerifier: 'test-verifier',
         state: 'test-state',
         redirectUri: 'http://localhost:3000/auth/microsoft/callback',

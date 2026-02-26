@@ -13,6 +13,10 @@ import {
 } from '@nexus-aec/email-providers';
 import { createLogger } from '@nexus-aec/logger';
 
+import { deleteState, getState, setState } from '../lib/redis-state';
+import { RedisTokenStorage } from '../lib/redis-token-storage';
+import { generateJWT } from '../middleware/auth';
+
 import type { EmailSource, OAuthState } from '@nexus-aec/email-providers';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
@@ -110,62 +114,41 @@ function getOAuthConfig(): {
 }
 
 // =============================================================================
-// State Management (In-memory for now, should use Redis in production)
+// State Management (Redis-backed for Lambda/container compatibility)
 // =============================================================================
 
-/**
- * Pending OAuth states awaiting callback
- * Key: state parameter, Value: OAuthState
- */
-const pendingOAuthStates = new Map<string, OAuthState>();
-
-/**
- * Completed OAuth results for mobile polling
- * Key: state parameter, Value: AuthSuccessResponse | AuthErrorResponse
- */
-const completedOAuthResults = new Map<string, AuthSuccessResponse | AuthErrorResponse>();
+const OAUTH_STATE_PREFIX = 'nexus:oauth-state:';
+const OAUTH_RESULT_PREFIX = 'nexus:oauth-result:';
+const OAUTH_STATE_TTL = 10 * 60; // 10 minutes
+const OAUTH_RESULT_TTL = 5 * 60; // 5 minutes
 
 /**
  * Store an OAuth state for later verification
  */
-function storePendingState(oauthState: OAuthState): void {
-  pendingOAuthStates.set(oauthState.state, oauthState);
-
-  // Auto-expire after 10 minutes
-  setTimeout(
-    () => {
-      pendingOAuthStates.delete(oauthState.state);
-    },
-    10 * 60 * 1000
-  );
+async function storePendingState(oauthState: OAuthState): Promise<void> {
+  await setState(`${OAUTH_STATE_PREFIX}${oauthState.state}`, oauthState, OAUTH_STATE_TTL);
 }
 
 /**
  * Retrieve and consume a pending OAuth state
  */
-function consumePendingState(state: string): OAuthState | undefined {
-  const oauthState = pendingOAuthStates.get(state);
+async function consumePendingState(state: string): Promise<OAuthState | undefined> {
+  const key = `${OAUTH_STATE_PREFIX}${state}`;
+  const oauthState = await getState<OAuthState>(key);
   if (oauthState) {
-    pendingOAuthStates.delete(state);
+    await deleteState(key);
   }
-  return oauthState;
+  return oauthState ?? undefined;
 }
 
 /**
  * Store a completed OAuth result for mobile polling
- * Auto-expires after 5 minutes
  */
-function storeCompletedResult(
+async function storeCompletedResult(
   state: string,
   result: AuthSuccessResponse | AuthErrorResponse
-): void {
-  completedOAuthResults.set(state, result);
-  setTimeout(
-    () => {
-      completedOAuthResults.delete(state);
-    },
-    5 * 60 * 1000
-  );
+): Promise<void> {
+  await setState(`${OAUTH_RESULT_PREFIX}${state}`, result, OAUTH_RESULT_TTL);
 }
 
 // =============================================================================
@@ -181,9 +164,11 @@ let googleProvider: GoogleOAuthProvider | null = null;
  */
 function getTokenManager(): TokenManager {
   if (!tokenManager) {
-    // File-based storage so tokens survive server restarts
+    const isProduction = process.env['NODE_ENV'] === 'production';
+    const storage = isProduction ? new RedisTokenStorage() : new FileTokenStorage();
+
     tokenManager = new TokenManager({
-      storage: new FileTokenStorage(),
+      storage,
       autoRefresh: true,
       onTokenRefresh: (userId, source) => {
         logger.info('Tokens refreshed', { userId, source });
@@ -266,7 +251,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       prompt: 'select_account',
     });
 
-    storePendingState(state);
+    await storePendingState(state);
 
     logger.info('Microsoft OAuth flow initiated', { stateId: state.state });
 
@@ -312,7 +297,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
       accessType: 'offline',
     });
 
-    storePendingState(state);
+    await storePendingState(state);
 
     logger.info('Google OAuth flow initiated', { stateId: state.state });
 
@@ -396,15 +381,17 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     const { state } = request.params;
 
     // Check if the result is ready
-    const result = completedOAuthResults.get(state);
+    const resultKey = `${OAUTH_RESULT_PREFIX}${state}`;
+    const result = await getState<AuthSuccessResponse | AuthErrorResponse>(resultKey);
     if (result) {
       // Consume the result (one-time read)
-      completedOAuthResults.delete(state);
+      await deleteState(resultKey);
       return reply.send(result);
     }
 
     // Check if the state is still pending (flow in progress)
-    if (pendingOAuthStates.has(state)) {
+    const pendingState = await getState<OAuthState>(`${OAUTH_STATE_PREFIX}${state}`);
+    if (pendingState) {
       return reply.status(202).send({ status: 'pending' });
     }
 
@@ -461,7 +448,7 @@ async function handleOAuthCallback(
   }
 
   // Validate state (CSRF protection)
-  const oauthState = consumePendingState(state);
+  const oauthState = await consumePendingState(state);
   if (!oauthState) {
     logger.warn('Invalid or expired state parameter', { source, stateParam: state });
     return reply.status(400).send({
@@ -544,11 +531,22 @@ async function handleOAuthCallback(
       hasEmail: !!email,
     });
 
+    // Issue JWT for the authenticated user
+    const jwtOptions: { email?: string; name?: string } = {};
+    if (email) {
+      jwtOptions.email = email;
+    }
+    if (displayName) {
+      jwtOptions.name = displayName;
+    }
+    const jwt = await generateJWT(userId, jwtOptions);
+
     // Build response (filter undefined values for exactOptionalPropertyTypes)
-    const response: AuthSuccessResponse = {
+    const response: AuthSuccessResponse & { token?: string } = {
       success: true,
       provider: source,
       userId,
+      token: jwt,
     };
     if (email) {
       response.email = email;
@@ -558,7 +556,7 @@ async function handleOAuthCallback(
     }
 
     // Store result for mobile polling
-    storeCompletedResult(state, response);
+    await storeCompletedResult(state, response);
 
     return reply.send(response);
   } catch (err) {
@@ -572,7 +570,7 @@ async function handleOAuthCallback(
     };
 
     // Store error result for mobile polling
-    storeCompletedResult(state, errorResponse);
+    await storeCompletedResult(state, errorResponse);
 
     return reply.status(500).send(errorResponse);
   }
@@ -586,8 +584,6 @@ async function handleOAuthCallback(
  * Reset singleton instances (for testing)
  */
 export function resetAuthState(): void {
-  pendingOAuthStates.clear();
-  completedOAuthResults.clear();
   tokenManager = null;
   microsoftProvider = null;
   googleProvider = null;
@@ -596,8 +592,8 @@ export function resetAuthState(): void {
 /**
  * Inject a pending state (for testing)
  */
-export function injectPendingState(oauthState: OAuthState): void {
-  pendingOAuthStates.set(oauthState.state, oauthState);
+export async function injectPendingState(oauthState: OAuthState): Promise<void> {
+  await storePendingState(oauthState);
 }
 
 /**

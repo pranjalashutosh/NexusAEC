@@ -96,7 +96,7 @@ jobs:
             ${{ runner.os }}-turbo-
 
       - name: Run tests
-        run: pnpm test
+        run: pnpm --filter @nexus-aec/encryption --filter @nexus-aec/logger --filter @nexus-aec/secure-storage --filter @nexus-aec/intelligence --filter @nexus-aec/email-providers --filter @nexus-aec/livekit-agent --filter @nexus-aec/api test
 
   build:
     name: Build

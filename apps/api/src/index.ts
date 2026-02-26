@@ -5,6 +5,7 @@ import { createLogger } from '@nexus-aec/logger';
 import { config } from 'dotenv';
 
 import { createApp } from './app';
+import { disconnectRedis } from './lib/redis';
 
 // Load .env — check cwd first (monorepo root), then walk up from package dir
 const envCandidates = [
@@ -29,6 +30,27 @@ async function main(): Promise<void> {
 
   await app.listen({ port, host });
   logger.info('API server started', { port, host });
+
+  // Graceful shutdown: drain HTTP connections, then disconnect Redis
+  const shutdown = async (signal: string) => {
+    logger.info('Received shutdown signal', { signal });
+    try {
+      await app.close();
+      logger.info('HTTP server closed');
+    } catch (err) {
+      logger.error('Error closing HTTP server', err instanceof Error ? err : null, {});
+    }
+    try {
+      await disconnectRedis();
+      logger.info('Redis disconnected');
+    } catch (err) {
+      logger.error('Error disconnecting Redis', err instanceof Error ? err : null, {});
+    }
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 }
 
 main().catch((error: unknown) => {
