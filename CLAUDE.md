@@ -124,13 +124,40 @@ via a multi-layer persistence system:
   `knowledgeEntries` is passed into pipeline options.
 - **Mute/VIP persistence:** `executeMuteSender` and `executePrioritizeVip` in
   `email-tools.ts` fire-and-forget persist to `PreferencesStore` via
-  `setPreferencesStore()`. Wired in `agent.ts` after `initializeFromPreferences`.
+  `setPreferencesStore()`. Wired in `agent.ts` after
+  `initializeFromPreferences`.
 - **Sender preferences in reasoning prompt:** `senderPreferences` from
   `SenderProfileStore.synthesizePreferences()` is injected into the system
   prompt's CURRENT CONTEXT section as "LEARNED SENDER PATTERNS".
 - **Dual-write durability:** `UserKnowledgeStore.append()` uses
   `Promise.allSettled()` — succeeds if at least one backend writes.
   `writeToSupabase()` retries 2x with exponential backoff.
+
+#### Design Motivations
+
+Why the cross-session memory system works the way it does:
+
+- **Redis race condition:** `lazyConnect` mode meant reads could fire before the
+  connection completed. Solved by `connectPromise` + `waitForReady()` in
+  `UserKnowledgeStore` — all reads/writes await the connection promise first.
+- **Knowledge must load before pipeline:** Rules like "never show Quora emails"
+  need to be available _before_ `runBriefingPipeline()` fetches and processes
+  emails. `agent.ts` loads `knowledgeEntries` early so `extractFilterRules()`
+  can apply them during pipeline execution, not after.
+- **Dual-write for high availability:** A single backend failure (Redis down,
+  Supabase timeout) shouldn't lose user knowledge. `Promise.allSettled()`
+  succeeds if either backend writes. Supabase gets 2x retry with exponential
+  backoff for transient failures.
+- **Mute/VIP must survive reconnects:** Without persistence, a "mute this
+  sender" command only lasted the current session. Fire-and-forget writes to
+  `PreferencesStore` make them durable without blocking voice interaction.
+- **`recall_knowledge` was a stub:** The tool existed but returned "no documents
+  uploaded." Now it keyword-searches the user's `KnowledgeDocument` entries with
+  a smart fallback (returns all entries if document is small, ≤30 entries).
+- **Raw memory entries shouldn't be read verbatim:** After `recall_knowledge`
+  executes, a follow-up `callLLM()` in `reasoning-loop.ts` lets GPT-4o
+  synthesize findings into natural speech instead of reading
+  `[rule] Never show Quora emails` verbatim.
 
 ### Briefing Pipeline
 
@@ -276,3 +303,6 @@ current work. All tests must pass — zero tolerance for known failures.
   `severity` field (can be `null` when below threshold).
 - `ScoringReason` uses `description` (not `reason`) for the human-readable
   explanation field.
+- `UserKnowledgeStore` uses `lazyConnect` Redis — always call `waitForReady()`
+  before any read/write operation, or reads will race against the connection and
+  silently return empty results.

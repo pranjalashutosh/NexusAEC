@@ -19,8 +19,9 @@ import { generateRoomName } from '../../services/livekit-token';
 
 interface BriefingStats {
   newCount: number;
-  vipCount: number;
-  urgentCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
 }
 
 import type { RootStackScreenProps } from '../../types/navigation';
@@ -61,8 +62,9 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
         if (data.success) {
           setBriefingStats({
             newCount: data.newCount,
-            vipCount: data.vipCount,
-            urgentCount: data.urgentCount,
+            highCount: data.highCount,
+            mediumCount: data.mediumCount,
+            lowCount: data.lowCount,
           });
         }
       }
@@ -237,7 +239,8 @@ export function BriefingRoomScreen({ navigation, route }: Props): React.JSX.Elem
                 {briefingStats.newCount} unread
               </Text>
               <Text style={[styles.topicProgress, { color: colors.textSecondary }]}>
-                {briefingStats.vipCount} VIP · {briefingStats.urgentCount} urgent
+                {briefingStats.highCount} high · {briefingStats.mediumCount} medium ·{' '}
+                {briefingStats.lowCount} low
               </Text>
             </>
           ) : (

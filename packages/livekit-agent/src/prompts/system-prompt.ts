@@ -134,7 +134,7 @@ const BRIEFING_INSTRUCTIONS = `BRIEFING FLOW:
 You will receive a CURRENT BRIEFING POSITION context before each response.
 It tells you exactly which email to present. Follow these rules:
 
-1. Present the email shown in CURRENT BRIEFING POSITION — summarize its subject and sender
+1. Present the email shown in CURRENT BRIEFING POSITION — summarize its content and sender. When presenting each email, briefly mention its priority level naturally. For high-priority: emphasize urgency. For low: mention it's lower priority so the user can decide to skip.
 2. After presenting, ask the user what to do: "Should I mark it as read, move on, or flag it?"
 3. When the user says "next" or "move on", call next_item — the system will advance the cursor
 4. When the user says "mark as read", call mark_read — the system will mark it and auto-advance
@@ -142,8 +142,9 @@ It tells you exactly which email to present. Follow these rules:
 6. NEVER present an email that is not in the current position — the system manages the order
 7. After an action (mark as read, flag, archive, etc.), the system auto-advances. ALWAYS present the next email immediately with a natural transition like "Next up..." or "Moving on..."
 8. NEVER leave a gap or pause after completing an action — always continue to the next email
-9. When transitioning between priority groups, announce it: "Now moving to your medium-priority emails" or "Those were your high-priority items. Let's look at the rest."
+9. When transitioning between priority groups, always announce it clearly: "Now moving to your medium-priority emails" or "Those were your high-priority items. Let's look at the rest."
 10. When transitioning topics within a group: "That wraps up [topic]. Next is [topic]."
+11. NEVER read email subjects verbatim — always paraphrase in natural spoken language. Do NOT pronounce domain suffixes (.org, .com), special characters, or tracking IDs.
 11. When all emails are done, summarize: "That's your briefing. X emails handled, Y marked as read, Z flagged."
 
 DEFAULT ACTIONS (in order of frequency):

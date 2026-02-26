@@ -8,7 +8,7 @@
 
 import { createLogger } from '@nexus-aec/logger';
 
-import { getPrebriefingStatus, storePrebriefing } from '../services/briefing-precompute';
+import { getPrebriefingStatus, runPrecomputation } from '../services/briefing-precompute';
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
@@ -39,15 +39,12 @@ export function registerBriefingRoutes(app: FastifyInstance): void {
 
       logger.info('Pre-compute request received', { userId });
 
-      // Store a placeholder to indicate computation is in progress.
-      // The actual computation would be triggered by the email services
-      // which are not available in the API layer directly.
-      // For now, this endpoint signals intent and the agent picks it up.
-      await storePrebriefing(userId, {
-        briefingJson: '{}',
-        remainingBatchesJson: '[]',
-        computedAt: new Date().toISOString(),
-        emailCount: 0,
+      // Fire and forget — don't block the response
+      void runPrecomputation(userId).catch((err) => {
+        logger.warn('Pre-computation failed', {
+          userId,
+          error: err instanceof Error ? err.message : String(err),
+        });
       });
 
       return reply.send({ accepted: true });

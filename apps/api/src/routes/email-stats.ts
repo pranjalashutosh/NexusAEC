@@ -49,8 +49,9 @@ interface StatsQuery {
 interface EmailStatsResponse {
   success: true;
   newCount: number;
-  vipCount: number;
-  urgentCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
 }
 
 /**
@@ -134,8 +135,9 @@ async function createAdaptersForUser(userId: string): Promise<AdapterCreationRes
  */
 async function fullFetchStats(
   adapters: UserAdapters,
-  vipList: string[]
-): Promise<{ newCount: number; vipCount: number; urgentCount: number }> {
+  _vipList: string[],
+  userId?: string
+): Promise<{ newCount: number; highCount: number; mediumCount: number; lowCount: number }> {
   const inbox = new UnifiedInboxService(adapters.providers, {
     continueOnError: true,
     defaultPageSize: 50,
@@ -147,14 +149,22 @@ async function fullFetchStats(
   const emails = result.items;
   const newCount = emails.length;
 
-  const vipCount =
-    vipList.length > 0
-      ? emails.filter((e) => vipList.some((vip) => e.from.email.toLowerCase().includes(vip))).length
-      : 0;
+  // Try to get LLM-derived priority counts from Redis
+  if (userId) {
+    const cache = getStatsCache();
+    const priorityCounts = await cache.getPriorityCounts(userId);
+    if (priorityCounts) {
+      return {
+        newCount,
+        highCount: priorityCounts.high,
+        mediumCount: priorityCounts.medium,
+        lowCount: priorityCounts.low,
+      };
+    }
+  }
 
-  const urgentCount = emails.filter((e) => e.isFlagged || e.importance === 'high').length;
-
-  return { newCount, vipCount, urgentCount };
+  // No LLM priority counts available — all unclassified shown as low
+  return { newCount, highCount: 0, mediumCount: 0, lowCount: newCount };
 }
 
 // =============================================================================
@@ -225,7 +235,7 @@ async function updateSyncCursors(
   adapters: UserAdapters,
   cache: EmailStatsCache,
   userId: string,
-  stats: { newCount: number; vipCount: number; urgentCount: number }
+  stats: { newCount: number; highCount: number; mediumCount: number; lowCount: number }
 ): Promise<void> {
   const lastStats: CachedStats = { ...stats, cachedAt: new Date().toISOString() };
 
@@ -297,8 +307,9 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
             return reply.send({
               success: true,
               newCount: cached.newCount,
-              vipCount: cached.vipCount,
-              urgentCount: cached.urgentCount,
+              highCount: cached.highCount,
+              mediumCount: cached.mediumCount,
+              lowCount: cached.lowCount,
             } satisfies EmailStatsResponse);
           }
         }
@@ -312,8 +323,9 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
           return reply.send({
             success: true,
             newCount: 0,
-            vipCount: 0,
-            urgentCount: 0,
+            highCount: 0,
+            mediumCount: 0,
+            lowCount: 0,
             ...(requiresReauth ? { requiresReauth: true } : {}),
           });
         }
@@ -334,8 +346,9 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
               // Refresh the stats cache TTL
               await cache.setStats(userId, vipHash, {
                 newCount: lastStats.newCount,
-                vipCount: lastStats.vipCount,
-                urgentCount: lastStats.urgentCount,
+                highCount: lastStats.highCount,
+                mediumCount: lastStats.mediumCount,
+                lowCount: lastStats.lowCount,
               });
 
               logger.info('Stats served from sync cursor (no changes)', {
@@ -346,8 +359,9 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
               return reply.send({
                 success: true,
                 newCount: lastStats.newCount,
-                vipCount: lastStats.vipCount,
-                urgentCount: lastStats.urgentCount,
+                highCount: lastStats.highCount,
+                mediumCount: lastStats.mediumCount,
+                lowCount: lastStats.lowCount,
               } satisfies EmailStatsResponse);
             }
           }
@@ -356,7 +370,7 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
         // =====================================================================
         // Full fetch (same as original flow)
         // =====================================================================
-        const stats = await fullFetchStats(adapters, vipList);
+        const stats = await fullFetchStats(adapters, vipList, userId);
 
         // Cache the results
         await cache.setStats(userId, vipHash, stats);
@@ -365,8 +379,9 @@ export function registerEmailStatsRoutes(app: FastifyInstance): void {
         logger.info('Email stats fetched (full)', {
           userId,
           newCount: stats.newCount,
-          vipCount: stats.vipCount,
-          urgentCount: stats.urgentCount,
+          highCount: stats.highCount,
+          mediumCount: stats.mediumCount,
+          lowCount: stats.lowCount,
         });
 
         return reply.send({

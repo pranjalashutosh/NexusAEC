@@ -28,8 +28,9 @@ type Props = RootStackScreenProps<'Home'>;
 
 interface EmailStats {
   newCount: number;
-  vipCount: number;
-  urgentCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
 }
 
 export function HomeScreen({ navigation }: Props): React.JSX.Element {
@@ -71,8 +72,9 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
           } else {
             setEmailStats({
               newCount: data.newCount,
-              vipCount: data.vipCount,
-              urgentCount: data.urgentCount,
+              highCount: data.highCount,
+              mediumCount: data.mediumCount,
+              lowCount: data.lowCount,
             });
           }
         }
@@ -85,6 +87,28 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
       setStatsLoading(false);
     }
   }, [userId, hasValidAccount, preferences.vips, markAccountExpired]);
+
+  // Trigger briefing pre-computation when account is valid
+  useEffect(() => {
+    if (!userId || !hasValidAccount) {
+      return;
+    }
+
+    const apiUrl = getApiBaseUrl();
+    // Fire and forget — triggers background LLM processing
+    void fetch(`${apiUrl}/briefing/precompute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    }).catch(() => {});
+
+    // Re-fetch stats after delay to pick up LLM priority counts
+    const timer = setTimeout(() => {
+      void fetchEmailStats();
+    }, 12000);
+
+    return () => clearTimeout(timer);
+  }, [userId, hasValidAccount]); // Intentionally excludes fetchEmailStats to avoid re-triggering precompute
 
   // Fetch stats when account becomes valid (e.g. after reconnect)
   useEffect(() => {
@@ -154,18 +178,18 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
             ) : (
               <>
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{emailStats?.newCount ?? 0}</Text>
-                  <Text style={styles.statLabel}>New</Text>
+                  <Text style={styles.statValue}>{emailStats?.highCount ?? 0}</Text>
+                  <Text style={styles.statLabel}>High</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{emailStats?.vipCount ?? 0}</Text>
-                  <Text style={styles.statLabel}>VIP</Text>
+                  <Text style={styles.statValue}>{emailStats?.mediumCount ?? 0}</Text>
+                  <Text style={styles.statLabel}>Medium</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{emailStats?.urgentCount ?? 0}</Text>
-                  <Text style={styles.statLabel}>Urgent</Text>
+                  <Text style={styles.statValue}>{emailStats?.lowCount ?? 0}</Text>
+                  <Text style={styles.statLabel}>Low</Text>
                 </View>
               </>
             )}

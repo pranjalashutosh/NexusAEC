@@ -8,6 +8,8 @@
  * Cuts LLM calls per email from 2 to 1.
  */
 
+import { cleanSubjectForVoice } from './voice-utils.js';
+
 import type { BriefingEmailRef } from '../reasoning/reasoning-loop.js';
 
 // =============================================================================
@@ -79,7 +81,7 @@ export function generateTransition(
 
   const summary = nextEmail.summary
     ? nextEmail.summary
-    : `${nextEmail.subject} from ${nextEmail.from}`;
+    : `${cleanSubjectForVoice(nextEmail.subject)} from ${nextEmail.from}`;
 
   return `${ack}${groupTransition} Next up: ${summary}${priorityLabel}`.trim();
 }

@@ -23,6 +23,7 @@ import {
   EmailMetadata,
 } from '@nexus-aec/intelligence';
 import { createLogger } from '@nexus-aec/logger';
+import Redis from 'ioredis';
 
 import { BriefedEmailStore } from './briefing/briefed-email-store.js';
 import { BriefingSessionTracker } from './briefing/briefing-session-tracker.js';
@@ -320,6 +321,24 @@ export function createVoiceAgent(config: AgentConfig) {
             remainingBatches: remainingBatches.length,
             sessionId,
           });
+          // Store priority counts in Redis for mobile app
+          if (briefingData) {
+            const highCount = briefingData.topics
+              .filter((t) => t.priority === 'high')
+              .reduce((s, t) => s + t.emails.length, 0);
+            const mediumCount = briefingData.topics
+              .filter((t) => t.priority === 'medium')
+              .reduce((s, t) => s + t.emails.length, 0);
+            const lowCount = briefingData.topics
+              .filter((t) => t.priority === 'low')
+              .reduce((s, t) => s + t.emails.length, 0);
+
+            void storePriorityCountsInRedis(participant.identity, {
+              high: highCount,
+              medium: mediumCount,
+              low: lowCount,
+            });
+          }
         } catch (error) {
           logger.error(
             'Briefing pipeline failed, falling back to defaults',
@@ -375,7 +394,8 @@ export function createVoiceAgent(config: AgentConfig) {
           config.openai.apiKey,
           vipEmails,
           sessionTracker,
-          null // ReasoningLoop not directly accessible here; alerts via tracker
+          null, // ReasoningLoop not directly accessible here; alerts via tracker
+          participant.identity
         ).catch((err) => {
           logger.warn('Background batch processing failed', {
             error: err instanceof Error ? err.message : String(err),
@@ -801,8 +821,12 @@ async function processRemainingBatches(
   apiKey: string,
   vipEmails: string[],
   tracker: BriefingSessionTracker,
-  _reasoningLoop: ReasoningLoop | null
+  _reasoningLoop: ReasoningLoop | null,
+  userId?: string
 ): Promise<void> {
+  // Track cumulative priority counts from background batches
+  const bgCounts = { high: 0, medium: 0, low: 0 };
+
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i]!;
     const result = await preprocessBatch(batch, {
@@ -828,15 +852,21 @@ async function processRemainingBatches(
     );
     tracker.addTopics(newTopicRefs);
 
-    const highPriorityCount = result.emails.filter(
-      (e: PreprocessedEmail) => e.priority === 'high'
-    ).length;
+    // Accumulate priority counts
+    for (const email of result.emails) {
+      bgCounts[email.priority]++;
+    }
 
     logger.info('Background batch processed', {
       batchIndex: i + 1,
       emailCount: batch.length,
-      highPriority: highPriorityCount,
+      highPriority: result.emails.filter((e: PreprocessedEmail) => e.priority === 'high').length,
     });
+  }
+
+  // Update Redis with combined priority counts (Batch 1 + background batches)
+  if (userId && (bgCounts.high > 0 || bgCounts.medium > 0 || bgCounts.low > 0)) {
+    void storePriorityCountsInRedis(userId, bgCounts);
   }
 }
 
@@ -938,6 +968,38 @@ export async function prewarm(proc: JobProcess): Promise<void> {
       'Failed to load configuration during prewarm',
       error instanceof Error ? error : null
     );
+  }
+}
+
+// =============================================================================
+// Priority Count Persistence
+// =============================================================================
+
+/**
+ * Store priority counts in Redis for the mobile app to consume.
+ * Uses the same key pattern as the API pre-computation service.
+ */
+async function storePriorityCountsInRedis(
+  userId: string,
+  counts: { high: number; medium: number; low: number }
+): Promise<void> {
+  const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
+  let redis: Redis | null = null;
+  try {
+    redis = new Redis(redisUrl, { maxRetriesPerRequest: 1, lazyConnect: true });
+    await redis.connect();
+    const key = `nexus:priority-counts:${userId}`;
+    await redis.setex(key, 1800, JSON.stringify(counts)); // 30-min TTL
+    logger.info('Priority counts stored in Redis', { userId, counts });
+  } catch (error) {
+    logger.warn('Failed to store priority counts', {
+      error: error instanceof Error ? error.message : String(error),
+      userId,
+    });
+  } finally {
+    if (redis) {
+      await redis.quit().catch(() => {});
+    }
   }
 }
 

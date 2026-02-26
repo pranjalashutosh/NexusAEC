@@ -20,8 +20,9 @@ const logger = createLogger({ baseContext: { component: 'email-stats-cache' } })
 
 export interface CachedStats {
   newCount: number;
-  vipCount: number;
-  urgentCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
   cachedAt: string; // ISO timestamp
 }
 
@@ -40,9 +41,11 @@ export interface SyncCursor {
 
 const STATS_KEY_PREFIX = 'nexus:emailstats:';
 const CURSOR_KEY_PREFIX = 'nexus:synccursor:';
+const PRIORITY_KEY_PREFIX = 'nexus:priority-counts:';
 
 const DEFAULT_STATS_TTL = 120; // 2 minutes
 const DEFAULT_CURSOR_TTL = 600; // 10 minutes
+const DEFAULT_PRIORITY_TTL = 1800; // 30 minutes
 
 // =============================================================================
 // Cache Service
@@ -162,6 +165,58 @@ export class EmailStatsCache {
   }
 
   // ---------------------------------------------------------------------------
+  // Priority Counts Cache (from LLM pipeline)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get cached LLM-derived priority counts for a user.
+   */
+  async getPriorityCounts(
+    userId: string
+  ): Promise<{ high: number; medium: number; low: number } | null> {
+    if (!this.client) {
+      return null;
+    }
+
+    try {
+      const key = `${PRIORITY_KEY_PREFIX}${userId}`;
+      const data = await this.client.get(key);
+      if (!data) {
+        return null;
+      }
+
+      return JSON.parse(data) as { high: number; medium: number; low: number };
+    } catch (error) {
+      logger.warn('Priority counts cache read failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Cache LLM-derived priority counts with 30-min TTL.
+   */
+  async setPriorityCounts(
+    userId: string,
+    counts: { high: number; medium: number; low: number },
+    ttlSeconds: number = DEFAULT_PRIORITY_TTL
+  ): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    try {
+      const key = `${PRIORITY_KEY_PREFIX}${userId}`;
+      await this.client.setex(key, ttlSeconds, JSON.stringify(counts));
+    } catch (error) {
+      logger.warn('Priority counts cache write failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Invalidation
   // ---------------------------------------------------------------------------
 
@@ -174,7 +229,11 @@ export class EmailStatsCache {
     }
 
     try {
-      const patterns = [`${STATS_KEY_PREFIX}${userId}:*`, `${CURSOR_KEY_PREFIX}${userId}:*`];
+      const patterns = [
+        `${STATS_KEY_PREFIX}${userId}:*`,
+        `${CURSOR_KEY_PREFIX}${userId}:*`,
+        `${PRIORITY_KEY_PREFIX}${userId}`,
+      ];
 
       for (const pattern of patterns) {
         const keys = await this.client.keys(pattern);

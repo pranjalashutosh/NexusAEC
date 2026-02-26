@@ -11,6 +11,8 @@
 
 import { createLogger } from '@nexus-aec/logger';
 
+import { cleanSubjectForVoice } from '../prompts/voice-utils.js';
+
 import type { BriefedEmailStore } from './briefed-email-store.js';
 import type { BriefingEmailRef, BriefingTopicRef } from '../reasoning/reasoning-loop.js';
 import type { SenderProfileStore, ProfileAction } from '@nexus-aec/intelligence';
@@ -504,26 +506,43 @@ export class BriefingSessionTracker {
     const flagLabel = currentEmail.isFlagged ? ' [FLAGGED]' : '';
 
     const priorityLabel = currentEmail.priority ? ` [${currentEmail.priority.toUpperCase()}]` : '';
-    const summaryLine = currentEmail.summary ? `Summary: ${currentEmail.summary}` : '';
+    const hasSummary = !!currentEmail.summary;
 
     // Detect priority group for announcements
     const topicPriority = this.getTopicPriority(progress.currentTopicIndex);
     const priorityGroupLine = topicPriority ? `Priority group: ${topicPriority.toUpperCase()}` : '';
+
+    // Build the email context: prefer summary over raw subject for voice
+    const emailContextLines: string[] = [];
+    if (hasSummary) {
+      emailContextLines.push(
+        `Current email from ${currentEmail.from}${priorityLabel}${flagLabel} (email_id: ${currentEmail.emailId})`,
+        `Summary: ${currentEmail.summary}`,
+        `Raw subject (reference only, do NOT read aloud): ${currentEmail.subject}`
+      );
+    } else {
+      const cleanedSubject = cleanSubjectForVoice(currentEmail.subject);
+      emailContextLines.push(
+        `Current email: "${cleanedSubject}" from ${currentEmail.from}${flagLabel}${priorityLabel} (email_id: ${currentEmail.emailId})`
+      );
+    }
+
+    // Build NEXT instruction based on whether summary exists
+    const nextInstruction = hasSummary
+      ? 'NEXT: Present this email naturally using the summary. Mention who it\'s from and its priority. Do NOT read the subject line. Mention the importance level naturally (e.g., "This is high-priority" for high, or "A lower-priority item" for low). Then ask: "Should I mark it as read, move on, or flag it?"'
+      : 'NEXT: Present this email naturally — mention sender, topic, and priority. Do NOT read special characters, URLs, or domain names aloud. Mention the importance level naturally (e.g., "This is high-priority" for high, or "A lower-priority item" for low). Then ask: "Should I mark it as read, move on, or flag it?"';
 
     return [
       'CURRENT BRIEFING POSITION:',
       `Topic ${progress.currentTopicIndex + 1} of ${progress.totalTopics}: "${progress.currentTopicLabel}"`,
       ...(priorityGroupLine ? [priorityGroupLine] : []),
       `Email ${progress.currentItemIndex + 1} of ${topicEmailCount} in this topic (${activeInTopic} remaining)`,
-      `Current email: "${currentEmail.subject}" from ${currentEmail.from}${flagLabel}${priorityLabel} (email_id: ${currentEmail.emailId})`,
-      ...(summaryLine ? [summaryLine] : []),
+      ...emailContextLines,
       `Progress: ${progress.emailsBriefed + progress.emailsActioned} of ${progress.totalEmails} handled, ${progress.emailsRemaining} remaining`,
       '',
       'MANDATORY: When the user says "next", "move on", "skip", "mark as read", "flag", "archive", or any action command, you MUST call the corresponding tool. NEVER just say "OK" or describe an action without a tool call.',
       '',
-      summaryLine
-        ? 'NEXT: Read the summary to the user naturally (do NOT read verbatim). Then ask: "Should I mark it as read, move on, or flag it?"'
-        : 'NEXT: Present THIS email to the user. Summarize its subject and sender, then ask: "Should I mark it as read, move on, or flag it?"',
+      nextInstruction,
     ].join('\n');
   }
 
@@ -556,8 +575,9 @@ export class BriefingSessionTracker {
           const flag = email.isFlagged ? ' [FLAGGED]' : '';
           const prio = email.priority ? ` [${email.priority.toUpperCase()}]` : '';
           const summary = email.summary ? ` | "${email.summary}"` : '';
+          const displaySubject = cleanSubjectForVoice(email.subject);
           lines.push(
-            `  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${email.subject}${flag}${prio}${summary}`
+            `  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${displaySubject}${flag}${prio}${summary}`
           );
         }
       } else {
