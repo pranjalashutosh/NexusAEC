@@ -70,10 +70,20 @@ pnpm infra:reset          # Reset all data and volumes
   (returns null if Redis unavailable)
 - OAuth tokens stored via `FileTokenStorage` →
   `apps/api/.nexus-data/tokens.json`
-- Briefing routes: `POST /briefing/precompute` (triggers background
-  computation), `GET /briefing/status/:userId` (returns `{ ready, emailCount }`)
-- Pre-computation service in `src/services/briefing-precompute.ts` — stores
-  results in Redis with 30-min TTL, 15-min freshness window
+- Briefing routes: `POST /briefing/precompute` (triggers background LLM
+  pipeline), `GET /briefing/status/:userId` (returns
+  `{ ready, emailCount, priorityCounts? }`)
+- Pre-computation service in `src/services/briefing-precompute.ts` —
+  `runPrecomputation(userId)` creates email adapters, fetches unread emails,
+  runs `presortEmails()` + `preprocessEmails()` from `@nexus-aec/intelligence`,
+  computes priority counts, and stores results in Redis with 30-min TTL, 15-min
+  freshness window. Requires `OPENAI_API_KEY` env var.
+- Email stats endpoint (`GET /email/stats`) returns
+  `{ newCount, highCount, mediumCount, lowCount }` — priority counts come from
+  Redis (`nexus:priority-counts:{userId}`) when available, otherwise all unread
+  shown as `lowCount`.
+- `EmailStatsCache` has `getPriorityCounts()`/`setPriorityCounts()` methods for
+  the `nexus:priority-counts:{userId}` key (30-min TTL).
 
 ### Email Providers (packages/email-providers)
 
@@ -104,6 +114,26 @@ pnpm infra:reset          # Reset all data and volumes
   save_to_memory, recall_knowledge), saving ~130 tokens per call
 - `batch_action` tool for bulk operations ("archive all LinkedIn", "mark all
   newsletters as read") — supports `archive`, `mark_read`, `flag` actions
+
+#### Voice Quality
+
+Natural voice output is ensured by several mechanisms:
+
+- **`cleanSubjectForVoice()`** in `src/prompts/voice-utils.ts`: Strips URLs,
+  email addresses, domain suffixes (.org, .com), tracking IDs ([JIRA-123]),
+  converts `$N` to "N dollars" and `%` to "percent", collapses whitespace. Used
+  by `buildCursorContext()`, `buildCompactEmailReference()`, and
+  `transition-generator.ts` fallback path.
+- **Cursor context prefers summaries:** When an LLM summary exists,
+  `buildCursorContext()` shows it as primary with the raw subject marked
+  "reference only, do NOT read aloud". When no summary exists, uses
+  `cleanSubjectForVoice()` on the raw subject.
+- **Priority mention instructions:** Both the cursor context NEXT instruction
+  and `BRIEFING_INSTRUCTIONS` in system-prompt.ts instruct GPT-4o to mention
+  priority levels naturally ("This is high-priority" / "A lower-priority item")
+  and to never read subjects verbatim.
+- **Agent stores priority counts in Redis** after both initial pipeline and
+  background batch processing, so the mobile app can display them.
 
 #### Cross-Session Memory
 
@@ -208,7 +238,10 @@ The briefing pipeline (`src/briefing/briefing-pipeline.ts`) has dual mode:
 - **Redis schemas:** `nexus:sender:{userId}:{hash}` (sender profiles, 90-day
   TTL), `nexus:prebriefing:{userId}` (pre-computed briefing cache, 30-min TTL),
   `nexus:briefed:{userId}` (briefed email records, 7-day TTL),
-  `nexus:knowledge:{userId}` (user knowledge document, no TTL)
+  `nexus:knowledge:{userId}` (user knowledge document, no TTL),
+  `nexus:priority-counts:{userId}` (LLM-derived high/medium/low counts, 30-min
+  TTL — written by both API `runPrecomputation()` and voice agent after
+  pipeline)
 
 ### Mobile (apps/mobile)
 
@@ -217,6 +250,10 @@ The briefing pipeline (`src/briefing/briefing-pipeline.ts`) has dual mode:
 - iOS Simulator CANNOT render WebRTC audio — must test on physical device
 - Screens in `src/screens/main/`, use `useFocusEffect` for refetch on screen
   focus
+- Home screen shows LLM-derived priority counts (High / Medium / Low) instead of
+  raw metadata counts (New / VIP / Urgent). Triggers `POST /briefing/precompute`
+  on mount and re-fetches stats after 12s delay.
+- BriefingRoom topic card shows "X high · Y medium · Z low" breakdown.
 
 ## Code Conventions
 
