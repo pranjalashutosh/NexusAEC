@@ -1,0 +1,58 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# envs/prod — variable values (TEMPLATE — committed to git)
+#
+# Copy this file to terraform.tfvars (gitignored) and fill in real values.
+# NEVER paste real secrets into THIS file — it's tracked in git via the
+# `!*.tfvars.example` exception in .gitignore.
+#
+# For each secret, the AUTHORITATIVE source is listed in a comment so you
+# always know where to regenerate or rotate it.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── AWS basics (defaults are usually fine) ─────────────────────────────────────
+# aws_region     = "us-east-1"
+# aws_profile    = "nexusAEC-prod"
+# aws_account_id = "843792057554"
+# environment    = "prod"
+
+# ── Upstash (serverless Redis) ─────────────────────────────────────────────────
+# Sign up: https://console.upstash.com/
+# API keys: https://console.upstash.com/account/api
+upstash_email   = "you@example.com"
+upstash_api_key = "REPLACE_ME"
+
+# ── Custom domain (OPTIONAL — leave commented to use API Gateway default URL) ──
+# api_custom_domain = "api.nexusaec.com"
+# route53_zone_id   = "Z0123456789ABCDEFGH"   # only if DNS is in Route 53
+
+# ── App secrets ────────────────────────────────────────────────────────────────
+# OpenAI: https://platform.openai.com/api-keys
+openai_api_key = "sk-REPLACE_ME"
+
+# Deepgram: https://console.deepgram.com/
+deepgram_api_key = "REPLACE_ME"
+
+# ElevenLabs: https://elevenlabs.io/app/settings/api-keys
+elevenlabs_api_key  = "REPLACE_ME"
+elevenlabs_voice_id = "REPLACE_ME"
+
+# LiveKit Cloud: https://cloud.livekit.io/
+livekit_url        = "wss://your-project.livekit.cloud"
+livekit_api_key    = "REPLACE_ME"
+livekit_api_secret = "REPLACE_ME"
+
+# Supabase: https://supabase.com/dashboard/project/_/settings/api
+# IMPORTANT: use the SERVICE_ROLE key (orange "secret" badge), NOT the anon key.
+# Verify by decoding the JWT payload — should show "role":"service_role".
+#   echo "<key>" | awk -F. '{print $2}' | base64 -d
+supabase_url              = "https://your-project.supabase.co"
+supabase_service_role_key = "REPLACE_ME"
+
+# Google OAuth: https://console.cloud.google.com/apis/credentials
+google_client_id     = "REPLACE_ME.apps.googleusercontent.com"
+google_client_secret = "REPLACE_ME"
+
+# Microsoft OAuth: https://portal.azure.com/ → App registrations
+# (leave empty strings if Outlook integration is not needed yet)
+microsoft_client_id     = ""
+microsoft_client_secret = ""
