@@ -51,17 +51,25 @@ Fargate. This hybrid gives you near-zero cost at low usage and smooth scaling to
   for room dispatch.
 - Audio streaming requires sustained compute, not request/response.
 
-**Why ECS Fargate for the Agent (not EC2, not Railway):**
+**Why EC2 t3.small for the Agent (not ECS Fargate, not Railway):**
 
-- **Fargate = serverless containers**: No instance management. Pay-per-second
-  for vCPU/memory.
-- At 2 users, 1 agent task (2 vCPU, 4GB) handles everything. At 10+, add more
-  tasks — LiveKit Cloud auto-distributes rooms.
+- **~$15/mo vs ~$69/mo**: ECS Fargate at 2 vCPU / 4GB costs ~$69/mo always-on
+  — overkill for 1-2 users. EC2 t3.small (2 vCPU, 2GB) is ~$15/mo on-demand,
+  free tier eligible for 12 months on new AWS accounts.
+- **Burstable CPU fits the workload**: Voice sessions burst during STT/TTS/LLM
+  calls and idle between. t3 baseline + burst credits match this pattern.
+- **Downsizable**: After profiling memory usage, can resize to t3.micro (2 vCPU,
+  1GB, ~$7.50/mo) via AWS Console stop → change type → start. Note: 1GB may be
+  tight for concurrent audio streams + GPT-4o context.
+- **Simple deployment**: `docker pull` + `docker run` on the instance. No task
+  definitions, service configs, or cluster management needed.
 - The existing Dockerfile at `packages/livekit-agent/Dockerfile` deploys
   directly.
+- **Not Fargate**: At 1-2 users, container orchestration adds cost and
+  complexity without benefit. Migrate to ECS Fargate at 10+ concurrent users
+  when auto-scaling across tasks becomes necessary.
 - **Not Railway**: Railway works at 2 users but caps at 32 GB RAM and lacks true
   autoscaling. Migrating later wastes time.
-- **Not EC2**: Instance management overhead isn't worth it until 50+ users.
 
 **Why Upstash Redis (not ElastiCache):**
 
@@ -78,7 +86,7 @@ Fargate. This hybrid gives you near-zero cost at low usage and smooth scaling to
 | Service                   | Where                             | Why                                                   | Est. Cost/mo (2 users) | Est. Cost/mo (10 users) |
 | ------------------------- | --------------------------------- | ----------------------------------------------------- | ---------------------- | ----------------------- |
 | **API (Fastify 5)**       | Lambda + API Gateway              | Pay-per-request. CORS, rate limiting, TLS built-in.   | $0-3                   | $3-10                   |
-| **LiveKit Agent**         | ECS Fargate (1 task: 2 vCPU, 4GB) | Long-lived sessions. Scale tasks as users grow.       | $20-30                 | $60-150 (3-5 tasks)     |
+| **LiveKit Agent**         | EC2 t3.small (2 vCPU, 2GB)        | Long-lived sessions. Simple, cheap. Upgrade at 10+ users. | $15 (free tier yr 1) | $30-150 (larger instance or ECS) |
 | **Redis**                 | Upstash (serverless)              | No VPC needed for Lambda. Free tier. Pay-per-command. | $0-5                   | $5-15                   |
 | **PostgreSQL + pgvector** | Supabase Cloud (already in use)   | Already provisioned. Free tier for 2 users.           | $0                     | $0-25                   |
 | **LiveKit Cloud**         | Already provisioned               | Free tier: 5K participant-min/mo.                     | $0-5                   | $20-60                  |
@@ -91,7 +99,7 @@ Fargate. This hybrid gives you near-zero cost at low usage and smooth scaling to
 
 |                                    | 2 users         | 10 users         |
 | ---------------------------------- | --------------- | ---------------- |
-| AWS compute (Lambda + ECS)         | $20-35          | $65-165          |
+| AWS compute (Lambda + EC2)         | $15-18          | $45-165          |
 | AWS infra (Secrets, ECR, Route 53) | $6              | $8               |
 | Upstash Redis                      | $0-5            | $5-15            |
 | Supabase                           | $0              | $0-25            |
@@ -142,9 +150,9 @@ Choose **us-east-1** (N. Virginia):
 
 | Users | Change                                                                                                |
 | ----- | ----------------------------------------------------------------------------------------------------- |
-| 2→5   | No changes. Lambda auto-scales. Keep 1 agent task.                                                    |
-| 5→10  | Add 1-2 more agent ECS tasks.                                                                         |
-| 10→25 | Add agent ECS auto-scaling (CloudWatch metric: active sessions).                                      |
+| 2→5   | No changes. Lambda auto-scales. Monitor agent memory on t3.small.                                     |
+| 5→10  | Upgrade agent to t3.medium (4GB) or migrate to ECS Fargate with 2-3 tasks.                            |
+| 10→25 | Migrate agent to ECS Fargate with auto-scaling (CloudWatch metric: active sessions).                  |
 | 25→50 | Consider moving API from Lambda to ECS (if cold starts become an issue). Switch Redis to ElastiCache. |
 | 50+   | Full ECS for all services. EC2 Spot for agent tasks.                                                  |
 
@@ -315,8 +323,8 @@ Deploy to production: Lambda alias + ECS production service
     fileb://api-lambda.zip
 ```
 
-**3.3 Add Agent Docker build** — Uncomment the deploy-agent job (lines 162-180).
-Switch registry to ECR:
+**3.3 Add Agent Docker build + deploy** — Build and push to ECR, then deploy to
+EC2 via SSH:
 
 ```yaml
 - name: Login to Amazon ECR
@@ -326,12 +334,22 @@ Switch registry to ECR:
   with:
     push: true
     tags: ${{ steps.ecr.outputs.registry }}/nexus-agent:${{ github.sha }}
+- name: Deploy to EC2
+  run: |
+    ssh ec2-user@${{ secrets.AGENT_HOST }} \
+      "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ steps.ecr.outputs.registry }} && \
+       docker pull ${{ steps.ecr.outputs.registry }}/nexus-agent:${{ github.sha }} && \
+       docker stop nexus-agent || true && \
+       docker run -d --rm --name nexus-agent --env-file /etc/nexus/.env \
+         ${{ steps.ecr.outputs.registry }}/nexus-agent:${{ github.sha }}"
 ```
 
+At 10+ users, migrate to ECS Fargate and switch to
+`aws ecs update-service --force-new-deployment`.
+
 **3.4 Add deployment jobs** — Lambda: use aliases (`staging`/`production`)
-pointing to specific versions. Agent:
-`aws ecs update-service --force-new-deployment`. Production requires manual
-approval via GitHub `environment: production`.
+pointing to specific versions. Agent: SSH pull + restart on EC2 (see 3.3).
+Production requires manual approval via GitHub `environment: production`.
 
 **3.5 Add smoke tests** — After staging deploy:
 
@@ -340,9 +358,9 @@ approval via GitHub `environment: production`.
 - Check Redis connectivity via health endpoint
 
 **3.6 Rollback** — Lambda: point alias to previous version
-(`aws lambda update-alias --function-version N-1`). Agent:
-`aws ecs update-service` with previous image SHA. Both are instant,
-zero-downtime.
+(`aws lambda update-alias --function-version N-1`). Agent: SSH into EC2, pull
+previous image tag (`docker run` with prior SHA). Lambda rollback is instant;
+agent rollback has ~10s downtime during container restart.
 
 ---
 
@@ -379,12 +397,27 @@ OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE
 
 ### Management Approach
 
-**AWS Secrets Manager:** Native integration with both Lambda and ECS. Secrets
-stored encrypted, referenced in Lambda environment config and ECS task
-definitions, injected as environment variables at launch. No secrets in git, no
-secrets in Docker images. The K8s `secret.yaml` template at
+**AWS Secrets Manager:** Native integration with Lambda; EC2 retrieves secrets
+via IAM instance profile + AWS SDK at container startup. Secrets stored
+encrypted, referenced in Lambda environment config and EC2 env file
+(`/etc/nexus/.env`), injected as environment variables at launch. No secrets in
+git, no secrets in Docker images. The K8s `secret.yaml` template at
 `infra/k8s/livekit-agent/secret.yaml` documents the secret structure — translate
 to Secrets Manager entries.
+
+### Infrastructure as Code (Terraform)
+
+All AWS and Upstash infrastructure is managed via Terraform in
+`infra/terraform/`. This provides:
+
+- **Multi-provider management**: AWS provider for compute/networking/secrets +
+  Upstash provider for Redis — single `terraform apply` provisions everything.
+- **Reproducibility**: `terraform plan` shows exact changes before apply. Full
+  infrastructure can be destroyed and recreated from scratch.
+- **State tracking**: S3 backend with DynamoDB locking for remote state. Prevents
+  drift between actual infrastructure and declared configuration.
+- **Modules**: Separate modules for `lambda` (API), `ec2` (agent), `networking`
+  (VPC/SG), `secrets` (Secrets Manager), `upstash` (Redis).
 
 Cost: $0.40/secret/month + $0.05/10K API calls. For ~15 secrets = ~$6/month.
 
@@ -405,8 +438,8 @@ Cost: $0.40/secret/month + $0.05/10K API calls. For ~15 secrets = ~$6/month.
 ### Logging — CloudWatch Logs (Default) or Axiom (Better Querying)
 
 The `@nexus-aec/logger` package already outputs structured JSON in production
-with PII filtering. Both Lambda and ECS Fargate natively ship stdout to
-CloudWatch Logs — zero configuration needed.
+with PII filtering. Lambda natively ships stdout to CloudWatch Logs. EC2
+requires the CloudWatch agent to forward Docker container logs.
 
 **Option A: CloudWatch Logs (simplest)**
 
@@ -453,9 +486,10 @@ level is `error` or `fatal`, forward to Sentry with context.
 | OAuth token refresh failures | API auth logs                 | Any occurrence           |
 | Container memory             | CloudWatch Container Insights | > 85% of limit           |
 
-**Launch approach:** CloudWatch Container Insights for ECS metrics (CPU, memory,
-network) + CloudWatch Alarms for threshold alerts + Sentry for error tracking.
-No custom Prometheus/Grafana needed yet.
+**Launch approach:** CloudWatch agent on EC2 for instance metrics (CPU, memory,
+disk) + Docker container logs. CloudWatch Alarms for threshold alerts + Sentry
+for error tracking. No custom Prometheus/Grafana needed yet. Migrate to
+CloudWatch Container Insights when moving agent to ECS Fargate.
 
 ### PostHog for Product Analytics (Optional, Post-Launch)
 
@@ -483,10 +517,10 @@ handle multiple concurrent rooms, but each voice session is resource-intensive:
 
 | Concurrent Users | Infrastructure                                           | Changes Needed                                                                  |
 | ---------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| **2** (launch)   | Lambda (API) + 1 ECS agent task                          | Baseline. LiveKit Cloud handles room dispatch.                                  |
-| **2-5**          | Same                                                     | Lambda auto-scales. Agent handles 2-3 sessions per task.                        |
-| **5-10**         | Add 1-2 agent ECS tasks                                  | LiveKit Cloud auto-distributes rooms across workers.                            |
-| **10-25**        | Agent auto-scaling (3-5 tasks)                           | CloudWatch custom metric: active sessions. Auto-scale at 3 sessions/task.       |
+| **2** (launch)   | Lambda (API) + EC2 t3.small (agent)                      | Baseline. Single instance handles 2-3 concurrent sessions.                      |
+| **2-5**          | Same                                                     | Lambda auto-scales. Monitor agent memory, resize instance if needed.            |
+| **5-10**         | Upgrade agent to t3.medium (4GB) or migrate to ECS       | t3.medium for single-instance. ECS Fargate if multi-instance needed.            |
+| **10-25**        | Migrate to ECS Fargate with auto-scaling (3-5 tasks)     | CloudWatch custom metric: active sessions. Auto-scale at 3 sessions/task.       |
 | **25-50**        | Consider moving API to ECS. Switch Redis to ElastiCache. | Lambda cold starts may matter at scale. ElastiCache for predictable Redis cost. |
 | **50+**          | Full ECS for all. EC2 Spot for agent.                    | One ECS task per active session for isolation. ~40% cost savings with Spot.     |
 
@@ -536,7 +570,7 @@ pay-per-command is ~$5-15/mo. At 50+ users, switch to ElastiCache t3.micro
 
 | Item                             | Status                                                          | Fix Location                                 |
 | -------------------------------- | --------------------------------------------------------------- | -------------------------------------------- |
-| HTTPS/TLS                        | API Gateway (API) + ACM (Agent ALB if needed)                   | Custom domain setup                          |
+| HTTPS/TLS                        | API Gateway (API) + ACM cert. Agent connects outbound only.     | Custom domain setup                          |
 | CORS                             | Missing                                                         | `apps/api/src/app.ts` — P0 fix               |
 | Rate limiting                    | Missing                                                         | `apps/api/src/app.ts` — P0 fix               |
 | JWT auth middleware              | Built, not wired                                                | `apps/api/src/app.ts` — P0 fix               |
@@ -566,22 +600,34 @@ pay-per-command is ~$5-15/mo. At 50+ users, switch to ElastiCache t3.micro
 9. Enhanced health check (P1 #2.8) — `apps/api/src/routes/health.ts`
 10. Security headers (P1 #2.10) — `apps/api/src/app.ts`
 
-### Phase 2: AWS Infrastructure Setup (1 week)
+### Phase 2: AWS Infrastructure Setup via Terraform (1 week)
 
-1. Create AWS account/org, set up IAM roles for Lambda + ECS + ECR
-2. Create ECR repository for `nexus-agent`
-3. Create Lambda function for API (deploy as zip with `@fastify/aws-lambda`
+All infrastructure is managed via Terraform (AWS + Upstash providers). Terraform
+files live in `infra/terraform/`.
+
+1. Create AWS account, enable MFA, create IAM admin user (manual — cannot be
+   automated)
+2. Initialize Terraform project with AWS + Upstash providers, S3 backend for
+   remote state
+3. Terraform: IAM roles — Lambda execution role (Secrets Manager read,
+   CloudWatch Logs) + EC2 instance profile (ECR pull, Secrets Manager read,
+   CloudWatch Logs)
+4. Terraform: ECR repository for `nexus-agent`
+5. Terraform: Lambda function for API (deploy as zip with `@fastify/aws-lambda`
    handler)
-4. Create API Gateway (HTTP API) with custom domain + ACM certificate
-5. Create Upstash Redis instance (or provision during Phase 1 for local testing)
-6. Create ECS cluster (Fargate) in us-east-1
-7. Create ECS task definition for agent from existing Dockerfile + K8s resource
-   specs
-8. Create ECS service (Agent: 1 task initially)
-9. Configure Route 53 or external DNS for custom domain → API Gateway
-10. Store all secrets in AWS Secrets Manager, reference from Lambda + ECS config
+6. Terraform: API Gateway (HTTP API) with custom domain + ACM certificate
+7. Terraform: Upstash Redis database (us-east-1, TLS enabled) via Upstash
+   provider
+8. Terraform: EC2 t3.small instance for agent — security group (outbound-only:
+   LiveKit, Deepgram, ElevenLabs, OpenAI, Redis, Supabase; inbound: SSH from
+   deploy IP only), key pair, user data script to install Docker + CloudWatch
+   agent
+9. Terraform: Route 53 or external DNS for custom domain → API Gateway
+10. Terraform: AWS Secrets Manager entries, referenced from Lambda env config +
+    EC2 env file (`/etc/nexus/.env` populated at startup via user data script)
 11. Set up Sentry (API + Agent + Mobile SDKs)
-12. CloudWatch Logs enabled automatically for Lambda + ECS
+12. Install CloudWatch agent on EC2 for Docker container logs (Lambda logs are
+    automatic)
 13. End-to-end smoke test with real Gmail account
 
 ### Phase 3: CI/CD Automation (3-5 days)
@@ -618,6 +664,7 @@ After implementing each phase:
 
 **Phase 2 verification:**
 
+- `terraform plan` — no drift from applied state
 - `curl https://<YOUR_DOMAIN>/health` returns 200 with dependency status (Redis,
   Supabase checks)
 - Verify Lambda cold start is < 1s (check CloudWatch duration metric)
@@ -625,9 +672,11 @@ After implementing each phase:
 - Start a voice session from mobile → agent connects, STT/TTS/GPT-4o all
   functional
 - Verify Sentry receives a test error
-- Verify CloudWatch Logs show structured JSON from both Lambda and Agent ECS
-  task
-- Verify Upstash Redis is reachable from both Lambda and Agent
+- Verify CloudWatch Logs show structured JSON from Lambda and agent container on
+  EC2
+- Verify Upstash Redis is reachable from both Lambda and EC2 agent
+- SSH into EC2: `docker stats` shows agent memory usage < 1.5GB (validates
+  future t3.micro downsize feasibility)
 
 **Phase 3 verification:**
 
