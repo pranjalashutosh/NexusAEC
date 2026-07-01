@@ -48,16 +48,15 @@
     // Skip type checking of declaration files for performance
     "skipLibCheck": true,
 
-    // Path Mapping (for monorepo)
-    "baseUrl": ".",
+    // Path Mapping (for monorepo) — paths resolve relative to this tsconfig
     "paths": {
-      "@nexus-aec/shared-types": ["packages/shared-types/src/index.ts"],
-      "@nexus-aec/encryption": ["packages/encryption/src/index.ts"],
-      "@nexus-aec/secure-storage": ["packages/secure-storage/src/index.ts"],
-      "@nexus-aec/logger": ["packages/logger/src/index.ts"],
-      "@nexus-aec/email-providers": ["packages/email-providers/src/index.ts"],
-      "@nexus-aec/intelligence": ["packages/intelligence/src/index.ts"],
-      "@nexus-aec/livekit-agent": ["packages/livekit-agent/src/index.ts"]
+      "@nexus-aec/shared-types": ["./packages/shared-types/src/index.ts"],
+      "@nexus-aec/encryption": ["./packages/encryption/src/index.ts"],
+      "@nexus-aec/secure-storage": ["./packages/secure-storage/src/index.ts"],
+      "@nexus-aec/logger": ["./packages/logger/src/index.ts"],
+      "@nexus-aec/email-providers": ["./packages/email-providers/src/index.ts"],
+      "@nexus-aec/intelligence": ["./packages/intelligence/src/index.ts"],
+      "@nexus-aec/livekit-agent": ["./packages/livekit-agent/src/index.ts"]
     }
   },
   "exclude": [
