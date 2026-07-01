@@ -177,7 +177,7 @@ Process these ${batch.length} emails:
    - HIGH: Immediate attention, important people, time-sensitive, financial/legal
    - MEDIUM: Relevant but not urgent, can be handled today
    - LOW: Newsletters, notifications, automated, FYI-only
-3. SUMMARIZE each in one voice-friendly sentence (will be spoken aloud by a voice assistant — keep it natural and concise)
+3. SUMMARIZE each email's INTENT in 6 to 14 spoken words. The summary will be read aloud by a voice assistant. Rules: rephrase the email's intent in everyday spoken language; never copy the subject line verbatim; lead with a verb (wants, announces, is asking, shares, reminds, confirms); do not include URLs, tracking IDs, dates, money amounts, or the sender name. If the email has no clear intent, write a short generic phrase like "automated notification" or "promotional update" — never copy the subject.
 ${vipLine}${preferencesBlock}${knowledgeBlock}
 Return ONLY valid JSON with this exact structure:
 {
@@ -232,11 +232,14 @@ function parseBatchResponse(
       clusters: parsed.clusters,
     };
   } catch {
-    // Fallback: if LLM returns garbage, create a single cluster with all emails
+    // Fallback: if LLM returns garbage, create a single cluster with all emails.
+    // Do NOT use the raw subject as the summary — that's exactly what the
+    // voice agent must avoid speaking. Leave summary empty so downstream code
+    // takes the no-summary path (which speaks only sender + a neutral hint).
     const fallbackEmails: PreprocessedEmail[] = batch.map((e) => ({
       emailId: e.id,
       priority: e.isVip ? 'high' : ('medium' as const),
-      summary: `${e.subject} from ${e.from}`,
+      summary: '',
       clusterLabel: 'Inbox',
     }));
 
@@ -286,6 +289,7 @@ export async function preprocessBatch(
   const result = await client.complete(messages, {
     temperature: 0.3,
     maxTokens: 2000,
+    responseFormat: { type: 'json_object' },
   });
 
   return parseBatchResponse(result.content, options.batchIndex, batch);

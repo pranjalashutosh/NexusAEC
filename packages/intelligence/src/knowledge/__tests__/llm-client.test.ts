@@ -146,7 +146,7 @@ describe('LLMClient', () => {
         expect.objectContaining({
           model: 'gpt-4o-mini',
           temperature: 0.5,
-          max_tokens: 500,
+          max_completion_tokens: 500,
           top_p: 0.9,
           frequency_penalty: 0.5,
           presence_penalty: 0.5,
@@ -264,7 +264,7 @@ describe('LLMClient', () => {
         expect.objectContaining({
           model: 'gpt-4o-mini',
           temperature: 0.3,
-          max_tokens: 200,
+          max_completion_tokens: 200,
           stream: true,
         })
       );

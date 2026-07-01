@@ -71,6 +71,13 @@ export interface LLMCompletionOptions {
   stop?: string[];
 
   /**
+   * Response format. Pass `{ type: 'json_object' }` to force JSON output
+   * (the prompt must mention "JSON"). Prevents the model from wrapping
+   * structured output in markdown fences, which breaks JSON.parse downstream.
+   */
+  responseFormat?: { type: 'json_object' | 'text' };
+
+  /**
    * Enable streaming
    * Default: false
    */
@@ -415,7 +422,7 @@ export class LLMClient {
         model,
         messages: messages as ChatCompletionMessageParam[],
         temperature,
-        max_tokens: maxTokens,
+        max_completion_tokens: maxTokens,
         ...(options.topP !== undefined ? { top_p: options.topP } : {}),
         ...(options.frequencyPenalty !== undefined
           ? { frequency_penalty: options.frequencyPenalty }
@@ -424,6 +431,9 @@ export class LLMClient {
           ? { presence_penalty: options.presencePenalty }
           : {}),
         ...(options.stop !== undefined ? { stop: options.stop } : {}),
+        ...(options.responseFormat !== undefined
+          ? { response_format: options.responseFormat }
+          : {}),
       };
 
       const response = await this.client.chat.completions.create(request);
@@ -503,7 +513,7 @@ export class LLMClient {
         model,
         messages: messages as ChatCompletionMessageParam[],
         temperature,
-        max_tokens: maxTokens,
+        max_completion_tokens: maxTokens,
         ...(options.topP !== undefined ? { top_p: options.topP } : {}),
         ...(options.frequencyPenalty !== undefined
           ? { frequency_penalty: options.frequencyPenalty }
