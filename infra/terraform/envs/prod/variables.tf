@@ -142,6 +142,11 @@ variable "microsoft_client_id" {
   default     = ""
 }
 
+variable "api_base_url" {
+  description = "Public base URL of the API Gateway. Used by Lambda to build OAuth callback URLs."
+  type        = string
+}
+
 variable "microsoft_client_secret" {
   description = "Microsoft OAuth client secret."
   type        = string

@@ -64,6 +64,12 @@ module "lambda_api" {
   lambda_role_arn = module.iam.lambda_exec_role_arn
   package_path    = "${path.module}/../../builds/api-lambda.zip"
   secret_name     = module.secrets.api_secret_name
+
+  # OAuth callback URLs are built from API_BASE_URL. Without this, the Lambda
+  # falls back to http://localhost:3000 and Google redirects users into the void.
+  extra_environment = {
+    API_BASE_URL = var.api_base_url
+  }
 }
 
 module "api_gateway" {
@@ -74,5 +80,23 @@ module "api_gateway" {
   lambda_invoke_arn    = module.lambda_api.invoke_arn
 }
 
-# ── Agent path (EC2, Route53, CloudWatch) ─────────────────────────────────────
-# Wired in next pass.
+# ── Agent path: networking + EC2 ──────────────────────────────────────────────
+
+module "networking" {
+  source = "../../modules/networking"
+
+  name_prefix = local.name_prefix
+}
+
+module "ec2_agent" {
+  source = "../../modules/ec2-agent"
+
+  name_prefix           = local.name_prefix
+  aws_region            = var.aws_region
+  subnet_id             = module.networking.first_subnet_id
+  security_group_id     = module.networking.agent_security_group_id
+  instance_profile_name = module.iam.agent_ec2_instance_profile_name
+  secret_name           = module.secrets.agent_secret_name
+  ecr_registry          = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
+  ecr_repository        = module.ecr.repository_name
+}

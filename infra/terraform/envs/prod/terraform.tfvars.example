@@ -25,6 +25,10 @@ upstash_api_key = "REPLACE_ME"
 # api_custom_domain = "api.nexusaec.com"
 # route53_zone_id   = "Z0123456789ABCDEFGH"   # only if DNS is in Route 53
 
+# ── Public API URL (REQUIRED — used by Lambda to build OAuth callback URLs) ───
+# After first apply, get this from `terraform output api_base_url` and paste here.
+api_base_url = "https://REPLACE_ME.execute-api.us-east-1.amazonaws.com"
+
 # ── App secrets ────────────────────────────────────────────────────────────────
 # OpenAI: https://platform.openai.com/api-keys
 openai_api_key = "sk-REPLACE_ME"

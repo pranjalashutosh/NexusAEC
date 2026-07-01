@@ -59,3 +59,20 @@ output "upstash_redis_url" {
   value       = module.upstash.redis_url
   sensitive   = true
 }
+
+# ── Agent outputs ─────────────────────────────────────────────────────────────
+
+output "agent_instance_id" {
+  description = "EC2 instance ID. Connect: aws ssm start-session --target <this> --profile nexusAEC-prod"
+  value       = module.ec2_agent.instance_id
+}
+
+output "agent_public_ip" {
+  description = "Stable Elastic IP of the agent instance."
+  value       = module.ec2_agent.public_ip
+}
+
+output "agent_log_group" {
+  description = "CloudWatch Logs group for agent container output. Tail: aws logs tail <this> --follow"
+  value       = module.ec2_agent.log_group_name
+}

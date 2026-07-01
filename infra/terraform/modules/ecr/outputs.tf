@@ -12,3 +12,8 @@ output "repository_name" {
   description = "Name of the ECR repository."
   value       = aws_ecr_repository.agent.name
 }
+
+output "registry_id" {
+  description = "AWS account ID hosting the registry (used in registry hostname)."
+  value       = aws_ecr_repository.agent.registry_id
+}
