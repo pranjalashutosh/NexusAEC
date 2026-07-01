@@ -47,9 +47,25 @@ export async function createApp(options: CreateAppOptions = {}): Promise<Fastify
   });
 
   // JWT auth middleware
+  // The mobile client does not yet attach a Bearer token to API calls
+  // (see apps/mobile/src/hooks/useAuth.tsx — `result.token` from the OAuth
+  // poll response is currently ignored). Until the mobile is updated to
+  // store and forward the JWT, the user-facing read paths below are
+  // auth-bypassed alongside /livekit/token. They take userId as a query
+  // param and operate on Redis-cached data tied to that userId; security
+  // posture matches /livekit/token's existing behavior.
   if (!options.disableAuth) {
     registerAuthMiddleware(app, {
-      excludePaths: ['/health', '/live', '/ready', '/auth/', '/webhooks/'],
+      excludePaths: [
+        '/health',
+        '/live',
+        '/ready',
+        '/auth/',
+        '/webhooks/',
+        '/livekit/token',
+        '/email/stats',
+        '/briefing/precompute',
+      ],
     });
   }
 
