@@ -53,8 +53,8 @@ export function getApiBaseUrl(): string {
     return 'http://localhost:3000';
   }
 
-  // Production URL (update when deploying)
-  return 'https://api.nexusaec.com';
+  // Production URL — deployed API Gateway (update when a custom domain is mapped)
+  return 'https://z01cl8u3kf.execute-api.us-east-1.amazonaws.com';
 }
 
 /**
