@@ -277,6 +277,7 @@ export async function runPrecomputation(userId: string): Promise<void> {
   // Also store priority counts separately for quick access by email-stats endpoint
   const cache = new EmailStatsCache(getRedisClient());
   await cache.setPriorityCounts(userId, priorityCounts);
+  await cache.invalidateStats(userId);
 
   logger.info('Pre-computation completed', {
     userId,

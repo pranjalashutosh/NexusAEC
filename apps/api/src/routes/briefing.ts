@@ -39,15 +39,16 @@ export function registerBriefingRoutes(app: FastifyInstance): void {
 
       logger.info('Pre-compute request received', { userId });
 
-      // Fire and forget — don't block the response
-      void runPrecomputation(userId).catch((err) => {
+      try {
+        await runPrecomputation(userId);
+        return reply.send({ accepted: true, completed: true });
+      } catch (err) {
         logger.warn('Pre-computation failed', {
           userId,
           error: err instanceof Error ? err.message : String(err),
         });
-      });
-
-      return reply.send({ accepted: true });
+        return reply.send({ accepted: true, completed: false });
+      }
     }
   );
 
