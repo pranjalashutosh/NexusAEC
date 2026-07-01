@@ -42,6 +42,7 @@ Thumbs.db
 
 # Mobile
 apps/mobile/ios/Pods/
+apps/mobile/ios/**/xcuserdata/
 apps/mobile/android/.gradle/
 apps/mobile/android/app/build/
 *.keystore
