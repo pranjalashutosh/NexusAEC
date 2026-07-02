@@ -2,7 +2,7 @@
   "name": "@nexus-aec/intelligence",
   "version": "0.1.0",
   "private": true,
-  "description": "Intelligence layer for red flag detection, clustering, and email analysis",
+  "description": "Intelligence layer for LLM-powered email preprocessing, knowledge base, and personalization",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

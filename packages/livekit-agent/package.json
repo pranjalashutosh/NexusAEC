@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "description": "LiveKit Voice Agent for NexusAEC - handles voice briefings, STT/TTS, and GPT-4o reasoning",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -22,8 +23,8 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "type-check": "tsc --noEmit",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "clean": "rm -rf dist"
   },
   "dependencies": {
@@ -44,6 +45,8 @@
     "openai": "^6.16.0"
   },
   "devDependencies": {
+    "@swc/core": "^1.15.43",
+    "@swc/jest": "^0.2.39",
     "@types/ioredis": "^5.0.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",

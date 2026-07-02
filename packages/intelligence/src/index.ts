@@ -2,77 +2,9 @@
  * @nexus-aec/intelligence
  *
  * Intelligence layer for NexusAEC voice executive assistant
- * Provides red flag detection, email clustering, and pattern matching
+ * Provides LLM-powered email preprocessing, knowledge base, personalization,
+ * and session state management.
  */
-
-// Export types
-export {
-  Severity,
-  RedFlagCategory,
-  PatternType,
-  type ContextField,
-  type RedFlagPattern,
-  type PatternMatch,
-} from './types';
-
-// Export default patterns and utilities
-export {
-  DEFAULT_RED_FLAG_PATTERNS,
-  getPatternsByCategory,
-  getPatternsBySeverity,
-  getPatternsForField,
-  getPatternById,
-} from './red-flags/default-patterns';
-
-// Export keyword matcher
-export {
-  KeywordMatcher,
-  type KeywordMatcherOptions,
-  type KeywordMatchResult,
-} from './red-flags/keyword-matcher';
-
-// Export VIP detector
-export {
-  VipDetector,
-  type VipDetectorOptions,
-  type VipDetectionResult,
-  type VipReason,
-} from './red-flags/vip-detector';
-
-// Export thread velocity detector
-export {
-  ThreadVelocityDetector,
-  type ThreadVelocityOptions,
-  type ThreadVelocityResult,
-  type VelocityReason,
-} from './red-flags/thread-velocity';
-
-// Export calendar proximity detector
-export {
-  CalendarProximityDetector,
-  type CalendarProximityOptions,
-  type CalendarProximityResult,
-  type RelevantEvent,
-  type ProximityReason,
-} from './red-flags/calendar-proximity';
-
-// Export Red Flag scorer
-export {
-  RedFlagScorer,
-  type RedFlagScorerOptions,
-  type RedFlagSignals,
-  type RedFlagScore,
-  type SignalContribution,
-  type ScoringReason,
-} from './red-flags/scorer';
-
-// Export topic clusterer
-export {
-  TopicClusterer,
-  type TopicClustererOptions,
-  type TopicCluster,
-  type TopicClusteringResult,
-} from './red-flags/topic-clusterer';
 
 // Export session state (Tier 2)
 export {
@@ -201,25 +133,6 @@ export {
   type EmailSummary,
   type EmailSummarizerOptions,
 } from './knowledge/email-summarizer';
-
-// Export Narrative generator
-export {
-  NarrativeGenerator,
-  type NarrativeStyle,
-  type ScriptSection,
-  type ScriptSegment,
-  type BriefingScript,
-  type BriefingInput,
-  type NarrativeGeneratorOptions,
-} from './knowledge/narrative-generator';
-
-// Export Explanation generator
-export {
-  ExplanationGenerator,
-  type ExplanationStyle,
-  type RedFlagExplanation,
-  type ExplanationGeneratorOptions,
-} from './knowledge/explanation-generator';
 
 // Export Preferences store
 export {

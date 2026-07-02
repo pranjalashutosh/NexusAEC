@@ -8,8 +8,6 @@
  * Cuts LLM calls per email from 2 to 1.
  */
 
-import { cleanSubjectForVoice } from './voice-utils.js';
-
 import type { BriefingEmailRef } from '../reasoning/reasoning-loop.js';
 
 // =============================================================================
@@ -79,9 +77,12 @@ export function generateTransition(
 
   const priorityLabel = nextEmail.priority === 'high' ? " This one's important." : '';
 
-  const summary = nextEmail.summary
-    ? nextEmail.summary
-    : `${cleanSubjectForVoice(nextEmail.subject)} from ${nextEmail.from}`;
+  // Speak the LLM-distilled summary if available. When summary is missing or
+  // empty (LLM parse failure or unprocessed batch), do NOT fall back to the
+  // raw subject — voice agents echoing email subjects is the exact failure
+  // mode this transition is meant to avoid. Speak only the sender; GPT-4o
+  // will narrate intent on the next turn driven by the cursor context.
+  const body = nextEmail.summary ? nextEmail.summary : `an email from ${nextEmail.from}`;
 
-  return `${ack}${groupTransition} Next up: ${summary}${priorityLabel}`.trim();
+  return `${ack}${groupTransition} Next up: ${body}${priorityLabel}`.trim();
 }

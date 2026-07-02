@@ -69,7 +69,7 @@ export async function summarizeKnowledge(
           content: 'Condense these entries. Return ONLY the JSON array, no other text.',
         },
       ],
-      max_tokens: 1000,
+      max_completion_tokens: 1000,
       temperature: 0.2,
     });
 

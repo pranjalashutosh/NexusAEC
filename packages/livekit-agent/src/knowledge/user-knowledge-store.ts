@@ -15,7 +15,7 @@
 
 import { createLogger } from '@nexus-aec/logger';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 const logger = createLogger({ baseContext: { component: 'user-knowledge-store' } });
 

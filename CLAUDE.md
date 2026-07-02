@@ -17,16 +17,15 @@ system:** Turborepo 2.0 **Node:** >=20.0.0 **TypeScript:** 5.4+ strict mode
 
 ```
 apps/
-  api/          — Fastify 5 backend (OAuth, LiveKit tokens, email stats, sync, briefing pre-computation)
+  api/          — Fastify 5 backend (OAuth, LiveKit tokens, email stats, briefing pre-computation)
   mobile/       — React Native iOS/Android with LiveKit voice
-  desktop/      — Electron + React + Vite (draft review, settings sync)
 packages/
   shared-types  — TypeScript interfaces for the monorepo (no deps, root of dep graph)
   encryption    — AES-256 encryption utilities
   secure-storage — Platform-agnostic secure storage abstraction
   logger        — Structured logging with PII filtering
   email-providers — Gmail/Outlook adapters, OAuth providers, token management
-  intelligence  — Email preprocessing (LLM batched), sender profiles, red flags, knowledge base (Supabase vectors)
+  intelligence  — Email preprocessing (LLM batched), sender profiles, knowledge base (Supabase vectors)
   livekit-agent — Voice agent: briefings, STT/TTS, GPT-4o reasoning loop
 infra/          — Docker Compose (Redis, PostgreSQL/pgvector)
 ```
@@ -47,7 +46,7 @@ pnpm lint:fix             # ESLint auto-fix
 pnpm format:check         # Prettier check
 pnpm format               # Prettier auto-format
 
-# Testing (NEVER include desktop — no test files, hangs the runner)
+# Testing (explicit per-package filters)
 pnpm --filter @nexus-aec/encryption --filter @nexus-aec/logger --filter @nexus-aec/secure-storage --filter @nexus-aec/intelligence --filter @nexus-aec/email-providers --filter @nexus-aec/livekit-agent --filter @nexus-aec/api test
 pnpm --filter @nexus-aec/encryption test  # Single package
 pnpm test:watch           # Watch mode
@@ -79,8 +78,8 @@ pnpm infra:reset          # Reset all data and volumes
   `nexus:tokens:`, 90-day TTL. Dev uses `FileTokenStorage` →
   `apps/api/.nexus-data/tokens.json`. Switched in `auth.ts` based on `NODE_ENV`.
 - **Redis state helpers** (`src/lib/redis-state.ts`): Generic
-  `setState`/`getState`/`deleteState` + hash variants. Used by `auth.ts`,
-  `sync.ts`, `webhooks.ts`.
+  `setState`/`getState`/`deleteState` + hash variants. Used by `auth.ts` and
+  `webhooks.ts`.
 - **OAuth callback issues JWT:** `auth.ts` calls
   `generateJWT(userId, { email, name })` and includes `token` in the response.
 - **Pre-computation:** `src/services/briefing-precompute.ts` —
@@ -176,14 +175,15 @@ dual-write, Redis race conditions, and memory loading order.
 
 ### Briefing Pipeline
 
-The briefing pipeline (`src/briefing/briefing-pipeline.ts`) has dual mode:
+The briefing pipeline (`src/briefing-pipeline.ts`) is LLM-only:
 
 - **LLM path** (when `apiKey` provided): Uses `EmailPreprocessor` from
   `@nexus-aec/intelligence` for batched GPT-4o preprocessing. Emails split into
   batches of 25; Batch 1 processed synchronously, remaining batches processed in
-  background. Priority ordering: HIGH → MEDIUM → LOW.
-- **Legacy fallback** (no `apiKey` or LLM failure): Uses `RedFlagScorer` +
-  `KeywordMatcher` + `VipDetector` + `TopicClusterer`. Always test both paths.
+  background. Priority ordering: HIGH → MEDIUM → LOW. Per-email `priority` +
+  `summary` flow straight through to `ScoredEmail` (no separate scoring step).
+- **No `apiKey` or LLM failure:** returns an **empty briefing** (logged as a
+  warning). There is no rule-based fallback.
 - **24-hour fetch window:** Only processes last 24 hours of unread emails.
 - **Progressive loading:** `BriefingSessionTracker.addTopics()` merges
   background batch results into the active session. `ReasoningLoop` can inject
@@ -264,11 +264,10 @@ complete:
 3. **Format:** `pnpm format:check` — run `pnpm format` if format errors exist.
 4. **Build:** `pnpm build` — Turborepo will surface dependency order issues
    here.
-5. **Tests:** Run tests for all packages EXCEPT desktop (no test files, hangs
-   the runner). Use explicit filters:
+5. **Tests:** Run tests with explicit per-package filters:
    `pnpm --filter @nexus-aec/encryption --filter @nexus-aec/logger --filter @nexus-aec/secure-storage --filter @nexus-aec/intelligence --filter @nexus-aec/email-providers --filter @nexus-aec/livekit-agent --filter @nexus-aec/api test`
    All tests must pass. Fix the code, not the tests (unless the test itself is
-   wrong). **NEVER include `@nexus-aec/desktop`** — only if explicitly asked.
+   wrong).
 
 **Loop rule:** If any step fails → fix → restart from step 1. Do not skip steps
 or proceed with known failures.
@@ -282,8 +281,6 @@ current work. All tests must pass — zero tolerance for known failures.
 
 ### Package-Specific Validation Gotchas
 
-- **desktop:** Has NO test files — `pnpm test` hangs indefinitely if desktop is
-  included. Always use explicit `--filter` flags listing only testable packages.
 - **livekit-agent:** Must use Node 20 —
   `PATH="$HOME/.nvm/versions/node/v20.20.0/bin:$PATH"` before running.
 - **mobile:** React Native type errors may require Metro cache clear —
@@ -312,12 +309,10 @@ current work. All tests must pass — zero tolerance for known failures.
 - `exactOptionalPropertyTypes` is enabled — use conditional spread
   `...(val ? { key: val } : {})` for optional fields, never assign `undefined`
   directly.
-- `briefing-pipeline.ts` has dual mode: LLM path (with `apiKey`) and legacy
-  fallback — always test both paths when modifying briefing logic.
-- `RedFlagScore` interface uses `signalBreakdown` (not `contributions`) and
-  `severity` field (can be `null` when below threshold).
-- `ScoringReason` uses `description` (not `reason`) for the human-readable
-  explanation field.
+- `briefing-pipeline.ts` is LLM-only: when `apiKey` is missing or the LLM call
+  fails, it returns an empty briefing (no rule-based fallback). Per-email
+  `priority` + `summary` come from `EmailPreprocessor` and flow through
+  `ScoredEmail`.
 - `UserKnowledgeStore` uses `lazyConnect` Redis — always call `waitForReady()`
   before any read/write operation, or reads will race against the connection and
   silently return empty results.
@@ -340,7 +335,6 @@ rationale behind stateless API and token encryption choices.
   `src/index.ts` for local dev.
 - **Voice Agent:** EC2 (long-lived WebSocket incompatible with Lambda timeout).
   Dockerfile at `packages/livekit-agent/Dockerfile`.
-- **Env vars required:** `OPENAI_API_KEY`, `JWT_SECRET`,
-  `TOKEN_ENCRYPTION_KEY` (or falls back to `JWT_SECRET`), `LIVEKIT_API_KEY`,
-  `LIVEKIT_API_SECRET`.
+- **Env vars required:** `OPENAI_API_KEY`, `JWT_SECRET`, `TOKEN_ENCRYPTION_KEY`
+  (or falls back to `JWT_SECRET`), `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
 - Full cost estimates and scaling path in `docs/DEPLOYMENT_ROADMAP.md`.

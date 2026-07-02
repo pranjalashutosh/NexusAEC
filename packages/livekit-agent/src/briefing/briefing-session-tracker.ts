@@ -512,13 +512,14 @@ export class BriefingSessionTracker {
     const topicPriority = this.getTopicPriority(progress.currentTopicIndex);
     const priorityGroupLine = topicPriority ? `Priority group: ${topicPriority.toUpperCase()}` : '';
 
-    // Build the email context: prefer summary over raw subject for voice
+    // Build the email context: prefer summary over raw subject for voice.
+    // When a summary exists, the raw subject is omitted entirely — LLMs leak
+    // negatively-instructed text ("do NOT read aloud") into output.
     const emailContextLines: string[] = [];
     if (hasSummary) {
       emailContextLines.push(
         `Current email from ${currentEmail.from}${priorityLabel}${flagLabel} (email_id: ${currentEmail.emailId})`,
-        `Summary: ${currentEmail.summary}`,
-        `Raw subject (reference only, do NOT read aloud): ${currentEmail.subject}`
+        `Summary: ${currentEmail.summary}`
       );
     } else {
       const cleanedSubject = cleanSubjectForVoice(currentEmail.subject);
@@ -529,8 +530,8 @@ export class BriefingSessionTracker {
 
     // Build NEXT instruction based on whether summary exists
     const nextInstruction = hasSummary
-      ? 'NEXT: Present this email naturally using the summary. Mention who it\'s from and its priority. Do NOT read the subject line. Mention the importance level naturally (e.g., "This is high-priority" for high, or "A lower-priority item" for low). Then ask: "Should I mark it as read, move on, or flag it?"'
-      : 'NEXT: Present this email naturally — mention sender, topic, and priority. Do NOT read special characters, URLs, or domain names aloud. Mention the importance level naturally (e.g., "This is high-priority" for high, or "A lower-priority item" for low). Then ask: "Should I mark it as read, move on, or flag it?"';
+      ? 'NEXT: Present this email naturally using the summary. Mention who it\'s from and its priority. Mention the importance level naturally (e.g., "This is high-priority" for high, or "A lower-priority item" for low). Then ask: "Should I mark it as read, move on, or flag it?"'
+      : 'NEXT: Describe what this email is about in your own words — paraphrase its purpose, do NOT echo the subject text. Mention sender and priority. Do NOT read special characters, URLs, or domain names aloud. Mention the importance level naturally (e.g., "This is high-priority" for high, or "A lower-priority item" for low). Then ask: "Should I mark it as read, move on, or flag it?"';
 
     return [
       'CURRENT BRIEFING POSITION:',
@@ -569,16 +570,23 @@ export class BriefingSessionTracker {
       hasEmails = true;
 
       if (t === currentTopicIdx) {
-        // Current topic: show full detail
+        // Current topic: show full detail. When a summary exists, render
+        // Description (the LLM-distilled intent) instead of Subject so GPT-4o
+        // narrates intent rather than echoing subject phrasing.
         lines.push(`\nCURRENT TOPIC: "${topic.label}" (${activeEmails.length} emails)`);
         for (const email of activeEmails) {
           const flag = email.isFlagged ? ' [FLAGGED]' : '';
           const prio = email.priority ? ` [${email.priority.toUpperCase()}]` : '';
-          const summary = email.summary ? ` | "${email.summary}"` : '';
-          const displaySubject = cleanSubjectForVoice(email.subject);
-          lines.push(
-            `  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${displaySubject}${flag}${prio}${summary}`
-          );
+          if (email.summary) {
+            lines.push(
+              `  - email_id: "${email.emailId}" | From: ${email.from} | Description: ${email.summary}${flag}${prio}`
+            );
+          } else {
+            const displaySubject = cleanSubjectForVoice(email.subject);
+            lines.push(
+              `  - email_id: "${email.emailId}" | From: ${email.from} | Subject: ${displaySubject}${flag}${prio}`
+            );
+          }
         }
       } else {
         // Other topics: one-line summary

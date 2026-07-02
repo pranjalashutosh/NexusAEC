@@ -33,8 +33,7 @@
     "infra:logs": "docker compose -f infra/docker-compose.yml logs -f",
     "infra:reset": "docker compose -f infra/docker-compose.yml --profile tools down -v",
     "infra:ps": "docker compose -f infra/docker-compose.yml ps",
-    "oauth:gmail": "npx ts-node scripts/gmail-oauth.ts",
-    "test:integration": "npx ts-node test-integration.ts"
+    "oauth:gmail": "npx ts-node scripts/gmail-oauth.ts"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.0.0",

@@ -304,7 +304,7 @@ async function callChatCompletion(
   const requestParams: OpenAI.ChatCompletionCreateParamsNonStreaming = {
     model: config.model,
     messages: openaiMessages,
-    max_tokens: config.maxTokens,
+    max_completion_tokens: config.maxTokens,
     temperature: config.temperature,
   };
 

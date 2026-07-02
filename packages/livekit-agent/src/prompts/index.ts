@@ -21,7 +21,6 @@ export {
   generateTopicTransition,
   generateProgressUpdate,
   generateEmailSummaryPrompt,
-  generateRedFlagPrompt,
   generateThreadSummaryPrompt,
   generateConfirmation,
   generateDisambiguationPrompt,

@@ -25,7 +25,6 @@ Example: "Flag all emails from John as priority"
  6. GPT-4o response: "Done. I've flagged 3 emails from John Smith."
  7. ElevenLabs TTS → WebRTC → Mobile App plays audio
  8. Shadow Processor: update Redis DriveState
- 9. Audit Trail: log action to desktop app
 ```
 
 ---
@@ -41,13 +40,12 @@ Example: "Flag all emails from John as priority"
  5. Agent generates briefing:
     a. Fetch emails (OutlookAdapter + GmailAdapter in parallel)
        → 27 new emails (merged timeline)
-    b. Red flag detection (Tier 1 ephemeral)
-       → 3 red flags found
-    c. Topic clustering → 5 topics
-    d. GPT-4o generates briefing script
-    e. ElevenLabs TTS streams audio to room
+    b. LLM preprocessing (Tier 1 ephemeral): presort → batch → GPT-4o
+       → per-email priority + summary, grouped into 5 topics
+    c. GPT-4o generates briefing script
+    d. ElevenLabs TTS streams audio to room
 
- 6. User listens to first red flag
+ 6. User listens to first high-priority email
 
  7. User interrupts: "Flag that for follow-up"
     → LiveKit detects speech → Agent pauses TTS

@@ -10,7 +10,6 @@ import {
   generateTopicTransition,
   generateProgressUpdate,
   generateEmailSummaryPrompt,
-  generateRedFlagPrompt,
   generateConfirmation,
   generateDisambiguationPrompt,
   generateBriefingOpening,
@@ -153,40 +152,6 @@ describe('livekit-agent/prompts', () => {
         expect(result).toContain('[VIP]');
         expect(result).toContain('attachments');
         expect(result).toContain('5 messages');
-      });
-    });
-
-    describe('generateRedFlagPrompt', () => {
-      it('returns empty for low score', () => {
-        const email: EmailSummaryInput = {
-          from: 'test@example.com',
-          subject: 'Test',
-          snippet: 'Content',
-          timestamp: new Date(),
-          isFromVip: false,
-          hasAttachments: false,
-          redFlagScore: 0.3,
-        };
-
-        const result = generateRedFlagPrompt(email);
-        expect(result).toBe('');
-      });
-
-      it('generates urgent callout for high score', () => {
-        const email: EmailSummaryInput = {
-          from: 'test@example.com',
-          subject: 'Test',
-          snippet: 'Content',
-          timestamp: new Date(),
-          isFromVip: false,
-          hasAttachments: false,
-          redFlagScore: 0.9,
-          redFlagReasons: ['deadline approaching'],
-        };
-
-        const result = generateRedFlagPrompt(email);
-        expect(result).toContain('URGENT');
-        expect(result).toContain('deadline approaching');
       });
     });
 

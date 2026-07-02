@@ -5,11 +5,16 @@
  * All credentials are loaded from environment variables.
  */
 
-import { resolve } from 'path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { config as dotenvConfig } from 'dotenv';
 
-// Load environment variables from root .env
+// ESM equivalent of CommonJS __dirname.
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load environment variables from root .env (skipped silently if file is missing,
+// e.g. in production where env vars come from Docker --env-file or AWS).
 dotenvConfig({ path: resolve(__dirname, '../../../.env') });
 
 // =============================================================================

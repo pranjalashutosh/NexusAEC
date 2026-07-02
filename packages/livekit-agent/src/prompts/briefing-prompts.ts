@@ -4,7 +4,6 @@
  * Templates for generating podcast-style briefings including:
  * - Topic transitions
  * - Email summaries
- * - Red-flag callouts
  * - Thread summaries
  */
 
@@ -23,8 +22,6 @@ export interface EmailSummaryInput {
   isFromVip: boolean;
   hasAttachments: boolean;
   threadLength?: number;
-  redFlagScore?: number;
-  redFlagReasons?: string[];
 }
 
 /**
@@ -116,29 +113,6 @@ RECEIVED: ${timeAgo}
 CONTENT PREVIEW: ${email.snippet}
 
 Format your response as natural speech, not a list. Lead with the key point.`;
-}
-
-/**
- * Generate red flag callout prompt
- */
-export function generateRedFlagPrompt(email: EmailSummaryInput): string {
-  if (!email.redFlagScore || email.redFlagScore < 0.5) {
-    return '';
-  }
-
-  const reasons = email.redFlagReasons?.length
-    ? email.redFlagReasons.join(', ')
-    : 'requires attention';
-
-  if (email.redFlagScore >= 0.8) {
-    return `[URGENT CALLOUT] This needs immediate attention. ${reasons}. What would you like to do?`;
-  }
-
-  if (email.redFlagScore >= 0.6) {
-    return `[ATTENTION] Worth noting: ${reasons}.`;
-  }
-
-  return `[NOTE] ${reasons}.`;
 }
 
 /**

@@ -20,7 +20,7 @@
  */
 
 import { createLogger } from '@nexus-aec/logger';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 const logger = createLogger({ baseContext: { component: 'briefed-email-store' } });
 

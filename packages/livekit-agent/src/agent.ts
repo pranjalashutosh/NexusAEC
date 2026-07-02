@@ -12,6 +12,8 @@
  * - Silero VAD for voice activity detection
  */
 
+import { fileURLToPath } from 'node:url';
+
 import { defineAgent, voice, cli, WorkerOptions } from '@livekit/agents';
 import * as deepgram from '@livekit/agents-plugin-deepgram';
 import * as elevenlabs from '@livekit/agents-plugin-elevenlabs';
@@ -23,7 +25,7 @@ import {
   EmailMetadata,
 } from '@nexus-aec/intelligence';
 import { createLogger } from '@nexus-aec/logger';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 import { BriefedEmailStore } from './briefing/briefed-email-store.js';
 import { BriefingSessionTracker } from './briefing/briefing-session-tracker.js';
@@ -48,6 +50,9 @@ import type { AgentSession } from './session-store.js';
 import type { JobContext, JobProcess } from '@livekit/agents';
 import type { UnifiedInboxService } from '@nexus-aec/email-providers';
 
+// ESM equivalent of CommonJS __filename — used by WorkerOptions.agent below.
+const __filename = fileURLToPath(import.meta.url);
+
 const logger = createLogger({ baseContext: { component: 'voice-agent' } });
 
 // =============================================================================
@@ -60,6 +65,21 @@ const logger = createLogger({ baseContext: { component: 'voice-agent' } });
 // Agent Implementation
 // =============================================================================
 
+// Tuned VAD options to suppress false barge-ins from speaker→mic echo on phones.
+// Default activationThreshold is 0.5 and minSpeechDuration is 50ms — too sensitive
+// for iPhone speakerphone, where AEC leakage triggers VAD on the agent's own audio.
+// Raising the threshold makes VAD reject lower-amplitude echo while still detecting
+// direct user speech. Lengthening minSpeechDuration filters short transients
+// (cough, click, breath). Tunable via env vars for production fine-tuning.
+const VAD_OPTIONS: Parameters<typeof silero.VAD.load>[0] = {
+  activationThreshold: parseFloat(process.env['VAD_ACTIVATION_THRESHOLD'] ?? '0.7'),
+  minSpeechDuration: parseInt(process.env['VAD_MIN_SPEECH_MS'] ?? '200', 10),
+};
+
+// Minimum sustained speech (in seconds) required to interrupt the agent. Default
+// 0.5s trips on speaker echo; 1.0s gives AEC time to settle while staying responsive.
+const MIN_INTERRUPTION_DURATION = parseFloat(process.env['MIN_INTERRUPTION_DURATION_S'] ?? '1.0');
+
 /**
  * Create the NexusAEC Voice Agent
  */
@@ -69,7 +89,7 @@ export function createVoiceAgent(config: AgentConfig) {
       logger.info('Prewarming agent process', { pid: process.pid });
 
       // Pre-load Silero VAD model for faster cold starts
-      proc.userData['vad'] = await silero.VAD.load();
+      proc.userData['vad'] = await silero.VAD.load(VAD_OPTIONS);
 
       // Pre-load configuration
       try {
@@ -477,47 +497,19 @@ async function startVoiceAssistant(
   // Build lightweight topic references with email IDs for GPT-4o context.
   // When LLM preprocessing was used, each email has a priority and summary
   // from the BatchResult. We look up by emailId to attach them.
-  const preprocessedMap = new Map<
-    string,
-    { priority: 'high' | 'medium' | 'low'; summary: string }
-  >();
-  if (briefingData?.topics) {
-    for (const topic of briefingData.topics) {
-      // The topic.priority from LLM pipeline is the cluster-level priority
-      for (const se of topic.emails) {
-        const score = briefingData.scoreMap.get(se.email.id);
-        if (score && score.reasons.length > 0) {
-          const priority: 'high' | 'medium' | 'low' = score.isFlagged
-            ? 'high'
-            : score.score >= 0.5
-              ? 'medium'
-              : 'low';
-          preprocessedMap.set(se.email.id, {
-            priority,
-            summary: score.reasons[0]?.description ?? '',
-          });
-        }
-      }
-    }
-  }
-
   const topicRefs: BriefingTopicRef[] =
     briefingData?.topics.map((topic) => ({
       label: topic.label,
       ...(topic.priority ? { priority: topic.priority } : {}),
-      emails: topic.emails.map((se) => {
-        const preprocessed = preprocessedMap.get(se.email.id);
-        return {
-          emailId: se.email.id,
-          subject: se.email.subject,
-          from: se.email.from?.email ?? se.email.from?.name ?? 'unknown',
-          threadId: se.email.threadId,
-          isFlagged: se.score.isFlagged,
-          ...(preprocessed
-            ? { priority: preprocessed.priority, summary: preprocessed.summary }
-            : {}),
-        };
-      }),
+      emails: topic.emails.map((se) => ({
+        emailId: se.email.id,
+        subject: se.email.subject,
+        from: se.email.from?.email ?? se.email.from?.name ?? 'unknown',
+        threadId: se.email.threadId,
+        isFlagged: se.priority === 'high',
+        priority: se.priority,
+        summary: se.summary,
+      })),
     })) ?? [];
 
   logger.info('Starting voice assistant pipeline', {
@@ -612,7 +604,7 @@ async function startVoiceAssistant(
 
   // 5. Get VAD from prewarm, or load if not available
   logger.info('[pipeline] Loading VAD model...');
-  const vad = (ctx.proc.userData['vad'] as silero.VAD) ?? (await silero.VAD.load());
+  const vad = (ctx.proc.userData['vad'] as silero.VAD) ?? (await silero.VAD.load(VAD_OPTIONS));
   logger.info('[pipeline] VAD model loaded');
 
   // 6. Create the voice Agent
@@ -631,7 +623,7 @@ async function startVoiceAssistant(
     turnDetection: 'vad',
     voiceOptions: {
       allowInterruptions: true,
-      minInterruptionDuration: 0.5,
+      minInterruptionDuration: MIN_INTERRUPTION_DURATION,
       minEndpointingDelay: 0.3,
       maxEndpointingDelay: 0.6,
       maxToolSteps: 5,
@@ -957,7 +949,7 @@ export async function prewarm(proc: JobProcess): Promise<void> {
   });
 
   // Pre-load Silero VAD model
-  proc.userData['vad'] = await silero.VAD.load();
+  proc.userData['vad'] = await silero.VAD.load(VAD_OPTIONS);
 
   // Pre-load configuration
   try {

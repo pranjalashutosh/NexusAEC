@@ -3,33 +3,22 @@
  *
  * Connects the intelligence layer to the voice agent by orchestrating:
  *   1. Fetch unread emails from last 24 hours
- *   2. Filter: muted senders, previously-briefed IDs
+ *   2. Filter: muted senders, previously-briefed IDs, knowledge rules
  *   3. Pre-sort by heuristic (VIP → replied-to → recency)
  *   4. Process Batch 1 via LLM → build BriefingData
  *   5. Return { briefingData, remainingBatches }
  *
- * Replaces the old scorer + clusterer pipeline with LLM-powered preprocessing.
+ * LLM-powered preprocessing is the only path. When no OpenAI API key is
+ * available (or the LLM call fails), the pipeline returns an empty briefing.
  */
 
-import {
-  RedFlagScorer,
-  KeywordMatcher,
-  VipDetector,
-  TopicClusterer,
-} from '@nexus-aec/intelligence';
 import { createLogger } from '@nexus-aec/logger';
 
 import type {
   UnifiedInboxService,
   StandardEmail as ProviderEmail,
 } from '@nexus-aec/email-providers';
-import type {
-  RedFlagScore,
-  RedFlagSignals,
-  TopicClusteringResult,
-  EmailMetadata,
-} from '@nexus-aec/intelligence';
-import type { StandardEmail as SharedEmail, VIP } from '@nexus-aec/shared-types';
+import type { EmailMetadata } from '@nexus-aec/intelligence';
 
 const logger = createLogger({ baseContext: { component: 'briefing-pipeline' } });
 
@@ -38,15 +27,18 @@ const logger = createLogger({ baseContext: { component: 'briefing-pipeline' } })
 // =============================================================================
 
 /**
- * A scored email with its red-flag assessment attached
+ * An email with its LLM-assigned priority and voice-friendly summary.
  */
 export interface ScoredEmail {
   email: ProviderEmail;
-  score: RedFlagScore;
+  /** LLM-assigned priority from preprocessing */
+  priority: 'high' | 'medium' | 'low';
+  /** Voice-friendly one-liner summary from LLM preprocessing */
+  summary: string;
 }
 
 /**
- * A briefing topic — a cluster of related emails with scoring
+ * A briefing topic — a cluster of related emails.
  */
 export interface BriefingTopic {
   /** Cluster ID */
@@ -55,11 +47,9 @@ export interface BriefingTopic {
   label: string;
   /** Keywords describing this topic */
   keywords: string[];
-  /** Emails in this topic, sorted by score descending */
+  /** Emails in this topic */
   emails: ScoredEmail[];
-  /** Highest red-flag score in this topic */
-  maxScore: number;
-  /** Number of flagged emails in this topic */
+  /** Number of high-priority emails in this topic */
   flaggedCount: number;
   /** LLM-assigned priority for this topic */
   priority?: 'high' | 'medium' | 'low';
@@ -77,10 +67,8 @@ export interface BriefingData {
   topicLabels: string[];
   /** Total email count */
   totalEmails: number;
-  /** Total flagged count */
+  /** Number of high-priority emails across all topics */
   totalFlagged: number;
-  /** All scored emails (for lookup) */
-  scoreMap: Map<string, RedFlagScore>;
   /** Time taken to build the briefing (ms) */
   pipelineDurationMs: number;
   /** How many emails were fetched before filtering */
@@ -95,12 +83,8 @@ export interface BriefingData {
 export interface BriefingPipelineOptions {
   /** Max emails to fetch for the briefing (default: 500) */
   maxEmails?: number;
-  /** Max topics to include (default: 50) */
-  maxTopics?: number;
-  /** VIP email addresses to boost scoring */
+  /** VIP email addresses to boost pre-sort ordering */
   vipEmails?: string[];
-  /** Custom keywords for red-flag detection */
-  customKeywords?: string[];
   /** Email IDs to exclude (already briefed/actioned in previous sessions) */
   excludeEmailIds?: Set<string>;
   /** Muted sender emails to filter out from briefing */
@@ -134,13 +118,8 @@ export interface BriefingPipelineResult {
 /**
  * Run the briefing pipeline: fetch → filter → presort → LLM preprocess → build.
  *
- * When `apiKey` is provided, uses the new LLM-powered pipeline:
- *   1. Fetch unread emails from last 24 hours
- *   2. Filter muted/excluded, pre-sort by heuristic
- *   3. Batch into groups of 25, process Batch 1 via LLM
- *   4. Return Batch 1 as BriefingData + remaining batches for background processing
- *
- * When `apiKey` is NOT provided, falls back to the legacy scorer+clusterer pipeline.
+ * LLM preprocessing is the only supported path. When `apiKey` is not provided,
+ * or the LLM call fails, the pipeline returns an empty briefing.
  */
 export async function runBriefingPipeline(
   inboxService: UnifiedInboxService,
@@ -148,12 +127,11 @@ export async function runBriefingPipeline(
 ): Promise<BriefingPipelineResult> {
   const startTime = Date.now();
   const maxEmails = options.maxEmails ?? 500;
-  const maxTopics = options.maxTopics ?? 50;
   const PAGE_SIZE = 50;
   const MAX_PAGES = 10;
   const since = options.since ?? new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  logger.info('Starting briefing pipeline', { maxEmails, maxTopics, since: since.toISOString() });
+  logger.info('Starting briefing pipeline', { maxEmails, since: since.toISOString() });
 
   // -------------------------------------------------------------------------
   // 1. Fetch unread emails with pagination (24-hour window)
@@ -250,26 +228,29 @@ export async function runBriefingPipeline(
   }
 
   // -------------------------------------------------------------------------
-  // 2. Try LLM preprocessing if apiKey is available
+  // 2. LLM preprocessing (only supported path)
   // -------------------------------------------------------------------------
-  if (options.apiKey) {
-    try {
-      return await runLLMPipeline(emails, rawEmails.length, options, startTime);
-    } catch (error) {
-      logger.warn('LLM pipeline failed, falling back to legacy scorer+clusterer', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      // Fall through to legacy pipeline
-    }
+  if (!options.apiKey) {
+    logger.warn(
+      'No OPENAI_API_KEY provided — returning empty briefing (LLM preprocessing required)'
+    );
+    return {
+      briefingData: createEmptyBriefing(Date.now() - startTime),
+      remainingBatches: [],
+    };
   }
 
-  // -------------------------------------------------------------------------
-  // 3. Legacy pipeline: Score + Cluster (fallback)
-  // -------------------------------------------------------------------------
-  return {
-    briefingData: runLegacyPipeline(emails, maxTopics, options, startTime),
-    remainingBatches: [],
-  };
+  try {
+    return await runLLMPipeline(emails, rawEmails.length, options, startTime);
+  } catch (error) {
+    logger.warn('LLM pipeline failed — returning empty briefing', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      briefingData: createEmptyBriefing(Date.now() - startTime),
+      remainingBatches: [],
+    };
+  }
 }
 
 // =============================================================================
@@ -316,27 +297,11 @@ async function runLLMPipeline(
     ...(options.knowledgeEntries ? { knowledgeEntries: options.knowledgeEntries } : {}),
   });
 
-  // Build BriefingData from Batch 1 result
   const batch1 = result.batches[0];
   const emailById = new Map(emails.map((e) => [e.id, e]));
 
-  // Build a minimal score for each email based on LLM priority
-  const scoreMap = new Map<string, RedFlagScore>();
-  const priorityScores: Record<string, number> = { high: 0.9, medium: 0.5, low: 0.1 };
-
-  if (batch1) {
-    for (const pe of batch1.emails) {
-      scoreMap.set(pe.emailId, {
-        score: priorityScores[pe.priority] ?? 0.5,
-        isFlagged: pe.priority === 'high',
-        reasons: [{ signal: 'keyword' as const, type: 'llm', description: pe.summary, weight: 1 }],
-        severity: null,
-        signalBreakdown: [],
-      });
-    }
-  }
-
-  // Build topics from LLM clusters
+  // Build topics directly from the LLM clusters, carrying the LLM's own
+  // priority and summary through to the briefing (no intermediate scoring).
   interface LLMCluster {
     label: string;
     priority: 'high' | 'medium' | 'low';
@@ -353,11 +318,10 @@ async function runLLMPipeline(
       const clusterEmails: ScoredEmail[] = cluster.emails
         .map((pe: LLMCluster['emails'][number]) => {
           const email = emailById.get(pe.emailId);
-          const score = scoreMap.get(pe.emailId);
-          if (!email || !score) {
+          if (!email) {
             return null;
           }
-          return { email, score };
+          return { email, priority: pe.priority, summary: pe.summary };
         })
         .filter((e): e is ScoredEmail => e !== null);
 
@@ -366,15 +330,13 @@ async function runLLMPipeline(
         label: cluster.label,
         keywords: [],
         emails: clusterEmails,
-        maxScore:
-          clusterEmails.length > 0 ? Math.max(...clusterEmails.map((e) => e.score.score)) : 0,
-        flaggedCount: clusterEmails.filter((e) => e.score.isFlagged).length,
+        flaggedCount: clusterEmails.filter((e) => e.priority === 'high').length,
         priority: cluster.priority,
       };
     }
   );
 
-  // Sort topics: high first, then by flaggedCount
+  // Sort topics: high first, then by high-priority count
   const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
   topics.sort((a, b) => {
     const aPrio = priorityOrder[a.priority ?? 'medium'] ?? 1;
@@ -386,7 +348,7 @@ async function runLLMPipeline(
   });
 
   const pipelineDurationMs = Date.now() - startTime;
-  const totalFlagged = Array.from(scoreMap.values()).filter((s) => s.isFlagged).length;
+  const totalFlagged = topics.reduce((sum, t) => sum + t.flaggedCount, 0);
 
   logger.info('LLM briefing pipeline complete', {
     topicCount: topics.length,
@@ -404,128 +366,11 @@ async function runLLMPipeline(
       topicLabels: topics.map((t) => t.label),
       totalEmails: emails.length,
       totalFlagged,
-      scoreMap,
       pipelineDurationMs,
       ...(totalFetched ? { totalFetched } : {}),
       ...(result.skippedSummary ? { triageSummary: result.skippedSummary } : {}),
     },
     remainingBatches: allBatches.slice(1),
-  };
-}
-
-// =============================================================================
-// Legacy Pipeline (Fallback)
-// =============================================================================
-
-function runLegacyPipeline(
-  emails: ProviderEmail[],
-  maxTopics: number,
-  options: BriefingPipelineOptions,
-  startTime: number
-): BriefingData {
-  // Score every email with the red-flag system
-  const keywordMatcher = new KeywordMatcher();
-  const vipList: VIP[] = (options.vipEmails ?? []).map((email, i) => ({
-    id: `vip-${i}`,
-    email,
-    addedAt: new Date(),
-    source: 'manual' as const,
-  }));
-  const vipDetector = new VipDetector({ vipList });
-  const scorer = new RedFlagScorer({ flagThreshold: 0.5 });
-  const scoreMap = new Map<string, RedFlagScore>();
-
-  for (const email of emails) {
-    const sharedEmail = email as unknown as SharedEmail;
-    const signals: RedFlagSignals = {
-      keywordMatch: keywordMatcher.matchEmail(sharedEmail),
-      vipDetection: vipDetector.detectVip(sharedEmail),
-    };
-    const score = scorer.scoreEmail(signals);
-    scoreMap.set(email.id, score);
-  }
-
-  const totalFlagged = Array.from(scoreMap.values()).filter((s) => s.isFlagged).length;
-
-  // Cluster emails into topics
-  const clusterer = new TopicClusterer({ minClusterSize: 2 });
-  const sharedEmails = emails as unknown as SharedEmail[];
-  const clusterResult: TopicClusteringResult = clusterer.clusterEmails(sharedEmails);
-
-  const emailById = new Map(emails.map((e) => [e.id, e]));
-
-  let topics: BriefingTopic[] = clusterResult.clusters.map((cluster) => {
-    const clusterEmails: ScoredEmail[] = cluster.emailIds
-      .map((id) => {
-        const email = emailById.get(id);
-        const score = scoreMap.get(id);
-        if (!email || !score) {
-          return null;
-        }
-        return { email, score };
-      })
-      .filter((e): e is ScoredEmail => e !== null)
-      .sort((a, b) => b.score.score - a.score.score);
-
-    return {
-      id: cluster.id,
-      label: cluster.topic,
-      keywords: cluster.keywords,
-      emails: clusterEmails,
-      maxScore: clusterEmails.length > 0 ? Math.max(...clusterEmails.map((e) => e.score.score)) : 0,
-      flaggedCount: clusterEmails.filter((e) => e.score.isFlagged).length,
-    };
-  });
-
-  // Add unclustered emails as catch-all
-  if (clusterResult.unclusteredEmailIds.length > 0) {
-    const unclustered: ScoredEmail[] = clusterResult.unclusteredEmailIds
-      .map((id) => {
-        const email = emailById.get(id);
-        const score = scoreMap.get(id);
-        if (!email || !score) {
-          return null;
-        }
-        return { email, score };
-      })
-      .filter((e): e is ScoredEmail => e !== null)
-      .sort((a, b) => b.score.score - a.score.score);
-
-    if (unclustered.length > 0) {
-      topics.push({
-        id: 'unclustered',
-        label: 'Other Messages',
-        keywords: [],
-        emails: unclustered,
-        maxScore: Math.max(...unclustered.map((e) => e.score.score)),
-        flaggedCount: unclustered.filter((e) => e.score.isFlagged).length,
-      });
-    }
-  }
-
-  // Sort topics
-  topics.sort((a, b) => {
-    if (b.flaggedCount !== a.flaggedCount) {
-      return b.flaggedCount - a.flaggedCount;
-    }
-    if (b.maxScore !== a.maxScore) {
-      return b.maxScore - a.maxScore;
-    }
-    return b.emails.length - a.emails.length;
-  });
-
-  topics = topics.slice(0, maxTopics);
-
-  const pipelineDurationMs = Date.now() - startTime;
-
-  return {
-    topics,
-    topicItems: topics.map((t) => t.emails.length),
-    topicLabels: topics.map((t) => t.label),
-    totalEmails: emails.length,
-    totalFlagged,
-    scoreMap,
-    pipelineDurationMs,
   };
 }
 
@@ -587,7 +432,6 @@ function createEmptyBriefing(durationMs: number): BriefingData {
     topicLabels: [],
     totalEmails: 0,
     totalFlagged: 0,
-    scoreMap: new Map(),
     pipelineDurationMs: durationMs,
   };
 }

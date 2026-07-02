@@ -1,81 +1,87 @@
 # Intelligence Layer
 
-> AI-powered email analysis: red flag detection, topic clustering, and briefing
-> generation. All processing is Tier 1 (ephemeral). See [overview](../../ARCHITECTURE.md).
+> AI-powered email analysis: LLM-based preprocessing, prioritization, and
+> clustering for briefing generation. All processing is Tier 1 (ephemeral). See
+> [overview](../../ARCHITECTURE.md).
 
 ---
 
-## Red Flag Detection Pipeline
+## LLM Preprocessing Pipeline
+
+The intelligence layer prioritizes and groups emails with a single batched
+GPT-4o pass (`EmailPreprocessor`). There is no separate rule-based scoring or
+clustering stage — priority and grouping come directly from the LLM.
 
 ```
 StandardEmail[] (from UnifiedInbox)
   │
-  ├─► Parallel Scoring
-  │     ├─ Keyword Matcher    (regex + fuzzy, score 0.0-1.0)
-  │     ├─ VIP Detector       (VIP list + frequency, 0.0 or 0.8)
-  │     ├─ Thread Velocity    (reply count in 24h, escalation, 0.0-1.0)
-  │     └─ Calendar Proximity (upcoming events, 0.0-1.0)
+  ├─► presortEmails()            heuristic ordering (VIP → replied-to → recency)
   │
-  ├─► Composite Scorer
-  │     score = (keyword × 0.3) + (vip × 0.4) +
-  │             (velocity × 0.2) + (calendar × 0.1)
-  │     Threshold: > 0.7 = RED FLAG
+  ├─► Batch into groups of 25
   │
-  ├─► Explanation Generator (GPT-4o)
-  │     "This is a red flag because John Smith (your VIP) sent 3
-  │      follow-ups about the incident, and you have a meeting in 2h."
+  ├─► preprocessEmails() → GPT-4o (Batch 1 sync, Batches 2..N in background)
+  │     For each email: { priority: high|medium|low, summary, clusterLabel }
+  │     For each cluster: { label, priority, emails[] }
   │
-  └─► RedFlag[] → briefing generator
+  └─► BriefingData → briefing generator
+        topics ordered high → medium → low
 ```
+
+**Per-email output (`PreprocessedEmail`):**
+
+- `priority` — `high` | `medium` | `low` (LLM-assigned)
+- `summary` — voice-friendly one-liner
+- `clusterLabel` — the topic this email belongs to
+
+**Fallback:** When no `OPENAI_API_KEY` is available, or the LLM call fails, the
+pipeline returns an **empty briefing** (logged as a warning). There is no
+rule-based fallback path.
+
+---
+
+## Prioritization
+
+`priority` flows straight from the LLM through the pipeline. The briefing
+pipeline (`packages/livekit-agent/src/briefing-pipeline.ts`) carries each
+email's `priority` and `summary` onto `ScoredEmail`, and derives:
+
+- `BriefingTopic.flaggedCount` — number of `high`-priority emails in the topic
+- `BriefingData.totalFlagged` — number of `high`-priority emails overall
+- Topic ordering — `high` first, then by `flaggedCount`
+
+Personalization signals feed the LLM prompt rather than a scoring formula:
+
+- **VIP hints** — `presortEmails()` boosts VIP senders in the pre-sort order.
+- **Sender preferences** — `SenderProfileStore.synthesizePreferences()` injects
+  natural-language guidance ("archives newsletters", "always replies to X").
+- **Knowledge rules** — `[rule]` knowledge entries drive `extractFilterRules()`,
+  which filters blocked domains/keywords out before the LLM pass.
 
 ---
 
 ## Topic Clustering
 
-**Algorithm:**
-
-1. **Extract features** per email: thread ID, normalized subject (strip RE:/FW:),
-   participants, optional semantic embedding
-2. **Group by thread ID** — same conversation = same topic
-3. **Cluster remaining** by subject similarity (Levenshtein, 80% threshold)
-4. **Merge clusters** with 50%+ participant overlap
-5. **Label clusters** — user-defined topics or auto-generated from common subject
-
-**Output:**
-
-```json
-[
-  {
-    "id": "topic-1",
-    "name": "Q1 Budget Review",
-    "emails": [/* 12 emails */],
-    "redFlagCount": 2,
-    "lastActivityAt": "2026-01-09T10:30:00Z"
-  },
-  {
-    "id": "topic-2",
-    "name": "P-104 Pump Maintenance",
-    "emails": [/* 5 emails */],
-    "redFlagCount": 1
-  }
-]
-```
+Clustering is produced by the LLM in the same `preprocessEmails()` pass — each
+cluster is `{ label, priority, emails[] }`. The briefing pipeline maps clusters
+to `BriefingTopic`s (`id: llm-cluster-N`) with no separate similarity/merge
+algorithm.
 
 ---
 
 ## Briefing Generation
 
-`Topics[] + RedFlags[]` → GPT-4o Narrative Generator
+`BriefingData.topics` → the voice agent's `ReasoningLoop` builds a per-turn
+system context (`buildCursorContext()`) and streams GPT-4o narration.
 
 **Script structure:**
 
-1. **Opening** — Email count, red flag count, set expectations
-2. **Red Flags** — High priority first, with context and action prompts
-3. **Topics** — Grouped by importance, with latest highlights
-4. **Closing** — Summary, offer to continue or skip
+1. **Opening** — Email count, high-priority count, set expectations
+2. **Topics** — Ordered by priority, with the LLM summary per email
+3. **Closing** — Summary, offer to continue or skip
 
-**Navigation commands during briefing:**
-`skip this topic` · `go deeper` · `next item` · `repeat that` · `pause` · `stop`
+**Navigation commands during briefing:** `skip this topic` · `go deeper` ·
+`next item` · `repeat that` · `pause` · `stop`
 
-**Wait behavior:** After each red flag, wait for user response or auto-continue
-after 3 seconds.
+**Progressive loading:** Batch 1 briefs immediately; later batches are processed
+in the background and merged into the active session via
+`BriefingSessionTracker.addTopics()`.

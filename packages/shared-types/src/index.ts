@@ -58,7 +58,6 @@ export interface StandardDraft {
   createdAt: Date;
   updatedAt: Date;
   isPendingReview: boolean;
-  redFlagRationale?: string;
 }
 
 /** Email address with optional name */
@@ -111,29 +110,8 @@ export interface Contact {
 }
 
 // =============================================================================
-// Red Flag & Intelligence Types
+// VIP & Topic Types
 // =============================================================================
-
-/** Red flag severity levels */
-export type RedFlagSeverity = 'critical' | 'high' | 'medium' | 'low';
-
-/** Red flag detected on an email/thread */
-export interface RedFlag {
-  id: string;
-  emailId: string;
-  threadId: string;
-  severity: RedFlagSeverity;
-  score: number;
-  reasons: RedFlagReason[];
-  detectedAt: Date;
-}
-
-/** Reason why something was flagged */
-export interface RedFlagReason {
-  type: 'keyword' | 'vip' | 'thread_velocity' | 'calendar_proximity' | 'deadline' | 'escalation';
-  description: string;
-  matchedValue?: string;
-}
 
 /** VIP (Very Important Person) configuration */
 export interface VIP {
@@ -216,7 +194,6 @@ export interface UserPreferences {
   userId: string;
   vips: VIP[];
   topics: Topic[];
-  redFlagKeywords: string[];
   mutedSenders: string[];
   verbosity: 'concise' | 'standard' | 'verbose';
   languageVariant: 'en-US' | 'en-GB' | 'en-IN' | 'en-AU';
