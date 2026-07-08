@@ -1,0 +1,45 @@
+{
+  "name": "@nexus-aec/worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Background worker: consumes the job bus and runs LangGraph graphs (Graph A inbox sorting; Graph B ReAct worker in Phase 4)",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "start": "node dist/main.js",
+    "start:dev": "tsx src/main.ts",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@nexus-aec/agent-graph": "workspace:*",
+    "@nexus-aec/email-providers": "workspace:*",
+    "@nexus-aec/encryption": "workspace:*",
+    "@nexus-aec/intelligence": "workspace:*",
+    "@nexus-aec/logger": "workspace:*",
+    "@nexus-aec/shared-types": "workspace:*",
+    "dotenv": "^17.2.3",
+    "ioredis": "^5.9.1"
+  },
+  "devDependencies": {
+    "@types/ioredis-mock": "^8.2.6",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "ioredis-mock": "^8.13.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

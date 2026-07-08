@@ -27,7 +27,8 @@
     "@nexus-aec/encryption": "workspace:*",
     "@nexus-aec/logger": "workspace:*",
     "@nexus-aec/secure-storage": "workspace:*",
-    "@nexus-aec/shared-types": "workspace:*"
+    "@nexus-aec/shared-types": "workspace:*",
+    "ioredis": "^5.9.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

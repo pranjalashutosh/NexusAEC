@@ -23,6 +23,7 @@
     "@fastify/helmet": "^13.0.2",
     "@fastify/multipart": "^9.4.0",
     "@fastify/rate-limit": "^10.3.0",
+    "@nexus-aec/agent-graph": "workspace:*",
     "@nexus-aec/email-providers": "workspace:*",
     "@nexus-aec/encryption": "workspace:*",
     "@nexus-aec/intelligence": "workspace:^",

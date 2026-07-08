@@ -435,8 +435,9 @@ function buildColumnMap(
     const headerLower = header.toLowerCase().trim();
 
     // Check custom mapping first
-    if (customMapping[header]) {
-      columnMap[customMapping[header]] = header;
+    const custom = customMapping[header];
+    if (custom) {
+      columnMap[custom] = header;
       return;
     }
 

@@ -125,70 +125,70 @@
 
 ## Tasks
 
-- [ ] **1.0 Phase 1 — Scaffold (`agent-graph`, contracts, checkpointer, bus; no
+- [x] **1.0 Phase 1 — Scaffold (`agent-graph`, contracts, checkpointer, bus; no
       behavior change)**
-  - [ ] 1.1 Create `packages/agent-graph` skeleton: `package.json`
+  - [x] 1.1 Create `packages/agent-graph` skeleton: `package.json`
         (`workspace:*` deps: shared-types, logger, email-providers,
         intelligence; deps: `@langchain/langgraph`, `@langchain/core`,
         `@langchain/openai`, `zod`, `ioredis`), strict `tsconfig.json`,
         `jest.config.js`, empty `src/index.ts`
-  - [ ] 1.2 Run `pnpm build` from root and confirm Turborepo orders agent-graph
+  - [x] 1.2 Run `pnpm build` from root and confirm Turborepo orders agent-graph
         between intelligence and livekit-agent
-  - [ ] 1.3 Add `packages/shared-types/src/agent-jobs.ts` with `AgentJob`,
+  - [x] 1.3 Add `packages/shared-types/src/agent-jobs.ts` with `AgentJob`,
         `AgentJobResult`, `InboxQueueItem`, `PendingAction`, `QueueCursor` (plan
         §7 — jobs carry NO tokens; NO `clusterLabel` on `InboxQueueItem`;
         `QueueCursor` anchors on `currentEmailId` with priority-only ordering,
         D7); export from `index.ts`; full root rebuild
-  - [ ] 1.4 Implement `src/state/annotations.ts` — `InboxState` (`userId`,
+  - [x] 1.4 Implement `src/state/annotations.ts` — `InboxState` (`userId`,
         `inbox_queue`, `user_preferences`, `retrieval_context`, `cursor`) and
         `WorkerState` (`MessagesAnnotation` + `task`, `plan`, `pending_actions`,
         `observations`, `outcome`)
-  - [ ] 1.5 Implement `src/state/inbox-queue.ts` — `mergeByEmailId` reducer
+  - [x] 1.5 Implement `src/state/inbox-queue.ts` — `mergeByEmailId` reducer
         (merge, status upsert, priority ordering) + tests
-  - [ ] 1.6 Implement `src/state/pending-actions.ts` — `upsertById` reducer +
+  - [x] 1.6 Implement `src/state/pending-actions.ts` — `upsertById` reducer +
         tests
-  - [ ] 1.7 Implement `src/state/user-preferences.ts` — hydration from
+  - [x] 1.7 Implement `src/state/user-preferences.ts` — hydration from
         `PreferencesStore` + `UserKnowledgeStore` +
         `SenderProfileStore.synthesizePreferences()` + tests (ioredis-mock)
-  - [ ] 1.8 Implement `src/checkpoint/redis-saver.ts` — `BaseCheckpointSaver`
+  - [x] 1.8 Implement `src/checkpoint/redis-saver.ts` — `BaseCheckpointSaver`
         (`getTuple`/`put`/`putWrites`/`list`) over ioredis, key
         `nexus:graph:{thread_id}`, 24h TTL, plain commands only (Upstash-safe,
         plan §8) + tests
-  - [ ] 1.9 Implement `src/bus/jobs.ts` — `XADD` producer to
+  - [x] 1.9 Implement `src/bus/jobs.ts` — `XADD` producer to
         `nexus:jobs:worker`, consumer-group helpers (`XREADGROUP`/`XACK` with
         blocking reads + sane timeouts, plan §16), result publisher to
         `nexus:results:{userId}`, `ApprovalRequest` event shape + tests
-  - [ ] 1.10 Implement `src/llm.ts` — `ChatOpenAI` factory (model, retries,
+  - [x] 1.10 Implement `src/llm.ts` — `ChatOpenAI` factory (model, retries,
         logger callbacks); resolve any `exactOptionalPropertyTypes` friction
         here once
-  - [ ] 1.11 Validation loop clean (no runtime behavior change expected)
+  - [x] 1.11 Validation loop clean (no runtime behavior change expected)
 
 - [ ] **2.0 Phase 2 — Graph A (`inbox_sorting`) + `apps/worker` container**
-  - [ ] 2.1 Implement `nodes/sorting/fetch-inbox.ts` — port pagination (50/page,
+  - [x] 2.1 Implement `nodes/sorting/fetch-inbox.ts` — port pagination (50/page,
         max 10 pages / 500 emails), 24h unread window from
         `briefing-pipeline.ts`; reuse `presortEmails()` ordering + tests
-  - [ ] 2.2 Implement `nodes/sorting/apply-rules.ts` — port briefed-ID exclusion
+  - [x] 2.2 Implement `nodes/sorting/apply-rules.ts` — port briefed-ID exclusion
         (`BriefedEmailStore`), muted senders, and `extractFilterRules` `[rule]`
         parsing + tests
-  - [ ] 2.3 Implement `nodes/sorting/hydrate-context.ts` — `Send()` fan-out per
+  - [x] 2.3 Implement `nodes/sorting/hydrate-context.ts` — `Send()` fan-out per
         batch of 25: `SenderProfileStore.get(sender)` +
         `RAGRetriever.retrieve(subject + snippet)`; graceful skip when
         Supabase/Redis unavailable + tests
-  - [ ] 2.4 Implement `nodes/sorting/classify-sort.ts` — zod structured-output
+  - [x] 2.4 Implement `nodes/sorting/classify-sort.ts` — zod structured-output
         classify emitting flat per-email `{ emailId, priority, summary }` — NO
         clustering (D7); port the preprocessor prompt minus its CLUSTER step,
         keeping the 6–14-word spoken-intent summary rules + tests (mocked LLM,
         malformed-JSON fallback keeps summary empty — never the raw subject)
-  - [ ] 2.5 Implement `nodes/sorting/write-queue.ts` — commit `inbox_queue`
+  - [x] 2.5 Implement `nodes/sorting/write-queue.ts` — commit `inbox_queue`
         (priority-ordered), mirror `nexus:priority-counts:{userId}` (30-min
         TTL), publish queue-updated event when a session is live + tests
-  - [ ] 2.6 Implement `graphs/inbox-sorting.graph.ts` — node wiring +
+  - [x] 2.6 Implement `graphs/inbox-sorting.graph.ts` — node wiring +
         conditional batch loop (progressive), Redis checkpointer,
         `thread_id = inbox:{userId}`; idempotent re-run test
-  - [ ] 2.7 Create `apps/worker`: `package.json`, `src/main.ts` (consumer-group
+  - [x] 2.7 Create `apps/worker`: `package.json`, `src/main.ts` (consumer-group
         loop → run graphs, graceful shutdown, `unhandledRejection` handler),
         `Dockerfile`
-  - [ ] 2.8 Rewrite `apps/api/src/services/briefing-precompute.ts` → enqueue
+  - [x] 2.8 Rewrite `apps/api/src/services/briefing-precompute.ts` → enqueue
         `inbox_sort` (POST `/briefing/precompute` contract unchanged); point GET
         `/briefing/status/:userId` at the Graph A checkpoint / priority-counts
         mirror; update route tests

@@ -263,3 +263,16 @@ export interface PaginationInfo {
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   pagination: PaginationInfo;
 }
+
+// =============================================================================
+// Agent Job / Graph Wire Contracts
+// =============================================================================
+
+export type {
+  QueuePriority,
+  InboxQueueItem,
+  QueueCursor,
+  PendingAction,
+  AgentJob,
+  AgentJobResult,
+} from './agent-jobs';

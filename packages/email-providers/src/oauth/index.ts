@@ -7,3 +7,4 @@
 export * from './microsoft';
 export * from './google';
 export * from './token-manager';
+export * from './redis-token-storage';
